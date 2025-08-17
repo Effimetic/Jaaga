@@ -81,19 +81,36 @@ const MainTabNavigator: React.FC = () => {
 const AppNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
 
+  console.log('🔄 AppNavigator re-render - user:', user, 'isLoading:', isLoading);
+  console.log('🔄 AppNavigator - user type:', typeof user, 'user value:', JSON.stringify(user));
+  console.log('🔄 AppNavigator - user === null:', user === null);
+  console.log('🔄 AppNavigator - user === undefined:', user === undefined);
+
   if (isLoading) {
+    console.log('⏳ AppNavigator - showing LoadingScreen');
     return <LoadingScreen />;
+  }
+
+  console.log('🎯 AppNavigator - rendering main navigation');
+  console.log('🎯 AppNavigator - user exists:', !!user);
+  console.log('🎯 AppNavigator - showing protected routes:', !!user);
+  
+  // If no user, we should be showing public routes
+  if (!user) {
+    console.log('🌐 AppNavigator - showing public routes (no user)');
+  } else {
+    console.log('🔒 AppNavigator - showing protected routes (user logged in)');
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {/* Public screens - accessible without login */}
+        {/* Public screens - always accessible */}
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         
-        {/* Protected screens - require login */}
+        {/* Protected screens - only shown when user is logged in */}
         {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />

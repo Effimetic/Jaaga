@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from models.unified_booking import Booking, TicketType, TaxProfile
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models.unified_booking import Booking, TicketType, TaxProfile, ScheduleTicketType
 from models.scheduling import Schedule
+from models import db, User
 from services.unified_booking import UnifiedBookingService
 from services.sms_service import sms_service
-from models import db
+from datetime import date
 
 unified_booking_bp = Blueprint('unified_booking', __name__)
 

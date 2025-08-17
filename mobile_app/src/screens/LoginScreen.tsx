@@ -19,8 +19,10 @@ import {
 import { FontAwesome } from "@expo/vector-icons";
 import { apiService } from "../services/apiService";
 import { userService } from "../services/userService";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen({ navigation }: { navigation?: any }) {
+  const { login, setUser } = useAuth();
   const [phone, setPhone] = useState("");
   const [currentPhone, setCurrentPhone] = useState(""); // tracks the phone used for token
   const [token, setToken] = useState("");
@@ -86,25 +88,101 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
     }
     setVerifying(true);
     try {
+      console.log('Verifying token for phone:', currentPhone || normalizedPhoneForApi);
       const response = await apiService.verifyToken(currentPhone || normalizedPhoneForApi, token);
+      console.log('Verify token response:', response);
       
       if (response.success) {
-        // Store user session
-        await userService.setCurrentUserSession(response.user, response.token);
+        console.log('Token verification successful, updating user state...');
         
-        Alert.alert("Success", response.message || "Login successful.");
+        // Create a temporary user object with the verified phone
+        const tempUser = {
+          id: 0, // Will be updated from profile
+          phone: response.phone,
+          name: `User_${response.phone.slice(-4)}`, // Temporary name
+          role: 'public', // Default role
+          authenticated: true
+        };
         
-        // Navigate to main app
-        if (navigation) {
-          navigation.reset({ 
-            index: 0, 
-            routes: [{ name: "MainTabs" }] 
-          });
+        // Store the session
+        await userService.setCurrentUserSession(tempUser, response.access_token);
+        
+        // Try to get profile data
+        try {
+          const profile = await apiService.getProfile();
+          if (profile.success) {
+            const userData = {
+              id: profile.profile.id,
+              phone: profile.profile.phone,
+              name: profile.profile.name,
+              role: profile.profile.role,
+              authenticated: true
+            };
+            await userService.setCurrentUserSession(userData, response.access_token);
+            // Update AuthContext user state
+            setUser(userData);
+            console.log('Profile loaded, user state updated:', userData);
+          }
+        } catch (profileError) {
+          console.log('Profile load failed, using basic user data');
+          // Set basic user data in AuthContext
+          setUser(tempUser);
+          console.log('Basic user state set:', tempUser);
         }
+        
+        console.log('Login successful, waiting for state update...');
+        
+        // Wait for state update to complete before navigation
+        setTimeout(async () => {
+          console.log('State update delay completed, attempting navigation...');
+          
+          // Try immediate navigation
+          if (navigation) {
+            try {
+              console.log('Attempting immediate navigation...');
+              navigation.reset({ 
+                index: 0, 
+                routes: [{ name: "MainTabs" }] 
+              });
+              console.log('Immediate navigation successful');
+              return;
+            } catch (navError) {
+              console.error('Immediate navigation failed:', navError);
+            }
+          }
+          
+          // Fallback: show alert and navigate on dismiss
+          Alert.alert("Success", response.message || "Login successful.", [
+            {
+              text: "OK",
+              onPress: () => {
+                console.log('Alert dismissed, navigating to MainTabs...');
+                if (navigation) {
+                  try {
+                    navigation.reset({ 
+                      index: 0, 
+                      routes: [{ name: "MainTabs" }] 
+                    });
+                    console.log('Navigation reset successful');
+                  } catch (navError) {
+                    console.error('Navigation reset failed:', navError);
+                    try {
+                      navigation.navigate('MainTabs');
+                      console.log('Fallback navigation successful');
+                    } catch (fallbackError) {
+                      console.error('Fallback navigation also failed:', fallbackError);
+                    }
+                  }
+                }
+              }
+            }
+          ]);
+        }, 500); // Increased delay to ensure state update
       } else {
         Alert.alert("Invalid token", response.error || "Please check the code and try again.");
       }
     } catch (err: any) {
+      console.error('Error in verifyToken:', err);
       Alert.alert("Error", err.message || "Network error. Please try again.");
     } finally {
       setVerifying(false);
@@ -142,6 +220,17 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.select({ ios: 24, android: 0 })}
       >
+        {/* Home Navigation Button */}
+        <View style={styles.homeNavContainer}>
+          <TouchableOpacity
+            style={styles.homeNavButton}
+            onPress={() => navigation?.navigate?.("Home")}
+          >
+            <FontAwesome name="home" size={20} style={styles.homeNavIcon} />
+            <Text style={styles.homeNavText}>Home</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.container}>
           <View style={styles.card}>
             <View style={styles.header}>
@@ -267,6 +356,32 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f6f8fa" },
   flex: { flex: 1 },
+  homeNavContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 50 : 20, // Adjust for safe area
+    zIndex: 10,
+    backgroundColor: "#f6f8fa",
+    alignItems: "center",
+  },
+  homeNavButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e0e7ff",
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  homeNavIcon: { color: "#2563eb" },
+  homeNavText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2563eb",
+  },
   container: {
     flex: 1,
     paddingHorizontal: 20,

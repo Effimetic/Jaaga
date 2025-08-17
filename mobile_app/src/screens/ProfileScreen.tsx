@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { userService } from '../services/userService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface User {
   id: number;
@@ -22,6 +23,7 @@ interface User {
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { logout } = useAuth();
 
   useEffect(() => {
     loadUserProfile();
@@ -52,10 +54,19 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await userService.clearCurrentUserSession();
-              // Navigation will be handled by AuthContext
+              console.log('🔄 ProfileScreen: Starting logout process...');
+              await logout();
+              console.log('🔄 ProfileScreen: Logout completed, navigating to Home...');
+              
+              // Explicitly navigate to Home screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+              
             } catch (error) {
-              console.error('Logout error:', error);
+              console.error('❌ ProfileScreen: Logout error:', error);
+              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
             }
           },
         },

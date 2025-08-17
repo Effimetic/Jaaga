@@ -5,6 +5,7 @@ interface User {
   phone: string;
   name: string;
   role: string;
+  authenticated: boolean;
 }
 
 export const userService = {

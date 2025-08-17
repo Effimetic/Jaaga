@@ -25,10 +25,19 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
           style: 'destructive',
           onPress: async () => {
             try {
+              console.log('🔄 SettingsScreen: Starting logout process...');
               await logout();
-              // Navigation will be handled by AuthContext
+              console.log('🔄 SettingsScreen: Logout completed, navigating to Home...');
+              
+              // Explicitly navigate to Home screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+              
             } catch (error) {
-              console.error('Logout error:', error);
+              console.error('❌ SettingsScreen: Logout error:', error);
+              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
             }
           },
         },

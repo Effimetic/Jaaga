@@ -13,6 +13,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  setUser: (user: User | null) => void;
   sendSMS: (phone: string) => Promise<{ success: boolean; message: string; debug_code?: string }>;
   verifySMS: (phone: string, token: string) => Promise<{ success: boolean; message: string; token?: string; user?: User }>;
   login: (phone: string, token: string) => Promise<void>;
@@ -31,8 +32,16 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Wrapper function for setUser with debugging
+  const setUser = (newUser: User | null) => {
+    console.log('AuthContext.setUser called with:', newUser);
+    console.log('Previous user state was:', user);
+    setUserState(newUser);
+    console.log('User state updated to:', newUser);
+  };
 
   useEffect(() => {
     // Check if user is already logged in
@@ -86,51 +95,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await apiService.verifyToken(phone, token);
       
       if (result.success) {
-        // Use user data from verification response
-        const userData = result.user ? {
-          id: result.user.id,
-          phone: result.user.phone,
-          name: result.user.name,
-          role: result.user.role,
-          authenticated: true
-        } : {
-          id: 1,
-          phone: result.phone || phone,
-          name: `User_${phone.slice(-4)}`,
-          role: 'public',
-          authenticated: true
-        };
-        
         // Store token for API requests
-        await userService.setCurrentUserSession(userData, result.access_token);
+        await userService.setCurrentUserSession({
+          id: 0, // Temporary ID, will be updated from profile
+          phone: result.phone,
+          name: `User_${result.phone.slice(-4)}`, // Temporary name
+          role: 'public', // Default role, will be updated from profile
+          authenticated: true
+        }, result.access_token);
         
-        // Try to get updated profile data
+        // Get updated profile data using the token
         try {
           const profile = await apiService.getProfile();
           if (profile.success) {
-            const updatedUserData = {
-              id: profile.profile.id || userData.id,
+            const userData = {
+              id: profile.profile.id,
               phone: profile.profile.phone,
-              name: profile.profile.name || userData.name,
-              role: profile.profile.role || userData.role,
+              name: profile.profile.name,
+              role: profile.profile.role,
               authenticated: true
             };
-            await userService.setCurrentUserSession(updatedUserData, result.access_token);
-            setUser(updatedUserData);
-          } else {
+            await userService.setCurrentUserSession(userData, result.access_token);
             setUser(userData);
+            
+            return {
+              success: true,
+              message: 'Login successful',
+              token: result.access_token,
+              user: userData
+            };
+          } else {
+            throw new Error('Failed to get profile data');
           }
         } catch (profileError) {
           console.error('Error getting profile:', profileError);
-          setUser(userData);
+          // If profile fails, still allow login with basic user data
+          const basicUserData = {
+            id: 0,
+            phone: result.phone,
+            name: `User_${result.phone.slice(-4)}`,
+            role: 'public',
+            authenticated: true
+          };
+          setUser(basicUserData);
+          
+          return {
+            success: true,
+            message: 'Login successful (basic profile)',
+            token: result.access_token,
+            user: basicUserData
+          };
         }
-        
-        return {
-          success: true,
-          message: 'Login successful',
-          token: result.access_token,
-          user: userData
-        };
       } else {
         return {
           success: false,
@@ -148,28 +163,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (phone: string, token: string) => {
     try {
+      console.log('AuthContext.login called with phone:', phone);
       const result = await verifySMS(phone, token);
+      console.log('verifySMS result:', result);
       
       if (result.success && result.user) {
+        console.log('Setting user state to:', result.user);
         setUser(result.user);
+        console.log('User state updated successfully');
       } else {
         throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Error storing auth data:', error);
+      console.error('Error in AuthContext.login:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
+      console.log('🔄 AuthContext.logout called');
+      console.log('🔄 Current user state before logout:', user);
+      
       // Use userService to clear session
       await userService.clearCurrentUserSession();
+      console.log('🔄 Session cleared from userService');
       
       // Update user state
       setUser(null);
+      console.log('🔄 User state set to null');
+      
+      console.log('🔄 Logout completed successfully');
+      
+      // Force a small delay to ensure state update is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
     } catch (error) {
-      console.error('Error clearing auth data:', error);
+      console.error('❌ Error in AuthContext.logout:', error);
       throw error;
     }
   };
@@ -178,7 +208,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await userService.getCurrentUserId();
   };
 
-  const value = { user, isLoading, sendSMS, verifySMS, login, logout, getCurrentUserId };
+  const value = { user, isLoading, setUser, sendSMS, verifySMS, login, logout, getCurrentUserId };
 
   return (
     <AuthContext.Provider value={value}>

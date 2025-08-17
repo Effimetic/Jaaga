@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,5 +23,3 @@ class Config:
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     FLASK_ENV = os.getenv('FLASK_ENV', 'development')
-
-from datetime import timedelta

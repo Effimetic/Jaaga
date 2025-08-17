@@ -32,6 +32,9 @@ from services.sms_service import sms_service
 # Import routes
 from routes import main, boat_management, owner_settings, scheduling, unified_booking
 
+# Global SMS codes storage (persistent between requests)
+sms_codes = {}
+
 @app.route('/api/register', methods=['POST'])
 def register():
     """User registration endpoint"""
@@ -98,24 +101,33 @@ def send_sms():
         data = request.get_json()
         phone = data.get('phone')
         
+        print(f"📱 SEND SMS DEBUG:")
+        print(f"   Received data: {data}")
+        print(f"   Phone: {phone}")
+        
         if not phone:
+            print(f"   ❌ No phone number provided")
             return jsonify({'error': 'Phone number is required'}), 400
         
         # Generate 6-digit verification code
         verification_code = ''.join(random.choices(string.digits, k=6))
+        print(f"   🔐 Generated code: {verification_code}")
         
         # Use SMS service to send the code
         sms_result = sms_service.send_verification_code(phone, verification_code)
+        print(f"   📤 SMS service result: {sms_result}")
         
         if sms_result['success']:
             # Store the code temporarily (in production, use Redis or database)
             # For now, we'll store it in a simple way
-            app.config.setdefault('sms_codes', {})
-            app.config['sms_codes'][phone] = {
+            global sms_codes
+            sms_codes[phone] = {
                 'code': verification_code,
                 'created_at': datetime.utcnow(),
                 'attempts': 0
             }
+            print(f"   💾 Stored code for {phone}: {sms_codes[phone]}")
+            print(f"   📊 Total codes stored: {len(sms_codes)}")
             
             return jsonify({
                 'success': True,
@@ -124,9 +136,11 @@ def send_sms():
                 'debug_code': verification_code  # Remove this in production
             })
         else:
+            print(f"   ❌ SMS service failed: {sms_result['message']}")
             return jsonify({'error': sms_result['message']}), 500
         
     except Exception as e:
+        print(f"   ❌ Exception: {str(e)}")
         return jsonify({'error': f'Failed to send SMS: {str(e)}'}), 500
 
 @app.route('/api/auth/verify-sms', methods=['POST'])
@@ -137,19 +151,29 @@ def verify_sms():
         phone = data.get('phone')
         code = data.get('code')
         
+        print(f"🔍 VERIFY SMS DEBUG:")
+        print(f"   Received data: {data}")
+        print(f"   Phone: {phone}")
+        print(f"   Code: {code}")
+        print(f"   SMS codes in config: {sms_codes}")
+        
         if not phone or not code:
+            print(f"   ❌ Missing phone or code")
             return jsonify({'error': 'Phone number and verification code are required'}), 400
         
         # Check if code exists and is valid
-        sms_codes = app.config.get('sms_codes', {})
         if phone not in sms_codes:
+            print(f"   ❌ Phone {phone} not found in SMS codes")
             return jsonify({'error': 'Invalid phone number or code expired'}), 400
         
         code_data = sms_codes[phone]
+        print(f"   📱 Found code data: {code_data}")
         
         # Check if code is correct
         if code_data['code'] != code:
             code_data['attempts'] += 1
+            print(f"   ❌ Code mismatch. Expected: {code_data['code']}, Got: {code}")
+            print(f"   ❌ Attempts: {code_data['attempts']}")
             if code_data['attempts'] >= 3:
                 del sms_codes[phone]
                 return jsonify({'error': 'Too many failed attempts. Please request a new code.'}), 400
@@ -157,8 +181,11 @@ def verify_sms():
         
         # Check if code is expired (15 minutes)
         if datetime.utcnow() - code_data['created_at'] > timedelta(minutes=15):
+            print(f"   ❌ Code expired. Created: {code_data['created_at']}")
             del sms_codes[phone]
             return jsonify({'error': 'Verification code expired. Please request a new one.'}), 400
+        
+        print(f"   ✅ Code verified successfully!")
         
         # Code is valid - create JWT token
         access_token = create_access_token(identity=phone)
@@ -174,6 +201,7 @@ def verify_sms():
         })
         
     except Exception as e:
+        print(f"   ❌ Exception: {str(e)}")
         return jsonify({'error': f'Failed to verify SMS: {str(e)}'}), 500
 
 @app.route('/api/auth/profile', methods=['GET'])

@@ -60,16 +60,29 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
     setIsLoading(true);
 
     try {
-      const response = await apiService.register(formData);
+      // Clean phone number for API call (remove spaces and format)
+      const cleanPhone = formData.phone.replace(/\s+/g, '');
+      console.log('Registering with data:', { ...formData, phone: cleanPhone });
+      
+      const response = await apiService.register({
+        ...formData,
+        phone: cleanPhone
+      });
+      console.log('Registration response:', response);
       
       if (response.success) {
+        console.log('Registration successful, showing success alert...');
         Alert.alert(
           'Success',
           response.message || 'Account created successfully!',
           [
             {
               text: 'OK',
-              onPress: () => navigation.navigate('Login'),
+              onPress: () => {
+                console.log('Alert dismissed, navigating to Login...');
+                // Navigate to login immediately after alert dismissal
+                navigation.navigate('Login');
+              },
             },
           ]
         );
@@ -77,6 +90,7 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
         Alert.alert('Error', response.error || 'Registration failed');
       }
     } catch (error: any) {
+      console.error('Registration error:', error);
       Alert.alert('Error', error.message || 'Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -99,6 +113,17 @@ export default function RegisterScreen({ navigation }: { navigation: any }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Home Navigation Button */}
+        <View style={styles.homeNavContainer}>
+          <TouchableOpacity
+            style={styles.homeNavButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <FontAwesome5 name="house-user" size={18} color="#007AFF" />
+            <Text style={styles.homeNavText}>Home</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
@@ -236,6 +261,25 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   container: { padding: 16 },
   
+  homeNavContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  homeNavButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  homeNavText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

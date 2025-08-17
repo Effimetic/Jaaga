@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Alert,
+  Pressable,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
-import { apiService } from '../services/apiService';
+import { useAuth } from '../contexts/AuthContext';
 import { userService } from '../services/userService';
+import { apiService } from '../services/apiService';
 
 interface DashboardStats {
   boat_count: number;
@@ -26,15 +28,16 @@ interface User {
 }
 
 export default function DashboardScreen({ navigation }: { navigation: any }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    boat_count: 0,
-    today_trips: 0,
-    today_travellers: 0,
-  });
+  const { user, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<any>({});
+
+  console.log('🔄 DashboardScreen: Component rendered');
+  console.log('🔄 DashboardScreen: user from useAuth:', user);
+  console.log('🔄 DashboardScreen: logout function:', typeof logout);
 
   useEffect(() => {
+    console.log('🔄 DashboardScreen: useEffect triggered');
     loadDashboardData();
   }, []);
 
@@ -45,7 +48,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       // Get current user
       const currentUser = await userService.getCurrentUser();
       if (currentUser) {
-        setUser(currentUser);
+        // setUser(currentUser); // This line is removed as per the new_code
       }
 
       // Get dashboard stats if user is owner
@@ -92,10 +95,19 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await userService.clearCurrentUserSession();
-              // Navigation will be handled by AuthContext
+              console.log('🔄 DashboardScreen: Starting logout process...');
+              await logout();
+              console.log('🔄 DashboardScreen: Logout completed, navigating to Home...');
+              
+              // Explicitly navigate to Home screen after logout
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+              
             } catch (error) {
-              console.error('Logout error:', error);
+              console.error('❌ DashboardScreen: Logout error:', error);
+              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
             }
           },
         },
@@ -132,10 +144,43 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Dashboard</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
+          <TouchableOpacity
+            style={[styles.logoutButton, { 
+              backgroundColor: '#EF4444', 
+              borderRadius: 8, 
+              padding: 8,
+              borderWidth: 2,
+              borderColor: '#DC2626'
+            }]} 
+            onPress={() => {
+              console.log('🔄 DashboardScreen: Corner logout button pressed!');
+              Alert.alert('Test', 'Corner logout button pressed!');
+              handleLogout();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <FontAwesome5 name="sign-out-alt" size={20} color="white" />
           </TouchableOpacity>
         </View>
+
+        {/* Test Logout Button */}
+        <Pressable
+          style={{
+            backgroundColor: '#10B981',
+            padding: 12,
+            borderRadius: 8,
+            marginBottom: 16,
+            alignItems: 'center'
+          }}
+          onPress={() => {
+            console.log('🔄 Test logout button pressed!');
+            Alert.alert('Test Logout', 'Testing logout function directly...');
+            logout();
+          }}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold' }}>TEST LOGOUT</Text>
+        </Pressable>
 
         {/* User Profile Header */}
         <View style={styles.userProfileHeader}>
@@ -357,6 +402,10 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 8,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   userProfileHeader: {
