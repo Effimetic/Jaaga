@@ -6,7 +6,7 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = 'http://192.168.100.14:8081';
+    this.baseURL = 'http://localhost:5001/api';
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 10000,
@@ -46,7 +46,7 @@ class ApiService {
   // Authentication endpoints
   async sendSMS(phone: string): Promise<any> {
     try {
-      const response = await this.api.post('/login', { phone });
+      const response = await this.api.post('/auth/send-sms', { phone });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to send SMS');
@@ -55,7 +55,7 @@ class ApiService {
 
   async verifyToken(phone: string, token: string): Promise<any> {
     try {
-      const response = await this.api.post('/verify_token', { phone, token });
+      const response = await this.api.post('/auth/verify-sms', { phone, code: token });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to verify token');
@@ -64,7 +64,7 @@ class ApiService {
 
   async getProfile(): Promise<any> {
     try {
-      const response = await this.api.get('/api/auth/profile');
+      const response = await this.api.get('/auth/profile');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get profile');
@@ -79,7 +79,7 @@ class ApiService {
     end_date?: string;
   }): Promise<any> {
     try {
-      const response = await this.api.get('/schedules/list', { params });
+      const response = await this.api.get('/schedules', { params });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get schedules');
@@ -88,7 +88,7 @@ class ApiService {
 
   async getScheduleById(scheduleId: number): Promise<any> {
     try {
-      const response = await this.api.get(`/schedules/${scheduleId}`);
+      const response = await this.api.get(`/schedules/schedules/${scheduleId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get schedule');
@@ -97,7 +97,7 @@ class ApiService {
 
   async createSchedule(scheduleData: any): Promise<any> {
     try {
-      const response = await this.api.post('/schedules/create', scheduleData);
+      const response = await this.api.post('/schedules/schedules/create', scheduleData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to create schedule');
@@ -106,7 +106,7 @@ class ApiService {
 
   async updateSchedule(scheduleId: number, scheduleData: any): Promise<any> {
     try {
-      const response = await this.api.put(`/schedules/${scheduleId}`, scheduleData);
+      const response = await this.api.put(`/schedules/schedules/${scheduleId}`, scheduleData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to update schedule');
@@ -115,7 +115,7 @@ class ApiService {
 
   async deleteSchedule(scheduleId: number): Promise<any> {
     try {
-      const response = await this.api.delete(`/schedules/${scheduleId}`);
+      const response = await this.api.delete(`/schedules/schedules/${scheduleId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to delete schedule');
@@ -125,7 +125,7 @@ class ApiService {
   // Boat management endpoints
   async getBoats(): Promise<any> {
     try {
-      const response = await this.api.get('/boats/');
+      const response = await this.api.get('/boats/boats');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get boats');
@@ -134,7 +134,7 @@ class ApiService {
 
   async getBoatById(boatId: number): Promise<any> {
     try {
-      const response = await this.api.get(`/boats/${boatId}`);
+      const response = await this.api.get(`/boats/boats/${boatId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get boat');
@@ -143,7 +143,7 @@ class ApiService {
 
   async createBoat(boatData: any): Promise<any> {
     try {
-      const response = await this.api.post('/boats/create', boatData);
+      const response = await this.api.post('/boats/boats/add', boatData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to create boat');
@@ -152,7 +152,7 @@ class ApiService {
 
   async updateBoat(boatId: number, boatData: any): Promise<any> {
     try {
-      const response = await this.api.put(`/boats/${boatId}`, boatData);
+      const response = await this.api.put(`/boats/boats/${boatId}/edit`, boatData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to update boat');
@@ -161,7 +161,7 @@ class ApiService {
 
   async deleteBoat(boatId: number): Promise<any> {
     try {
-      const response = await this.api.delete(`/boats/${boatId}`);
+      const response = await this.api.post(`/boats/boats/${boatId}/delete`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to delete boat');
@@ -169,12 +169,9 @@ class ApiService {
   }
 
   // Booking endpoints
-  async getBookings(scheduleId?: number): Promise<any> {
+  async getBookings(params?: any): Promise<any> {
     try {
-      const endpoint = scheduleId 
-        ? `/api/schedules/${scheduleId}/bookings`
-        : '/api/bookings';
-      const response = await this.api.get(endpoint);
+      const response = await this.api.get('/bookings', { params });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get bookings');
@@ -183,7 +180,7 @@ class ApiService {
 
   async createBooking(scheduleId: number, bookingData: any): Promise<any> {
     try {
-      const response = await this.api.post(`/api/schedules/${scheduleId}/bookings`, bookingData);
+      const response = await this.api.post(`/bookings/schedules/${scheduleId}/bookings`, bookingData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to create booking');
@@ -192,7 +189,7 @@ class ApiService {
 
   async getBookingById(bookingId: number): Promise<any> {
     try {
-      const response = await this.api.get(`/api/bookings/${bookingId}`);
+      const response = await this.api.get(`/bookings/bookings/${bookingId}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get booking');
@@ -201,17 +198,27 @@ class ApiService {
 
   async getBookingByCode(code: string): Promise<any> {
     try {
-      const response = await this.api.get(`/api/bookings/code/${code}`);
+      const response = await this.api.get(`/bookings/bookings/code/${code}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get booking');
     }
   }
 
+  // Get schedule ticket types
+  async getScheduleTicketTypes(scheduleId: number): Promise<any> {
+    try {
+      const response = await this.api.get(`/schedules/api/schedules/${scheduleId}/ticket-types`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get schedule ticket types');
+    }
+  }
+
   // Owner settings endpoints
   async getTicketTypes(): Promise<any> {
     try {
-      const response = await this.api.get('/api/ticket-types');
+      const response = await this.api.get('/bookings/ticket-types');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get ticket types');
@@ -220,7 +227,10 @@ class ApiService {
 
   async createTicketType(ticketTypeData: any): Promise<any> {
     try {
-      const response = await this.api.post('/api/ticket-types', ticketTypeData);
+      const response = await this.api.post('/owner-settings/settings/ticket-types', { 
+        action: 'create', 
+        ...ticketTypeData 
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to create ticket type');
@@ -229,7 +239,11 @@ class ApiService {
 
   async updateTicketType(ticketTypeId: number, ticketTypeData: any): Promise<any> {
     try {
-      const response = await this.api.put(`/api/ticket-types/${ticketTypeId}`, ticketTypeData);
+      const response = await this.api.post('/owner-settings/settings/ticket-types', { 
+        action: 'update', 
+        id: ticketTypeId,
+        ...ticketTypeData 
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to update ticket type');
@@ -238,7 +252,10 @@ class ApiService {
 
   async deleteTicketType(ticketTypeId: number): Promise<any> {
     try {
-      const response = await this.api.delete(`/api/ticket-types/${ticketTypeId}`);
+      const response = await this.api.post('/owner-settings/settings/ticket-types', { 
+        action: 'delete', 
+        id: ticketTypeId 
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to delete ticket type');
@@ -248,7 +265,7 @@ class ApiService {
   // Islands and destinations
   async getIslands(): Promise<any> {
     try {
-      const response = await this.api.get('/api/islands');
+      const response = await this.api.get('/schedules/api/islands');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get islands');
@@ -257,7 +274,7 @@ class ApiService {
 
   async getDestinations(): Promise<any> {
     try {
-      const response = await this.api.get('/api/destinations');
+      const response = await this.api.get('/schedules/api/destinations');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get destinations');
@@ -277,10 +294,47 @@ class ApiService {
   // Dashboard stats endpoint
   async getDashboardStats(): Promise<any> {
     try {
-      const response = await this.api.get('/api/dashboard/stats');
+      const response = await this.api.get('/dashboard');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get dashboard stats');
+    }
+  }
+
+  // Owner settings endpoints
+  async getOwnerSettings(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/settings');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get owner settings');
+    }
+  }
+
+  async updateOwnerSettings(settingsData: any): Promise<any> {
+    try {
+      const response = await this.api.put('/owner-settings/settings', settingsData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update owner settings');
+    }
+  }
+
+  async getStaffUsers(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/staff');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get staff users');
+    }
+  }
+
+  async createStaffUser(staffData: any): Promise<any> {
+    try {
+      const response = await this.api.post('/owner-settings/staff', staffData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to create staff user');
     }
   }
 }

@@ -84,20 +84,52 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const verifySMS = async (phone: string, token: string) => {
     try {
       const result = await apiService.verifyToken(phone, token);
-      // For now, we'll need to handle the redirect response
-      // The backend returns a redirect URL, so we'll need to extract user info differently
-      return {
-        success: true,
-        message: 'Login successful',
-        token: 'temp_token', // We'll need to get the actual token from the response
-        user: {
-          id: 1, // This should come from the backend
-          phone: phone,
-          name: `User_${phone.slice(-4)}`,
+      
+      if (result.success) {
+        // Store the access token and user data
+        const userData = {
+          id: 1, // This will be updated when we get profile
+          phone: result.phone,
+          name: `User_${result.phone.slice(-4)}`,
           role: 'public',
           authenticated: true
+        };
+        
+        // Store token for API requests
+        await userService.setCurrentUserSession(userData, result.access_token);
+        
+        // Get actual profile data
+        try {
+          const profile = await apiService.getProfile();
+          if (profile.success) {
+            const updatedUserData = {
+              id: profile.profile.id || userData.id,
+              phone: profile.profile.phone,
+              name: profile.profile.name || userData.name,
+              role: profile.profile.role || userData.role,
+              authenticated: true
+            };
+            await userService.setCurrentUserSession(updatedUserData, result.access_token);
+            setUser(updatedUserData);
+          }
+        } catch (profileError) {
+          console.error('Error getting profile:', profileError);
+          // Use basic user data if profile fetch fails
+          setUser(userData);
         }
-      };
+        
+        return {
+          success: true,
+          message: 'Login successful',
+          token: result.access_token,
+          user: userData
+        };
+      } else {
+        return {
+          success: false,
+          message: result.error || 'Verification failed'
+        };
+      }
     } catch (error: any) {
       console.error('Error verifying token:', error);
       return {
@@ -109,18 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (phone: string, token: string) => {
     try {
-      const userData = {
-        id: 1, // This should come from the backend
-        phone: phone,
-        name: `User_${phone.slice(-4)}`,
-        role: 'public'
-      };
+      const result = await verifySMS(phone, token);
       
-      // Use userService to set session
-      await userService.setCurrentUserSession(userData, token);
-      
-      // Update user state
-      setUser({ ...userData, authenticated: true });
+      if (result.success && result.user) {
+        setUser(result.user);
+      } else {
+        throw new Error(result.message || 'Login failed');
+      }
     } catch (error) {
       console.error('Error storing auth data:', error);
       throw error;

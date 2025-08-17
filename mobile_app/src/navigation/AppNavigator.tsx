@@ -12,6 +12,11 @@ import MyBoatsScreen from '../screens/MyBoatsScreen';
 import BookTicketsScreen from '../screens/BookTicketsScreen';
 import SchedulesScreen from '../screens/SchedulesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import AddBoatScreen from '../screens/AddBoatScreen';
+import EditBoatScreen from '../screens/EditBoatScreen';
+import ViewBoatScreen from '../screens/ViewBoatScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import MyBookingsScreen from '../screens/MyBookingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 
 export type RootStackParamList = {
@@ -99,11 +104,5 @@ const AppNavigator: React.FC = () => {
   );
 };
 
-// Placeholder screens - these will be created next
-const AddBoatScreen = () => <></>;
-const EditBoatScreen = () => <></>;
-const ViewBoatScreen = () => <></>;
-const SettingsScreen = () => <></>;
-const MyBookingsScreen = () => <></>;
 
 export default AppNavigator;

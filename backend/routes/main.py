@@ -125,6 +125,19 @@ def dashboard():
             schedule_count = Schedule.query.filter_by(owner_id=user.id).count()
             stats['schedules'] = schedule_count
             
+            # Count today's trips
+            today = date.today()
+            today_trips = Schedule.query.filter_by(
+                owner_id=user.id, 
+                schedule_date=today,
+                status='PUBLISHED'
+            ).count()
+            stats['today_trips'] = today_trips
+            
+            # Calculate today's travellers (placeholder for now)
+            today_travellers = 0  # This will be implemented when booking system is ready
+            stats['today_travellers'] = today_travellers
+            
             # Get recent schedules
             recent_schedules = Schedule.query.filter_by(owner_id=user.id).order_by(Schedule.created_at.desc()).limit(5).all()
             stats['recent_schedules'] = [
@@ -144,7 +157,8 @@ def dashboard():
                 'name': user.name,
                 'role': user.role
             },
-            'stats': stats
+            'stats': stats,
+            'data': stats  # For backward compatibility
         })
         
     except Exception as e:

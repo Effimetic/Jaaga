@@ -42,9 +42,9 @@ export default function BookTicketsScreen({ navigation, route }: { navigation: a
       }
 
       // Load ticket types
-      const ticketTypesResponse = await apiService.getTicketTypes();
+      const ticketTypesResponse = await apiService.getScheduleTicketTypes(scheduleId);
       if (ticketTypesResponse.success) {
-        setTicketTypes(ticketTypesResponse.data);
+        setTicketTypes(ticketTypesResponse.data || []);
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load data');
@@ -75,7 +75,7 @@ export default function BookTicketsScreen({ navigation, route }: { navigation: a
     Object.entries(selectedTickets).forEach(([ticketTypeId, quantity]) => {
       const ticketType = ticketTypes.find(tt => tt.id === parseInt(ticketTypeId));
       if (ticketType) {
-        total += ticketType.price * quantity;
+        total += (ticketType.final_price || ticketType.base_price) * quantity;
       }
     });
     return total;
@@ -134,7 +134,9 @@ export default function BookTicketsScreen({ navigation, route }: { navigation: a
             <View key={ticketType.id} style={styles.ticketCard}>
               <View style={styles.ticketInfo}>
                 <Text style={styles.ticketName}>{ticketType.name}</Text>
-                <Text style={styles.ticketPrice}>MVR {ticketType.price}</Text>
+                <Text style={styles.ticketPrice}>
+                  {ticketType.currency} {ticketType.final_price || ticketType.base_price}
+                </Text>
               </View>
               <View style={styles.ticketActions}>
                 <TouchableOpacity

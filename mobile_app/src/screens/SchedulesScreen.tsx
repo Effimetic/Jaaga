@@ -40,9 +40,12 @@ export default function SchedulesScreen({ navigation, route }: { navigation: any
   const loadSchedules = async () => {
     try {
       setIsLoading(true);
-      const response = await apiService.getSchedules();
+      const response = await apiService.getSchedules({
+        start_date: searchParams?.date,
+        // Add other search parameters as needed
+      });
       if (response.success) {
-        setSchedules(response.data);
+        setSchedules(response.schedules || response.data || []);
       } else {
         Alert.alert('Error', 'Failed to load schedules');
       }
