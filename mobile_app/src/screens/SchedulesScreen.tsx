@@ -211,6 +211,9 @@ export default function SchedulesScreen({ navigation, route }: { navigation: any
           <Text style={styles.pageSubtitle}>
             {searchParams ? 'Schedules matching your search' : 'Browse all available schedules'}
           </Text>
+        </View>
+      </View>
+      
       {searchParams && searchParams.from && (
         <View style={styles.searchSummary}>
           <Text style={styles.searchTitle}>Search Results</Text>
@@ -301,7 +304,7 @@ export default function SchedulesScreen({ navigation, route }: { navigation: any
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
 
-  pageHeader: {
+  header: {
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
@@ -497,166 +500,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
-  },
-
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-});
-
-        <FlatList
-          data={schedules}
-          renderItem={renderScheduleItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.schedulesList}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <View style={styles.emptyState}>
-          <FontAwesome5 name="calendar-times" size={48} color="#9CA3AF" />
-          <Text style={styles.emptyTitle}>No Schedules Available</Text>
-          <Text style={styles.emptyText}>
-            There are no schedules available for the selected criteria.
-          </Text>
-        </View>
-      )}
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: { padding: 8 },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  placeholder: { width: 36 },
-
-  searchSummary: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    borderRadius: 8,
-    padding: 16,
-    margin: 16,
-  },
-  searchTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1E40AF',
-    marginBottom: 8,
-  },
-  searchText: {
-    fontSize: 14,
-    color: '#1E40AF',
-    marginBottom: 4,
-  },
-
-  schedulesList: {
-    padding: 16,
-    gap: 12,
-  },
-
-  scheduleCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  scheduleHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  scheduleName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    flex: 1,
-  },
-  seatsInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  seatsText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-
-  scheduleDetails: {
-    gap: 8,
-    marginBottom: 16,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#374151',
-    flex: 1,
-  },
-
-  bookButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  bookButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 20,
   },
 
   loadingContainer: {
