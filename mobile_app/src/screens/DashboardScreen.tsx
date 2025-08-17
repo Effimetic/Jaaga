@@ -53,7 +53,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         try {
           const statsResponse = await apiService.getDashboardStats();
           if (statsResponse.success) {
-            setStats(statsResponse.data);
+            setStats(statsResponse.stats || statsResponse.data || {});
           }
         } catch (error) {
           console.error('Failed to load dashboard stats:', error);
@@ -162,7 +162,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
                   <FontAwesome5 name="ship" size={20} color="#FFF" />
                 </View>
                 <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.boat_count}</Text>
+                  <Text style={styles.statValue}>{stats.boats || stats.boat_count || 0}</Text>
                   <Text style={styles.statLabel}>Total Boats</Text>
                 </View>
               </View>
@@ -172,7 +172,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
                   <FontAwesome5 name="calendar-day" size={20} color="#FFF" />
                 </View>
                 <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.today_trips}</Text>
+                  <Text style={styles.statValue}>{stats.today_trips || 0}</Text>
                   <Text style={styles.statLabel}>Today's Trips</Text>
                 </View>
               </View>
@@ -182,7 +182,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
                   <FontAwesome5 name="users" size={20} color="#FFF" />
                 </View>
                 <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.today_travellers}</Text>
+                  <Text style={styles.statValue}>{stats.today_travellers || 0}</Text>
                   <Text style={styles.statLabel}>Total Travellers Today</Text>
                 </View>
               </View>
