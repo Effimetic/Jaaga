@@ -1,0 +1,1587 @@
+{% extends "base.html" %}
+
+{% block title %}Owner Settings{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style Settings Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">Settings</h4>
+        <p class="page-subtitle">Configure your boat service</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings List -->
+  <div class="settings-list">
+    <div class="settings-header">
+      <h5 class="settings-title">
+        <i class="fas fa-cog me-2"></i>Settings
+      </h5>
+      <p class="settings-subtitle">Manage your boat service configuration</p>
+    </div>
+
+    <div class="settings-items">
+      <a href="{{ url_for('owner_settings.company_info') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-building"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Company Information</h6>
+          <p class="item-description">Update your business details and branding</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.payment_methods') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Payment Methods</h6>
+          <p class="item-description">Configure payment options for your customers</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.bml_gateway') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-university"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">BML Gateway</h6>
+          <p class="item-description">Configure QR code payment settings</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.bank_transfer') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Bank Transfer</h6>
+          <p class="item-description">Configure bank account settings</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.staff_management') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Staff Management</h6>
+          <p class="item-description">Manage your team members</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.ticket_types') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Ticket Types</h6>
+          <p class="item-description">Configure different ticket categories</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('owner_settings.tax_config') }}" class="settings-item">
+        <div class="item-icon">
+          <i class="fas fa-percentage"></i>
+        </div>
+        <div class="item-content">
+          <h6 class="item-title">Tax Configuration</h6>
+          <p class="item-description">Set up tax rates and rules</p>
+        </div>
+        <div class="item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+                
+                <!-- Payment Methods -->
+                <div class="tab-pane fade" id="payment-methods">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Methods</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="paymentMethodsForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Standard Payment Methods</h6>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="cashPayment" 
+                                                   {% if settings.payment_methods.cash %}checked{% endif %}>
+                                            <label class="form-check-label" for="cashPayment">
+                                                <i class="fas fa-money-bill-wave me-2"></i>Cash Payment
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="transferPayment" 
+                                                   {% if settings.payment_methods.transfer %}checked{% endif %}>
+                                            <label class="form-check-label" for="transferPayment">
+                                                <i class="fas fa-university me-2"></i>Bank Transfer
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="bmlGatewayPayment" 
+                                                   {% if settings.payment_methods.bml_gateway %}checked{% endif %}>
+                                            <label class="form-check-label" for="bmlGatewayPayment">
+                                                <i class="fas fa-qrcode me-2"></i>BML Gateway (QR Code)
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="otherPayment" 
+                                                   {% if settings.payment_methods.other %}checked{% endif %}>
+                                            <label class="form-check-label" for="otherPayment">
+                                                <i class="fas fa-plus me-2"></i>Other Payment Methods
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6>Custom Payment Methods</h6>
+                                        <div id="customPaymentMethods">
+                                            {% for method in settings.other_payment_methods %}
+                                            <div class="input-group mb-2">
+                                                <input type="text" class="form-control custom-payment-method" 
+                                                       value="{{ method }}" placeholder="Payment method name">
+                                                <button type="button" class="btn btn-outline-danger remove-payment-method" title="Remove payment method">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="addPaymentMethod">
+                                            <i class="fas fa-plus me-1"></i>Add Payment Method
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Payment Methods
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BML Gateway -->
+                <div class="tab-pane fade" id="bml-gateway">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-university me-2"></i>BML Gateway Configuration</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Configure BML Gateway for QR code payments. Get your credentials from 
+                                                                                <a href="https://dashboard.merchants.bankofmaldives.com.mv" target="_blank" rel="noopener">BML Merchant Dashboard</a>.
+                            </div>
+                            
+                            <form id="bmlGatewayForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="bmlMerchantId" class="form-label">Merchant ID</label>
+                                            <input type="text" class="form-control" id="bmlMerchantId" 
+                                                   value="{{ settings.bml_merchant_id or '' }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="bmlApiKey" class="form-label">API Key</label>
+                                            <input type="password" class="form-control" id="bmlApiKey" 
+                                                   value="{{ settings.bml_api_key or '' }}">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="bmlClientId" class="form-label">Client ID</label>
+                                            <input type="text" class="form-control" id="bmlClientId" 
+                                                   value="{{ settings.bml_client_id or '' }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="bmlClientSecret" class="form-label">Client Secret</label>
+                                            <input type="password" class="form-control" id="bmlClientSecret" 
+                                                   value="{{ settings.bml_client_secret or '' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="bmlEnvironment" class="form-label">Environment</label>
+                                    <select class="form-select" id="bmlEnvironment">
+                                        <option value="testing" {% if settings.bml_environment == 'testing' %}selected{% endif %}>Testing</option>
+                                        <option value="production" {% if settings.bml_environment == 'production' %}selected{% endif %}>Production</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <button type="button" class="btn btn-outline-info" id="testBmlConnection">
+                                        <i class="fas fa-test-tube me-2"></i>Test Connection
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save BML Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bank Transfer -->
+                <div class="tab-pane fade" id="bank-transfer">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Bank Transfer Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="bankTransferForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="bankAccountName" class="form-label">Account Holder Name</label>
+                                            <input type="text" class="form-control" id="bankAccountName" 
+                                                   value="{{ settings.bank_account_name or '' }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="bankAccountNumber" class="form-label">Account Number</label>
+                                            <input type="text" class="form-control" id="bankAccountNumber" 
+                                                   value="{{ settings.bank_account_number or '' }}">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="bankName" class="form-label">Bank Name</label>
+                                            <input type="text" class="form-control" id="bankName" 
+                                                   value="{{ settings.bank_name or '' }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="autoVerification" 
+                                                       {% if settings.transfer_auto_verification %}checked{% endif %}>
+                                                <label class="form-check-label" for="autoVerification">
+                                                    Enable Auto Verification
+                                                </label>
+                                            </div>
+                                            <div class="form-text">Automatically verify transfers using OCR</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Transfer Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Staff Management -->
+                <div class="tab-pane fade" id="staff-management">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-users me-2"></i>Staff Management</h5>
+                            <a href="{{ url_for('owner_settings.staff_management') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-cog me-2"></i>Manage Staff
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            {% if staff_users %}
+                            <div class="row">
+                                {% for staff in staff_users %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <h6 class="card-title">{{ staff.name }}</h6>
+                                            <p class="card-text text-muted mb-1">{{ staff.phone_number }}</p>
+                                            <span class="badge bg-info">{{ staff.get_role_display_name() }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                <h6 class="text-muted">No staff members yet</h6>
+                                <p class="text-muted small">Add staff members to help manage your boat service.</p>
+                                <a href="{{ url_for('owner_settings.staff_management') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-2"></i>Add Staff
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ticket Types -->
+                <div class="tab-pane fade" id="ticket-types">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Ticket Types</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="ticketTypesForm">
+                                <div id="ticketTypesList">
+                                    {% for key, ticket in settings.ticket_types.items() %}
+                                    <div class="row mb-3 ticket-type-item" data-key="{{ key }}">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Ticket Name</label>
+                                            <input type="text" class="form-control ticket-name" 
+                                                   value="{{ ticket.name }}" placeholder="Ticket name">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Discount (%)</label>
+                                            <input type="number" class="form-control ticket-discount" 
+                                                   value="{{ ticket.discount }}" min="0" max="100" placeholder="0">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Actions</label>
+                                            <div>
+                                                <button type="button" class="btn btn-outline-danger btn-sm remove-ticket-type">
+                                                    <i class="fas fa-trash"></i> Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <button type="button" class="btn btn-outline-primary mb-3" id="addTicketType">
+                                    <i class="fas fa-plus me-2"></i>Add Ticket Type
+                                </button>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Ticket Types
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tax Configurations -->
+                <div class="tab-pane fade" id="tax-configurations">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-percentage me-2"></i>Tax Configurations</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="taxConfigurationsForm">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="enableTaxes" 
+                                               {% if settings.tax_configurations.enabled %}checked{% endif %}>
+                                        <label class="form-check-label" for="enableTaxes">
+                                            Enable Tax Calculations
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Enable this to apply taxes to bookings</div>
+                                </div>
+                                
+                                <div id="taxConfigurationsContent" {% if not settings.tax_configurations.enabled %}style="display: none;"{% endif %}>
+                                    <div class="mb-3">
+                                        <h6>Tax Rules</h6>
+                                        <div id="taxRulesList">
+                                            {% for tax in settings.tax_configurations.taxes %}
+                                            <div class="row mb-3 tax-rule-item" data-index="{{ loop.index0 }}">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Tax Name</label>
+                                                    <input type="text" class="form-control tax-name" 
+                                                           value="{{ tax.name }}" placeholder="e.g., GST, Service Tax">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Rate</label>
+                                                    <input type="number" class="form-control tax-rate" 
+                                                           value="{{ tax.rate }}" min="0" step="0.01" placeholder="0.00">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Type</label>
+                                                    <select class="form-select tax-type">
+                                                        <option value="percentage" {% if tax.type == 'percentage' %}selected{% endif %}>Percentage (%)</option>
+                                                        <option value="flat" {% if tax.type == 'flat' %}selected{% endif %}>Flat Rate</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Inclusive</label>
+                                                    <select class="form-select tax-inclusive">
+                                                        <option value="false" {% if not tax.inclusive %}selected{% endif %}>Exclusive</option>
+                                                        <option value="true" {% if tax.inclusive %}selected{% endif %}>Inclusive</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Status</label>
+                                                    <div>
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input tax-enabled" type="checkbox" 
+                                                                   {% if tax.enabled %}checked{% endif %}>
+                                                            <label class="form-check-label">Enabled</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-1">
+                                                    <label class="form-label">Actions</label>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-tax-rule" title="Remove tax rule">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="addTaxRule">
+                                            <i class="fas fa-plus me-1"></i>Add Tax Rule
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h6>Tax Preview</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <label for="taxPreviewAmount" class="form-label">Test Amount (MVR)</label>
+                                                <input type="number" class="form-control" id="taxPreviewAmount" 
+                                                       value="1000" min="0" step="0.01" placeholder="0.00">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="taxCalculationType" class="form-label">Calculation Type</label>
+                                                <select class="form-select" id="taxCalculationType">
+                                                    <option value="subtotal">Subtotal (Add Tax)</option>
+                                                    <option value="total">Total (Inclusive Tax)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">&nbsp;</label>
+                                                <button type="button" class="btn btn-outline-info btn-sm w-100" id="calculateTaxPreview">
+                                                    <i class="fas fa-calculator me-1"></i>Calculate
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="taxPreviewResult" class="mt-3" style="display: none;">
+                                            <div class="card bg-light">
+                                                <div class="card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <strong>Subtotal:</strong> <span id="previewSubtotal">0.00</span> MVR
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <strong>Total Tax:</strong> <span id="previewTotalTax">0.00</span> MVR
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <strong>Total Amount:</strong> <span id="previewTotalAmount">0.00</span> MVR
+                                                        </div>
+                                                    </div>
+                                                    <div id="taxBreakdown" class="mt-2">
+                                                        <!-- Tax breakdown will be populated here -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Save Tax Configurations
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .settings-list {
+    padding: 1.5rem;
+  }
+
+  .settings-header {
+    margin-bottom: 2rem;
+  }
+
+  .settings-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .settings-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .settings-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .settings-item {
+    background: white;
+    border-radius: 16px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+    border: 1px solid #e9ecef;
+  }
+
+  .settings-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .item-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  .item-content {
+    flex: 1;
+  }
+
+  .item-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .item-description {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .item-arrow {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+
+  .settings-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+  }
+
+  .settings-page {
+    display: none;
+  }
+
+  .settings-page.active {
+    display: block;
+  }
+
+  .page-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+
+  .back-to-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #667eea;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    transition: color 0.2s ease;
+  }
+
+  .back-to-nav:hover {
+    color: #764ba2;
+  }
+
+  .page-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .form-container {
+    padding: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease;
+    background: #f8f9fa;
+  }
+
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .file-upload {
+    position: relative;
+  }
+
+  .file-upload input[type="file"] {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .upload-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+
+  .upload-info i {
+    font-size: 1.25rem;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    width: 100%;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Form Sections */
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+  }
+
+  /* Checkbox Styles */
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+  }
+
+  .form-checkbox {
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
+    accent-color: #667eea;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #495057;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .checkbox-label i {
+    color: #667eea;
+    width: 16px;
+  }
+
+  /* Input Groups */
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .input-group .form-input {
+    flex: 1;
+  }
+
+  .remove-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8d7da;
+    color: #dc3545;
+    border: none;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .remove-btn:hover {
+    background: #f1aeb5;
+  }
+
+  .add-btn {
+    background: #e7f3ff;
+    color: #0d6efd;
+    border: 1px solid #b3d9ff;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .add-btn:hover {
+    background: #d1e7ff;
+  }
+
+  /* Info Card */
+  .info-card {
+    background: #e7f3ff;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-icon {
+    color: #0d6efd;
+    margin-right: 0.75rem;
+    margin-top: 0.125rem;
+  }
+
+  .info-content {
+    font-size: 0.875rem;
+    color: #0d6efd;
+    line-height: 1.4;
+  }
+
+  .info-content a {
+    color: #0d6efd;
+    text-decoration: underline;
+  }
+
+  /* Test Button */
+  .test-btn {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-right: 1rem;
+  }
+
+  .test-btn:hover {
+    background: #ffeaa7;
+  }
+
+  /* Staff Management */
+  .content-container {
+    padding: 1.5rem;
+  }
+
+  .staff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .staff-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    border: 1px solid #e9ecef;
+  }
+
+  .staff-avatar {
+    width: 50px;
+    height: 50px;
+    background: #667eea;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 1rem;
+  }
+
+  .staff-info {
+    flex: 1;
+  }
+
+  .staff-name {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .staff-phone {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .staff-role {
+    background: #667eea;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+  }
+
+  .empty-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .empty-description {
+    margin: 0 0 1.5rem 0;
+    color: #6c757d;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .empty-action-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 500;
+    transition: transform 0.2s ease;
+  }
+
+  .empty-action-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+  }
+
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .action-btn.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+  }
+
+  .action-btn.primary:hover {
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+    
+    .settings-nav {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .nav-item {
+      padding: 0.75rem;
+    }
+    
+    .nav-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+    
+    .nav-content h6 {
+      font-size: 0.875rem;
+    }
+    
+    .nav-content p {
+      font-size: 0.75rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Company Information Form
+document.getElementById('companyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        company_name: document.getElementById('companyName').value,
+        company_description: document.getElementById('companyDescription').value
+    };
+    
+    // Handle logo upload
+    const logoFile = document.getElementById('companyLogo').files[0];
+    if (logoFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            formData.company_logo = e.target.result;
+            submitCompanyInfo(formData);
+        };
+        reader.readAsDataURL(logoFile);
+    } else {
+        submitCompanyInfo(formData);
+    }
+});
+
+function submitCompanyInfo(data) {
+    fetch('/owner/settings/company', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update company information');
+    });
+}
+
+// Payment Methods Form
+document.getElementById('paymentMethodsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const customMethods = Array.from(document.querySelectorAll('.custom-payment-method'))
+        .map(input => input.value.trim())
+        .filter(value => value !== '');
+    
+    const formData = {
+        cash: document.getElementById('cashPayment').checked,
+        transfer: document.getElementById('transferPayment').checked,
+        bml_gateway: document.getElementById('bmlGatewayPayment').checked,
+        other: document.getElementById('otherPayment').checked,
+        other_methods: customMethods
+    };
+    
+    fetch('/owner/settings/payment-methods', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update payment methods');
+    });
+});
+
+// Add custom payment method
+document.getElementById('addPaymentMethod').addEventListener('click', function() {
+    const container = document.getElementById('customPaymentMethods');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = `
+        <input type="text" class="form-control custom-payment-method" placeholder="Payment method name">
+        <button type="button" class="btn btn-outline-danger remove-payment-method">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(div);
+});
+
+// Remove custom payment method
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-payment-method')) {
+        e.target.closest('.input-group').remove();
+    }
+});
+
+// BML Gateway Form
+document.getElementById('bmlGatewayForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        merchant_id: document.getElementById('bmlMerchantId').value,
+        api_key: document.getElementById('bmlApiKey').value,
+        client_id: document.getElementById('bmlClientId').value,
+        client_secret: document.getElementById('bmlClientSecret').value,
+        environment: document.getElementById('bmlEnvironment').value
+    };
+    
+    fetch('/owner/settings/bml-gateway', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update BML Gateway settings');
+    });
+});
+
+// Test BML Connection
+document.getElementById('testBmlConnection').addEventListener('click', function() {
+    const formData = {
+        merchant_id: document.getElementById('bmlMerchantId').value,
+        api_key: document.getElementById('bmlApiKey').value,
+        client_id: document.getElementById('bmlClientId').value,
+        client_secret: document.getElementById('bmlClientSecret').value,
+        environment: document.getElementById('bmlEnvironment').value,
+        test_connection: true
+    };
+    
+    fetch('/owner/settings/test-bml', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to test BML connection');
+    });
+});
+
+// Bank Transfer Form
+document.getElementById('bankTransferForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        account_name: document.getElementById('bankAccountName').value,
+        account_number: document.getElementById('bankAccountNumber').value,
+        bank_name: document.getElementById('bankName').value,
+        auto_verification: document.getElementById('autoVerification').checked
+    };
+    
+    fetch('/owner/settings/bank-transfer', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update bank transfer settings');
+    });
+});
+
+// Ticket Types Form
+document.getElementById('ticketTypesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const ticketTypes = {};
+    document.querySelectorAll('.ticket-type-item').forEach(item => {
+        const key = item.dataset.key;
+        const name = item.querySelector('.ticket-name').value;
+        const discount = parseInt(item.querySelector('.ticket-discount').value);
+        
+        if (name.trim()) {
+            ticketTypes[key] = {
+                name: name.trim(),
+                discount: discount
+            };
+        }
+    });
+    
+    const formData = {
+        ticket_types: ticketTypes
+    };
+    
+    fetch('/owner/settings/ticket-types', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update ticket types');
+    });
+});
+
+// Add ticket type
+document.getElementById('addTicketType').addEventListener('click', function() {
+    const container = document.getElementById('ticketTypesList');
+    const key = 'custom_' + Date.now();
+    const div = document.createElement('div');
+    div.className = 'row mb-3 ticket-type-item';
+    div.dataset.key = key;
+    div.innerHTML = `
+        <div class="col-md-4">
+            <label class="form-label">Ticket Name</label>
+            <input type="text" class="form-control ticket-name" placeholder="e.g., Student Discount">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Discount (%)</label>
+            <input type="number" class="form-control ticket-discount" value="0" min="0" max="100">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Actions</label>
+            <div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-ticket-type">
+                    <i class="fas fa-trash"></i> Remove
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+});
+
+// Remove ticket type
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-ticket-type')) {
+        e.target.closest('.ticket-type-item').remove();
+    }
+});
+
+// Tax Configurations Form
+document.getElementById('taxConfigurationsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const taxes = [];
+    document.querySelectorAll('.tax-rule-item').forEach(item => {
+        const name = item.querySelector('.tax-name').value.trim();
+        const rate = parseFloat(item.querySelector('.tax-rate').value);
+        const type = item.querySelector('.tax-type').value;
+        const inclusive = item.querySelector('.tax-inclusive').value === 'true';
+        const enabled = item.querySelector('.tax-enabled').checked;
+        
+        if (name) {
+            taxes.push({
+                name: name,
+                rate: rate,
+                type: type,
+                inclusive: inclusive,
+                enabled: enabled
+            });
+        }
+    });
+    
+    const formData = {
+        enabled: document.getElementById('enableTaxes').checked,
+        taxes: taxes
+    };
+    
+    fetch('/owner/settings/tax-configurations', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            showAlert('success', data.message);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to update tax configurations');
+    });
+});
+
+// Toggle tax configurations content
+document.getElementById('enableTaxes').addEventListener('change', function() {
+    const content = document.getElementById('taxConfigurationsContent');
+    if (this.checked) {
+        content.style.display = 'block';
+    } else {
+        content.style.display = 'none';
+    }
+});
+
+// Add tax rule
+document.getElementById('addTaxRule').addEventListener('click', function() {
+    const container = document.getElementById('taxRulesList');
+    const index = container.children.length;
+    const div = document.createElement('div');
+    div.className = 'row mb-3 tax-rule-item';
+    div.dataset.index = index;
+    div.innerHTML = `
+        <div class="col-md-3">
+            <label class="form-label">Tax Name</label>
+            <input type="text" class="form-control tax-name" placeholder="e.g., GST, Service Tax">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Rate</label>
+            <input type="number" class="form-control tax-rate" value="0" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Type</label>
+            <select class="form-select tax-type">
+                <option value="percentage">Percentage (%)</option>
+                <option value="flat">Flat Rate</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Inclusive</label>
+            <select class="form-select tax-inclusive">
+                <option value="false">Exclusive</option>
+                <option value="true">Inclusive</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Status</label>
+            <div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input tax-enabled" type="checkbox" checked>
+                    <label class="form-check-label">Enabled</label>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-1">
+            <label class="form-label">Actions</label>
+            <button type="button" class="btn btn-outline-danger btn-sm remove-tax-rule" title="Remove tax rule">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(div);
+});
+
+// Remove tax rule
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('remove-tax-rule')) {
+        e.target.closest('.tax-rule-item').remove();
+    }
+});
+
+// Calculate tax preview
+document.getElementById('calculateTaxPreview').addEventListener('click', function() {
+    const amount = parseFloat(document.getElementById('taxPreviewAmount').value);
+    const calculationType = document.getElementById('taxCalculationType').value;
+    
+    if (isNaN(amount) || amount <= 0) {
+        showAlert('error', 'Please enter a valid amount');
+        return;
+    }
+    
+    fetch('/owner/settings/calculate-tax', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            subtotal: amount,
+            type: calculationType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('error', data.error);
+        } else {
+            // Update preview
+            document.getElementById('previewSubtotal').textContent = data.subtotal.toFixed(2);
+            document.getElementById('previewTotalTax').textContent = data.total_tax.toFixed(2);
+            document.getElementById('previewTotalAmount').textContent = data.total_amount.toFixed(2);
+            
+            // Update tax breakdown
+            const breakdown = document.getElementById('taxBreakdown');
+            if (data.tax_breakdown.length > 0) {
+                let breakdownHtml = '<div class="mt-2"><strong>Tax Breakdown:</strong><ul class="list-unstyled mt-1">';
+                data.tax_breakdown.forEach(tax => {
+                    const typeText = tax.type === 'percentage' ? `${tax.rate}%` : `MVR ${tax.rate}`;
+                    const inclusiveText = tax.inclusive ? ' (Inclusive)' : ' (Exclusive)';
+                    breakdownHtml += `<li>• ${tax.name}: ${typeText}${inclusiveText} = MVR ${tax.amount.toFixed(2)}</li>`;
+                });
+                breakdownHtml += '</ul></div>';
+                breakdown.innerHTML = breakdownHtml;
+            } else {
+                breakdown.innerHTML = '<div class="mt-2 text-muted">No taxes configured or enabled</div>';
+            }
+            
+            // Show calculation type info
+            const calculationInfo = calculationType === 'total' ? 
+                '<div class="mt-2 text-info"><small><i class="fas fa-info-circle me-1"></i>Input amount is total (inclusive tax), subtotal calculated by removing tax</small></div>' :
+                '<div class="mt-2 text-info"><small><i class="fas fa-info-circle me-1"></i>Input amount is subtotal, total calculated by adding tax</small></div>';
+            breakdown.innerHTML += calculationInfo;
+            
+            document.getElementById('taxPreviewResult').style.display = 'block';
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Failed to calculate tax preview');
+    });
+});
+
+// Simple settings page - no JavaScript needed for navigation
+// Each settings item links to its own dedicated page
+
+// Utility function to show alerts
+function showAlert(type, message) {
+    const alertClass = type === 'error' ? 'alert-danger' : 'alert-success';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert alert at the top of the container
+    const container = document.querySelector('.mobile-app-container');
+    container.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %} 

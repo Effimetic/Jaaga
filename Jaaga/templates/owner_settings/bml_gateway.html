@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}BML Gateway - Settings{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style BML Gateway Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">BML Gateway</h4>
+        <p class="page-subtitle">Configure QR code payment settings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <div class="info-card">
+      <div class="info-icon">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <div class="info-content">
+        Configure BML Gateway for QR code payments. Get your credentials from 
+        <a href="https://dashboard.merchants.bankofmaldives.com.mv" target="_blank" rel="noopener">BML Merchant Dashboard</a>.
+      </div>
+    </div>
+    
+    <form id="bmlGatewayForm">
+      <div class="form-group">
+        <label for="bmlMerchantId" class="form-label">Merchant ID</label>
+        <input type="text" class="form-input" id="bmlMerchantId" 
+               value="{{ settings.bml_merchant_id or '' }}" placeholder="Enter merchant ID">
+      </div>
+      
+      <div class="form-group">
+        <label for="bmlApiKey" class="form-label">API Key</label>
+        <input type="password" class="form-input" id="bmlApiKey" 
+               value="{{ settings.bml_api_key or '' }}" placeholder="Enter API key">
+      </div>
+      
+      <div class="form-group">
+        <label for="bmlClientId" class="form-label">Client ID</label>
+        <input type="text" class="form-input" id="bmlClientId" 
+               value="{{ settings.bml_client_id or '' }}" placeholder="Enter client ID">
+      </div>
+      
+      <div class="form-group">
+        <label for="bmlClientSecret" class="form-label">Client Secret</label>
+        <input type="password" class="form-input" id="bmlClientSecret" 
+               value="{{ settings.bml_client_secret or '' }}" placeholder="Enter client secret">
+      </div>
+      
+      <div class="form-group">
+        <label for="bmlEnvironment" class="form-label">Environment</label>
+        <select class="form-select" id="bmlEnvironment">
+          <option value="testing" {% if settings.bml_environment == 'testing' %}selected{% endif %}>Testing</option>
+          <option value="production" {% if settings.bml_environment == 'production' %}selected{% endif %}>Production</option>
+        </select>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" class="test-btn" onclick="testBmlConnection()">
+          <i class="fas fa-test-tube me-2"></i>Test Connection
+        </button>
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-save me-2"></i>Save BML Settings
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .info-card {
+    background: #e7f3ff;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  .info-icon {
+    color: #0d6efd;
+    margin-right: 0.75rem;
+    margin-top: 0.125rem;
+  }
+
+  .info-content {
+    font-size: 0.875rem;
+    color: #0d6efd;
+    line-height: 1.4;
+  }
+
+  .info-content a {
+    color: #0d6efd;
+    text-decoration: underline;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background: #f8f9fa;
+  }
+
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .test-btn {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    margin-right: 1rem;
+  }
+
+  .test-btn:hover {
+    background: #ffeaa7;
+  }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+  }
+</style>
+
+<script>
+document.getElementById('bmlGatewayForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        bml_merchant_id: document.getElementById('bmlMerchantId').value,
+        bml_api_key: document.getElementById('bmlApiKey').value,
+        bml_client_id: document.getElementById('bmlClientId').value,
+        bml_client_secret: document.getElementById('bmlClientSecret').value,
+        bml_environment: document.getElementById('bmlEnvironment').value
+    };
+    
+    fetch('{{ url_for("owner_settings.update_bml_gateway") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert('BML Gateway settings updated successfully!', 'success');
+        } else {
+            showAlert(data.error || 'Failed to update BML Gateway settings', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while updating BML Gateway settings', 'error');
+    });
+});
+
+function testBmlConnection() {
+    const data = {
+        bml_merchant_id: document.getElementById('bmlMerchantId').value,
+        bml_api_key: document.getElementById('bmlApiKey').value,
+        bml_client_id: document.getElementById('bmlClientId').value,
+        bml_client_secret: document.getElementById('bmlClientSecret').value,
+        bml_environment: document.getElementById('bmlEnvironment').value
+    };
+    
+    fetch('{{ url_for("owner_settings.test_bml_gateway") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert('BML Gateway connection test successful!', 'success');
+        } else {
+            showAlert(data.error || 'BML Gateway connection test failed', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while testing BML Gateway connection', 'error');
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.mobile-app-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %} 

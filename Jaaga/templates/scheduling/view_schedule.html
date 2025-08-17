@@ -1,0 +1,2045 @@
+{% extends "base.html" %}
+
+{% block title %}{{ schedule.name }} - Schedule Details{% endblock %}
+
+{% block content %}
+<div class="mobile-app-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h4 class="page-title"><i class="fas fa-calendar-alt me-2"></i>{{ schedule.name }}</h4>
+      <p class="page-subtitle">{{ schedule.schedule_date.strftime('%b %d, %Y') }} • {{ schedule.boat.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('scheduling.schedules') }}" class="add-btn" title="Back"><i class="fas fa-arrow-left"></i></a>
+      <a href="{{ url_for('scheduling.edit_schedule', schedule_id=schedule.id) }}" class="add-btn" title="Edit"><i class="fas fa-edit"></i></a>
+      <button type="button" class="add-btn delete-btn" title="Delete" onclick="deleteSchedule({{ schedule.id }})" style="background: #dc3545; color: white;">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Status & Seats -->
+  <div class="status-card">
+    <div class="status-row">
+      <div>
+        <div class="status-label">Status</div>
+        <div class="status-value">
+          {% set st = schedule.status if schedule.status else 'draft' %}
+          <span class="badge {{ 'bg-success' if st=='published' else ('bg-secondary' if st=='completed' else 'bg-warning') }}">{{ st|title }}</span>
+                                </div>
+                            </div>
+      <div>
+        <div class="status-label">Seats</div>
+        <div class="status-value">{{ schedule.available_seats }}/{{ schedule.total_seats }} available</div>
+                        </div>
+    </div>
+    {% if schedule.blocked_seats %}
+    <div class="blocked-seats">
+      <div class="blocked-title">Blocked seats</div>
+      <div class="blocked-list">
+        {% for seat in schedule.blocked_seats %}
+          <span class="seat-chip">{{ seat.seat_number }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Tab Content Container -->
+  <div class="tab-content-container">
+    <!-- Details Tab -->
+    <div id="details-tab" class="tab-content active">
+      <!-- Route & Destinations -->
+      <div class="form-card">
+        <h6 class="section-title"><i class="fas fa-route me-2"></i>Route & Destinations</h6>
+        <div class="destinations">
+        {% for destination in schedule.destinations %}
+          <div class="destination-row">
+            <div class="dest-order">{{ destination.sequence_order }}</div>
+            <div class="dest-body">
+              <div class="dest-name">{{ destination.island_name }}</div>
+              <div class="dest-meta">
+                <span class="meta"><i class="fas fa-sign-out-alt me-1"></i>{{ destination.departure_time.strftime('%H:%M') if destination.departure_time else '-' }}</span>
+                <span class="meta"><i class="fas fa-sign-in-alt me-1"></i>{{ destination.arrival_time.strftime('%H:%M') if destination.arrival_time else '-' }}</span>
+                <span class="meta">
+                  {% if destination.is_pickup and destination.is_dropoff %}Pickup & Dropoff{% elif destination.is_pickup %}Pickup{% elif destination.is_dropoff %}Dropoff{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+      <!-- Options -->
+      <div class="form-card">
+        <h6 class="section-title"><i class="fas fa-cog me-2"></i>Options</h6>
+        <div class="options-grid">
+          <div>
+            <div class="opt-label">Confirmation</div>
+            <div class="opt-value">{{ 'Immediate' if schedule.confirmation_type=='immediate' else 'Manual' }}</div>
+          </div>
+          <div>
+            <div class="opt-label">Visibility</div>
+            <div class="opt-value">{{ 'Public' if schedule.is_public else 'Private' }}</div>
+          </div>
+          {% if schedule.public_rate %}
+          <div>
+            <div class="opt-label">Public rate</div>
+            <div class="opt-value">{{ schedule.public_rate }} {{ schedule.public_currency }}</div>
+          </div>
+          {% endif %}
+          {% if schedule.agent_rate %}
+          <div>
+            <div class="opt-label">Agent rate</div>
+            <div class="opt-value">{{ schedule.agent_rate }} {{ schedule.agent_currency }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Back Link -->
+      <div class="back-link-container">
+        <a href="{{ url_for('scheduling.schedules') }}" class="cancel-link"><i class="fas fa-arrow-left me-2"></i>Back to schedules</a>
+      </div>
+    </div>
+
+    <!-- Book Seats Tab -->
+    <div id="book-seats-tab" class="tab-content">
+      <div class="form-card">
+        <h6 class="section-title"><i class="fas fa-ticket me-2"></i>Book Seats</h6>
+        
+        <!-- Seat Selection Grid (for chart-based boats) -->
+        <div id="seatSelectionSection" class="seat-selection-section mb-4" style="display: none;">
+          <h6 class="mb-3">Select Your Seats</h6>
+          <div id="seatGrid" class="d-flex flex-column align-items-center gap-2 mb-3"></div>
+          <div class="d-flex flex-wrap gap-2 small mb-3">
+            <span class="badge bg-secondary">Blocked (owner can book)</span>
+            <span class="badge bg-danger">Booked</span>
+            <span class="badge bg-success">Selected</span>
+            <span class="badge bg-light text-dark border">Available</span>
+          </div>
+          <div class="text-muted small">Selected: <span id="selectedCount">0</span></div>
+        </div>
+        
+        <!-- Count-based seating info -->
+        <div id="countSeatingInfo" class="alert alert-info mb-4" style="display: none;">
+          <i class="fas fa-info-circle me-2"></i>
+          This boat doesn't have assigned seating. Seats will be allocated automatically.
+        </div>
+
+        <!-- Route Selection -->
+        <div class="route-selection-section mb-4">
+          <h6 class="mb-3">Select Your Route</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Pickup Point</label>
+              <select id="pickupDestination" class="form-select" onchange="updateRouteInfo()">
+                <option value="">Select pickup point...</option>
+                {% for destination in schedule.destinations %}
+                  {% if destination.is_pickup %}
+                  <option value="{{ destination.id }}" data-sequence="{{ destination.sequence_order }}" data-time="{{ destination.departure_time.strftime('%H:%M') if destination.departure_time else '' }}">
+                    {{ destination.island_name }} ({{ destination.departure_time.strftime('%H:%M') if destination.departure_time else 'TBD' }})
+                  </option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Dropoff Point</label>
+              <select id="dropoffDestination" class="form-select" onchange="updateRouteInfo()">
+                <option value="">Select dropoff point...</option>
+                {% for destination in schedule.destinations %}
+                  {% if destination.is_dropoff %}
+                  <option value="{{ destination.id }}" data-sequence="{{ destination.sequence_order }}" data-time="{{ destination.arrival_time.strftime('%H:%M') if destination.arrival_time else '' }}">
+                    {{ destination.island_name }} ({{ destination.arrival_time.strftime('%H:%M') if destination.arrival_time else 'TBD' }})
+                  </option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          
+          <!-- Route Summary -->
+          <div id="routeSummary" class="alert alert-info mt-3" style="display: none;">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-route me-2"></i>
+              <div>
+                <strong>Selected Route:</strong> 
+                <span id="routeText">-</span>
+              </div>
+            </div>
+            <div class="mt-2 small">
+              <span class="me-3"><i class="fas fa-clock me-1"></i>Departure: <span id="departureTime">-</span></span>
+              <span><i class="fas fa-map-marker-alt me-1"></i>Duration: <span id="routeDuration">-</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Form -->
+        <div class="booking-form-section">
+          <h6 class="mb-3">Passenger & Payment Details</h6>
+          
+          <!-- Role-based form display -->
+          <div id="ownerBookingForm" style="display: none;">
+            <!-- Owner can book for anyone -->
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Booking For</label>
+                <select id="bookingFor" class="form-select">
+                  <option value="public">Public Passenger</option>
+                  <option value="agent">Connected Agent</option>
+                </select>
+                                            </div>
+              <div class="col-md-6">
+                <label class="form-label">Ticket Type</label>
+                <select id="ticketType" class="form-select">
+                  <option value="">Select ticket type...</option>
+                </select>
+                <small class="text-muted">Currency will be automatically set based on ticket type</small>
+              </div>
+              <div class="col-md-6" id="publicPhoneWrap" style="display:none">
+                <label class="form-label">Passenger phone</label>
+                <div class="input-group">
+                  <input id="contactPhone" type="tel" class="form-control" placeholder="e.g., 7xxxxxx">
+                  <button class="btn btn-outline-secondary" type="button" id="lookupUserBtn" title="Lookup user by phone">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6" id="publicNameWrap" style="display:none">
+                <label class="form-label">Passenger name</label>
+                <input id="contactName" type="text" class="form-control" placeholder="Passenger full name">
+              </div>
+              <div class="col-md-6" id="agentSelectWrap" style="display:none">
+                <label class="form-label">Agent</label>
+                <select id="agentSelect" class="form-select"></select>
+                <small class="text-muted">Only approved connected agents are listed</small>
+              </div>
+                            <div class="col-md-6">
+                <label class="form-label">Number of Seats</label>
+                <input id="seatCount" type="number" class="form-control" min="1" max="50" value="1" placeholder="How many seats to book">
+                <small class="text-muted">Select quantity of seats to book</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <input id="bookingNotes" type="text" class="form-control" placeholder="Optional notes">
+              </div>
+            </div>
+          </div>
+                                
+          <div id="agentBookingForm" style="display: none;">
+            <!-- Agent can only book for themselves -->
+            <div class="row g-3">
+                                        <div class="col-md-6">
+                <label class="form-label">Ticket Type</label>
+                <select id="agentTicketType" class="form-select">
+                  <option value="">Select ticket type...</option>
+                </select>
+                <small class="text-muted">Currency will be automatically set based on ticket type</small>
+                                            </div>
+                            <div class="col-md-6">
+                <label class="form-label">Confirmation Type</label>
+                <select id="agentConfirmationType" class="form-select">
+                  <option value="manual">Manual Confirmation</option>
+                  <option value="immediate">Immediate Issue</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Number of Seats</label>
+                <input id="agentSeatCount" type="number" class="form-control" min="1" max="50" value="1" placeholder="How many seats to book">
+                <small class="text-muted">Select quantity of seats to book</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <input id="agentBookingNotes" type="text" class="form-control" placeholder="Optional notes">
+              </div>
+            </div>
+          </div>
+
+          <div id="publicBookingForm" style="display: none;">
+            <!-- Public can only book for themselves -->
+            <div class="row g-3">
+                                        <div class="col-md-6">
+                <label class="form-label">Ticket Type</label>
+                <select id="publicTicketType" class="form-select">
+                  <option value="">Select ticket type...</option>
+                </select>
+                <small class="text-muted">Currency will be automatically set based on ticket type</small>
+                                            </div>
+                            <div class="col-md-6">
+                <label class="form-label">Your Phone</label>
+                <input id="publicPhone" type="tel" class="form-control" placeholder="Your phone number" value="{{ current_user.phone if current_user.phone else '' }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Number of Seats</label>
+                <input id="publicSeatCount" type="number" class="form-control" min="1" max="50" value="1" placeholder="How many seats to book">
+                <small class="text-muted">Select quantity of seats to book</small>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <input id="publicBookingNotes" type="text" class="form-control" placeholder="Optional notes">
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <button class="btn btn-success btn-lg" onclick="confirmUnifiedBooking({{ schedule.id }})" id="confirmBookingBtn" disabled>
+              <i class="fas fa-check me-2"></i>Confirm Booking
+            </button>
+          </div>
+                            </div>
+                        </div>
+                    </div>
+
+    <!-- Bookings Tab -->
+    <div id="bookings-tab" class="tab-content">
+      <div class="form-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="section-title"><i class="fas fa-list me-2"></i>All Bookings</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadBookings({{ schedule.id }})">
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+                        </button>
+                    </div>
+        
+        <div id="bookingsContainer">
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+            <p>Loading bookings...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets Tab -->
+    <div id="tickets-tab" class="tab-content">
+      <div class="form-card">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="section-title"><i class="fas fa-check-circle me-2"></i>Confirmed Tickets</h6>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="loadTickets({{ schedule.id }})">
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+          </button>
+        </div>
+        
+        <div id="ticketsContainer">
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+            <p>Loading tickets...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation Menu -->
+  <div class="bottom-nav">
+    <button class="nav-tab active" data-tab="details-tab">
+      <i class="fas fa-info-circle"></i>
+      <span>Details</span>
+    </button>
+    <button class="nav-tab" data-tab="book-seats-tab">
+      <i class="fas fa-ticket"></i>
+      <span>Book Seats</span>
+    </button>
+    <button class="nav-tab" data-tab="bookings-tab">
+      <i class="fas fa-list"></i>
+      <span>Bookings</span>
+    </button>
+    <button class="nav-tab" data-tab="tickets-tab">
+      <i class="fas fa-check-circle"></i>
+      <span>Tickets</span>
+    </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.getAttribute('data-tab');
+            
+            // Remove active class from all tabs and contents
+            navTabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and target content
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+            
+            // Load content based on active tab
+            loadTabContent(targetTab);
+        });
+    });
+    
+    // Load initial content
+    loadTabContent('details-tab');
+});
+
+function loadTabContent(tabId) {
+    switch(tabId) {
+        case 'bookings-tab':
+            loadBookings({{ schedule.id }});
+            break;
+        case 'tickets-tab':
+            loadConfirmedTickets({{ schedule.id }});
+            break;
+        case 'book-seats-tab':
+            loadSeatMap({{ schedule.id }});
+            setupBookingForm();
+            break;
+        default:
+            // Details tab is static
+            break;
+    }
+}
+
+function loadConfirmedTickets(scheduleId) {
+    // Use the new loadTickets function
+    loadTickets(scheduleId);
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Are you sure you want to delete this schedule? This action cannot be undone.')) {
+        fetch(`/schedules/${scheduleId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showAlert(data.message, 'success');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("scheduling.schedules") }}';
+                }, 1500);
+            } else {
+                showAlert(data.error || 'Failed to delete schedule', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Network error. Please try again.', 'danger');
+        });
+    }
+}
+</script>
+<style>
+  .mobile-app-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e9ecef; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .header-content { flex: 1; }
+  .page-title { margin: 0; font-size: 1.125rem; font-weight: 600; color: #212529; }
+  .page-subtitle { margin: 0.25rem 0 0; color: #6c757d; font-size: 0.85rem; }
+  .add-btn { width: 40px; height: 40px; background: #f1f3f5; color: #495057; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; text-decoration: none; }
+
+  .form-card { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 1rem; }
+  .section-title { margin: 0 0 0.5rem 0; font-weight: 700; color: #212529; font-size: 0.95rem; }
+
+  .status-card { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; }
+  .status-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .status-label { font-size: 0.8rem; color: #6c757d; }
+  .status-value { font-weight: 600; color: #212529; }
+  .blocked-seats { margin-top: 0.75rem; }
+  .blocked-title { font-size: 0.85rem; color: #6c757d; margin-bottom: 0.25rem; }
+  .blocked-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .seat-chip { background: #fde2e4; color: #b02a37; border: 1px solid #f5c2c7; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+
+  .destinations { display: flex; flex-direction: column; gap: 0.75rem; }
+  .destination-row { display: grid; grid-template-columns: 36px 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem; border: 1px solid #f1f3f5; border-radius: 12px; background: #fff; }
+  .dest-order { width: 36px; height: 36px; border-radius: 10px; background: #f1f3f5; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #495057; }
+  .dest-name { font-weight: 600; color: #212529; }
+  .dest-meta { display: flex; flex-wrap: wrap; gap: 0.5rem; color: #6c757d; font-size: 0.85rem; }
+  .dest-meta .meta i { color: #667eea; }
+
+  .options-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.75rem; }
+  .opt-label { font-size: 0.8rem; color: #6c757d; }
+  .opt-value { font-weight: 600; color: #212529; }
+
+  .back-link-container { margin-top: 1rem; }
+  
+  .action-btn { 
+    border: none; 
+    border-radius: 12px; 
+    padding: 0.75rem 1.25rem; 
+    color: #fff; 
+    font-weight: 600; 
+    text-decoration: none; 
+    display: inline-flex; 
+    align-items: center; 
+    justify-content: center; 
+    transition: all 0.3s ease; 
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+    min-width: 120px;
+    font-size: 0.9rem;
+  }
+  
+  .action-btn:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15); 
+    color: #fff;
+    text-decoration: none;
+  }
+  
+  .book-btn { 
+    background: linear-gradient(135deg, #6f42c1, #5a32a3); 
+  }
+  
+    .book-btn:hover {
+    background: linear-gradient(135deg, #5a32a3, #4c2a8a); 
+  }
+  
+  .submit-btn { border: none; border-radius: 12px; padding: 0.6rem 0.9rem; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 600; text-decoration: none; }
+  .cancel-link { color: #6c757d; text-decoration: none; }
+  .cancel-link:hover { text-decoration: underline; }
+
+  /* Booking Form Styling */
+  .seat-selection-section {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1.5rem;
+  }
+  
+  .booking-form-section {
+    padding-top: 1rem;
+  }
+  
+  .form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-select, .form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+  }
+  
+  .form-select:focus, .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    border-radius: 12px;
+  }
+  
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Tab System Styling */
+  .tab-content-container {
+    margin-bottom: 80px; /* Space for bottom navigation */
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  /* Bottom Navigation */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.5rem 0;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+  }
+  
+  .nav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    color: #6c757d;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    min-width: 60px;
+  }
+  
+  .nav-tab i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .nav-tab.active {
+    color: #667eea;
+  }
+  
+  .nav-tab:hover {
+    color: #667eea;
+    transform: translateY(-2px);
+  }
+  
+  .nav-tab span {
+    font-weight: 500;
+  }
+
+  @media (max-width: 480px) {
+    .status-row { grid-template-columns: 1fr; }
+    .options-grid { grid-template-columns: 1fr; }
+    
+    .action-btn { 
+      min-width: auto; 
+      width: 100%; 
+      justify-content: center; 
+    }
+    
+    .bottom-nav {
+      padding: 0.75rem 0;
+    }
+    
+    .nav-tab {
+      font-size: 0.7rem;
+      min-width: 50px;
+    }
+    
+    .nav-tab i {
+      font-size: 1.1rem;
+    }
+  }
+  
+  /* Booking Cards Styling */
+  .booking-card { 
+    background: #fff; 
+    border: 1px solid #e9ecef !important; 
+    border-radius: 12px; 
+    transition: all 0.2s ease;
+  }
+  .booking-card:hover { 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    border-color: #667eea !important;
+  }
+  .booking-card h6 { 
+    color: #212529; 
+    font-weight: 600; 
+    margin: 0; 
+  }
+  .booking-card .fw-semibold { 
+    color: #495057; 
+    font-weight: 600; 
+  }
+  .booking-card .text-muted { 
+    font-size: 0.8rem; 
+  }
+  .booking-card .badge { 
+    font-size: 0.7rem; 
+    padding: 0.35rem 0.6rem; 
+  }
+  
+  /* Payment Method Modal Styling */
+  .payment-method-modal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+  .payment-method-modal .modal-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 16px 16px 0 0;
+  }
+  .payment-method-modal .modal-header .btn-close {
+    filter: invert(1);
+  }
+  .payment-method-modal .alert-info {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    color: #1565c0;
+  }
+  
+  .payment-method-modal .alert-light {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+    color: #495057;
+  }
+  
+  .payment-method-modal .text-success {
+    color: #28a745 !important;
+    font-size: 1.1rem;
+  }
+</style>
+ 
+ <script>
+let seatState = { blocked: new Set(), booked: new Set(), selected: new Set(), seatMap: null };
+
+async function loadSeatMap(scheduleId) {
+  const res = await fetch(`/schedules/${scheduleId}/seat-map`);
+  const data = await res.json();
+  if (!res.ok) { showAlert(data.error || 'Failed to load seat map', 'danger'); return; }
+  console.log('Seat map data received:', data);
+  seatState.blocked = new Set(data.blocked || []);
+  seatState.booked = new Set(data.booked || []);
+  seatState.seatMap = data.seat_map;
+  seatState.allowBlocked = !!data.allow_blocked;
+  seatState.connections = data.connections || [];
+  console.log('Seat state after processing:', seatState);
+  
+  // Check if this is a count-based boat (no assigned seating)
+  const isCountBased = {{ 'true' if schedule.boat and schedule.boat.seating_type == 'count' else 'false' }};
+  
+  if (isCountBased) {
+    // For count-based boats, show count info and setup booking form
+    console.log('Count-based boat detected, showing count info');
+    document.getElementById('countSeatingInfo').style.display = 'block';
+    document.getElementById('seatSelectionSection').style.display = 'none';
+    setupBookingForm();
+  } else {
+    // For chart-based boats, show seat grid and setup form
+    console.log('Chart-based boat detected, showing seat grid');
+    document.getElementById('countSeatingInfo').style.display = 'none';
+    document.getElementById('seatSelectionSection').style.display = 'block';
+    buildSeatGrid();
+    setupBookingForm();
+  }
+}
+
+function setupBookingForm() {
+  console.log('DEBUG: setupBookingForm called');
+  
+  // Determine user role and show appropriate form
+  const userRole = '{{ current_user.role if current_user else "public" }}';
+  const scheduleOwnerId = {{ schedule.owner_id }};
+  const currentUserId = {{ current_user.id if current_user else 0 }};
+  
+  console.log('DEBUG: userRole:', userRole, 'scheduleOwnerId:', scheduleOwnerId, 'currentUserId:', currentUserId);
+  
+  // Check if forms exist in DOM
+  const ownerForm = document.getElementById('ownerBookingForm');
+  const agentForm = document.getElementById('agentBookingForm');
+  const publicForm = document.getElementById('publicBookingForm');
+  
+  console.log('DEBUG: Forms found - owner:', ownerForm, 'agent:', agentForm, 'public:', publicForm);
+  
+  // Hide all forms initially
+  if (ownerForm) ownerForm.style.display = 'none';
+  if (agentForm) agentForm.style.display = 'none';
+  if (publicForm) publicForm.style.display = 'none';
+  
+  if (userRole === 'owner' && currentUserId === scheduleOwnerId) {
+    // Boat owner - show owner booking form
+    console.log('DEBUG: Showing owner booking form');
+    if (ownerForm) {
+      ownerForm.style.display = 'block';
+      setupOwnerBookingForm();
+    }
+  } else if (userRole === 'agent') {
+    // Check if agent has access to this boat
+    console.log('DEBUG: Checking agent access');
+    checkAgentAccess(scheduleOwnerId, currentUserId);
+  } else {
+    // Public user - show public booking form
+    console.log('DEBUG: Showing public booking form');
+    if (publicForm) {
+      publicForm.style.display = 'block';
+      setupPublicBookingForm();
+    }
+  }
+  
+  // Load ticket types for the schedule
+  console.log('DEBUG: Loading schedule ticket types');
+  loadScheduleTicketTypes();
+}
+
+function setupOwnerBookingForm() {
+  const bookingFor = document.getElementById('bookingFor');
+  if (bookingFor) {
+    bookingFor.addEventListener('change', onBookingForChange);
+  }
+  
+  // Setup agent selection
+  const agentSel = document.getElementById('agentSelect');
+  if (agentSel && Array.isArray(seatState.connections)) {
+    agentSel.innerHTML = '<option value="">Select agent</option>' + seatState.connections.map(c => `<option value="${c.agent_id}">${c.agent.name} (${c.currency})</option>`).join('');
+  }
+  
+  // Setup user lookup button
+  const lookupBtn = document.getElementById('lookupUserBtn');
+  if (lookupBtn) lookupBtn.addEventListener('click', lookupUserByPhone);
+  
+  // Initialize form state
+  onBookingForChange();
+}
+
+function setupAgentBookingForm() {
+  // Agent booking form is already set up
+  // Just ensure confirmation type is set correctly
+  const confirmationType = document.getElementById('agentConfirmationType');
+  if (confirmationType) {
+    confirmationType.value = 'manual'; // Default to manual
+  }
+}
+
+function setupPublicBookingForm() {
+  // Public booking form is already set up
+  // Phone number is pre-filled from current user
+}
+
+async function checkAgentAccess(scheduleOwnerId, agentId) {
+  try {
+    const response = await fetch(`/api/agent-access/${scheduleOwnerId}/${agentId}`);
+    const data = await response.json();
+    
+    if (data.hasAccess) {
+      document.getElementById('agentBookingForm').style.display = 'block';
+      setupAgentBookingForm();
+    } else {
+      // Show access denied message
+      document.getElementById('booking-form-section').innerHTML = `
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          You don't have access to book seats on this boat. Please contact the boat owner.
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error checking agent access:', error);
+    // Show error message
+    document.getElementById('booking-form-section').innerHTML = `
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        Error checking access. Please try again.
+      </div>
+    `;
+  }
+}
+
+async function loadScheduleTicketTypes() {
+  console.log('DEBUG: loadScheduleTicketTypes called');
+  try {
+    const url = `/schedules/api/schedules/{{ schedule.id }}/ticket-types`;
+    console.log('DEBUG: Fetching from URL:', url);
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    console.log('DEBUG: Response received:', response.status, data);
+    
+    if (data.success) {
+      // Store ticket types globally for reuse
+      window.currentTicketTypes = data.ticket_types;
+      console.log('DEBUG: Ticket types stored:', data.ticket_types);
+      populateTicketTypes(data.ticket_types);
+    } else {
+      console.error('API returned error:', data.error);
+    }
+  } catch (error) {
+    console.error('Error loading ticket types:', error);
+  }
+}
+
+function populateTicketTypes(ticketTypes) {
+  console.log('DEBUG: Received ticket types:', ticketTypes);
+  
+  if (!ticketTypes || ticketTypes.length === 0) {
+    console.log('DEBUG: No ticket types received');
+    return;
+  }
+  
+  // Filter ticket types by channel
+  const publicTicketTypes = ticketTypes.filter(tt => tt.channel === 'PUBLIC');
+  const agentTicketTypes = ticketTypes.filter(tt => tt.channel === 'AGENT');
+  
+  console.log('DEBUG: Filtered ticket types - Public:', publicTicketTypes, 'Agent:', agentTicketTypes);
+  
+  // Populate owner booking form dropdown (filtered by selected channel)
+  const ownerDropdown = document.getElementById('ticketType');
+  console.log('DEBUG: Owner dropdown found:', ownerDropdown);
+  if (ownerDropdown) {
+    ownerDropdown.innerHTML = '<option value="">Select ticket type...</option>';
+    // For owner form, show both public and agent types initially
+    const allTypes = [...publicTicketTypes, ...agentTicketTypes];
+    console.log('DEBUG: Adding', allTypes.length, 'ticket types to owner dropdown');
+    allTypes.forEach(tt => {
+      const option = document.createElement('option');
+      option.value = tt.id;
+      option.textContent = `${tt.name} - ${tt.base_price} ${tt.currency}`;
+      option.dataset.currency = tt.currency;
+      option.dataset.basePrice = tt.base_price;
+      option.dataset.channel = tt.channel;
+      ownerDropdown.appendChild(option);
+    });
+  } else {
+    console.log('DEBUG: Owner dropdown NOT found');
+  }
+  
+  // Populate agent booking form dropdown (only agent ticket types)
+  const agentDropdown = document.getElementById('agentTicketType');
+  if (agentDropdown) {
+    agentDropdown.innerHTML = '<option value="">Select ticket type...</option>';
+    agentTicketTypes.forEach(tt => {
+      const option = document.createElement('option');
+      option.value = tt.id;
+      option.textContent = `${tt.name} - ${tt.base_price} ${tt.currency}`;
+      option.dataset.currency = tt.currency;
+      option.dataset.basePrice = tt.base_price;
+      agentDropdown.appendChild(option);
+    });
+  }
+  
+  // Populate public booking form dropdown (only public ticket types)
+  const publicDropdown = document.getElementById('publicTicketType');
+  if (publicDropdown) {
+    publicDropdown.innerHTML = '<option value="">Select ticket type...</option>';
+    publicTicketTypes.forEach(tt => {
+      const option = document.createElement('option');
+      option.value = tt.id;
+      option.textContent = `${tt.name} - ${tt.base_price} ${tt.currency}`;
+      option.dataset.currency = tt.currency;
+      option.dataset.basePrice = tt.base_price;
+      publicDropdown.appendChild(option);
+    });
+  }
+}
+
+function buildSeatGrid() {
+  const gridRoot = document.getElementById('seatGrid');
+  gridRoot.innerHTML = '';
+  const map = seatState.seatMap;
+  const grid = (map && map.gridData) ? map.gridData : null;
+  if (!grid) { gridRoot.innerHTML = '<div class="text-muted">No seat map found.</div>'; return; }
+  const allowBlocked = seatState.allowBlocked === true;
+  console.log('Building seat grid with allowBlocked:', allowBlocked, 'blocked seats:', Array.from(seatState.blocked), 'booked seats:', Array.from(seatState.booked), 'seat map structure:', map);
+  grid.forEach(row => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'd-flex gap-1';
+    row.forEach(cell => {
+      let el = document.createElement('button');
+      el.className = 'btn btn-sm';
+      el.style.minWidth = '36px';
+      el.style.height = '36px';
+      el.disabled = true;
+      if (cell.isWalkway) {
+        el.className += ' btn-light';
+        el.textContent = '';
+      } else if (cell.seatNumber) {
+        const sn = cell.seatNumber;
+        el.disabled = false;
+        el.textContent = sn;
+        if (seatState.blocked.has(sn)) {
+          if (allowBlocked) {
+            el.className += ' btn-outline-warning';
+            el.onclick = () => toggleSelect(sn, el);
+          } else {
+            el.className += ' btn-secondary';
+            el.disabled = true;
+          }
+        } else if (seatState.booked.has(sn)) {
+          el.className += ' btn-danger';
+          el.disabled = true;
+        } else {
+          el.className += ' btn-outline-success';
+          el.onclick = () => toggleSelect(sn, el);
+        }
+      } else {
+        el.className += ' btn-light';
+      }
+      rowDiv.appendChild(el);
+    });
+    gridRoot.appendChild(rowDiv);
+  });
+}
+
+function onCustomerTypeChange() {
+  const isPublic = document.getElementById('customerType').value === 'public';
+  document.getElementById('publicPhoneWrap').style.display = isPublic ? 'block' : 'none';
+  document.getElementById('publicNameWrap').style.display = isPublic ? 'block' : 'none';
+  document.getElementById('agentSelectWrap').style.display = isPublic ? 'none' : 'block';
+  buildSeatGrid();
+}
+
+function onBookingForChange() {
+  const isPublic = document.getElementById('bookingFor').value === 'public';
+  document.getElementById('publicPhoneWrap').style.display = isPublic ? 'block' : 'none';
+  document.getElementById('publicNameWrap').style.display = isPublic ? 'block' : 'none';
+  document.getElementById('agentSelectWrap').style.display = isPublic ? 'none' : 'block';
+  
+  // Filter ticket types based on the selected channel
+  if (window.currentTicketTypes) {
+    const ticketTypeDropdown = document.getElementById('ticketType');
+    if (ticketTypeDropdown) {
+      const selectedChannel = isPublic ? 'PUBLIC' : 'AGENT';
+      const filteredTypes = window.currentTicketTypes.filter(tt => tt.channel === selectedChannel);
+      
+      ticketTypeDropdown.innerHTML = '<option value="">Select ticket type...</option>';
+      filteredTypes.forEach(tt => {
+        const option = document.createElement('option');
+        option.value = tt.id;
+        option.textContent = `${tt.name} - ${tt.base_price} ${tt.currency}`;
+        option.dataset.currency = tt.currency;
+        option.dataset.basePrice = tt.base_price;
+        option.dataset.channel = tt.channel;
+        ticketTypeDropdown.appendChild(option);
+      });
+    }
+  }
+}
+
+async function lookupUserByPhone() {
+  const phone = (document.getElementById('contactPhone')?.value || '').trim();
+  if (!phone) { showAlert('Enter phone number first', 'warning'); return; }
+  try {
+    const res = await fetch(`/owner/api/users/by-phone?phone=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+    if (res.ok && data && data.name) {
+      document.getElementById('contactName').value = data.name;
+    } else if (data.suggest_create) {
+      // Show option to create new user
+      showCreateUserOption(data.suggested_phone, data.message);
+    } else {
+      showAlert(data.error || 'User not found. Enter name manually.', 'info');
+    }
+  } catch {
+    showAlert('Lookup failed. Enter name manually.', 'warning');
+  }
+}
+
+function showCreateUserOption(suggestedPhone, message) {
+  const modalHtml = `
+    <div class="modal fade" id="createUserModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Create New User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted mb-3">${message}</p>
+            <div class="mb-3">
+              <label class="form-label">Phone Number</label>
+              <input type="tel" id="newUserPhone" class="form-control" value="${suggestedPhone}" readonly>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="newUserName" class="form-control" placeholder="Enter full name" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="createNewUser()">Create User</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  
+  const holder = document.createElement('div');
+  holder.innerHTML = modalHtml;
+  document.body.appendChild(holder);
+  const modal = new bootstrap.Modal(document.getElementById('createUserModal'));
+  modal.show();
+  document.getElementById('createUserModal').addEventListener('hidden.bs.modal', () => holder.remove());
+}
+
+async function createNewUser() {
+  const phone = document.getElementById('newUserPhone').value;
+  const name = document.getElementById('newUserName').value.trim();
+  
+  if (!name) {
+    showAlert('Please enter a name', 'warning');
+    return;
+  }
+  
+  try {
+    const res = await fetch('/owner/api/users/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, name })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+      showAlert('User created successfully!', 'success');
+      // Auto-fill the contact name field
+      document.getElementById('contactName').value = data.name;
+      // Close the modal
+      bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+    } else {
+      showAlert(data.error || 'Failed to create user', 'danger');
+    }
+  } catch (error) {
+    showAlert('Failed to create user. Please try again.', 'danger');
+  }
+}
+
+function toggleSelect(sn, btn) {
+  console.log('toggleSelect called for seat:', sn, 'current state:', seatState.selected.has(sn));
+  
+  if (seatState.selected.has(sn)) {
+    seatState.selected.delete(sn);
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-outline-success');
+    console.log('Seat', sn, 'deselected. Selected count:', seatState.selected.size);
+  } else {
+    seatState.selected.add(sn);
+    btn.classList.remove('btn-outline-success');
+    btn.classList.add('btn-success');
+    console.log('Seat', sn, 'selected. Selected count:', seatState.selected.size);
+  }
+  
+  const selectedCountElement = document.getElementById('selectedCount');
+  if (selectedCountElement) {
+    selectedCountElement.textContent = seatState.selected.size;
+  }
+  
+  // Enable/disable confirm booking button based on seat selection
+  const confirmBtn = document.getElementById('confirmBookingBtn');
+  if (confirmBtn) {
+    confirmBtn.disabled = seatState.selected.size === 0;
+    console.log('Confirm button disabled:', confirmBtn.disabled, 'Selected seats:', Array.from(seatState.selected));
+  }
+}
+
+async function confirmBooking(scheduleId) {
+  if (seatState.selected.size === 0) { showAlert('Select at least one seat', 'warning'); return; }
+  const body = {
+    seats: Array.from(seatState.selected),
+    customer_type: document.getElementById('customerType').value,
+    price_type: document.getElementById('priceType').value,
+    currency: document.getElementById('currency').value,
+    total_amount: 0,
+    notes: document.getElementById('bookingNotes').value,
+    contact_phone: document.getElementById('contactPhone')?.value || null,
+    contact_name: document.getElementById('contactName')?.value || null,
+    agent_id: document.getElementById('agentSelect')?.value || null
+  };
+  // Disable Book unless required details provided
+  const isPublic = document.getElementById('customerType').value === 'public';
+  if (isPublic && (!body.contact_phone || !body.contact_name)) { showAlert('Enter passenger phone and name', 'warning'); return; }
+  if (!isPublic && !body.agent_id) { showAlert('Select an agent', 'warning'); return; }
+  const res = await fetch(`/schedules/${scheduleId}/book`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) { showAlert(data.error || 'Failed to create booking', 'danger'); return; }
+  showAlert('Booking created: ' + data.booking_ref, 'success');
+  setTimeout(() => window.location.reload(), 1000);
+}
+
+async function confirmUnifiedBooking(scheduleId) {
+  console.log('confirmUnifiedBooking called. Selected seats:', Array.from(seatState.selected), 'Count:', seatState.selected.size);
+  
+  // Get seats for booking (handles both chart and count seating)
+  const seats = getSeatsForBooking();
+  console.log('Seats for booking:', seats);
+  
+  if (!seats || seats.length === 0) { 
+    console.log('No seats determined for booking, showing warning');
+    showAlert('Unable to determine seats for booking', 'warning'); 
+    return; 
+  }
+  
+  const userRole = '{{ current_user.role }}';
+  const scheduleOwnerId = {{ schedule.owner_id }};
+  const currentUserId = {{ current_user.id }};
+  
+  let bookingData = {
+    schedule_id: scheduleId,
+    seats: seats,
+    notes: ''
+  };
+  
+  try {
+    if (userRole === 'owner' && currentUserId === scheduleOwnerId) {
+      // Owner booking for someone else
+      bookingData = await prepareOwnerBookingData();
+    } else if (userRole === 'agent') {
+      // Agent self-booking
+      bookingData = await prepareAgentBookingData();
+    } else {
+      // Public self-booking
+      bookingData = await preparePublicBookingData();
+    }
+    
+    if (!bookingData) return; // Validation failed
+    
+    // Create unified booking
+    const response = await fetch(`/schedules/${scheduleId}/book`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookingData)
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      showAlert(`Booking created successfully! Code: ${data.booking.code}`, 'success');
+      setTimeout(() => window.location.reload(), 1500);
+    } else {
+      showAlert(data.error || 'Failed to create booking', 'danger');
+    }
+    
+  } catch (error) {
+    console.error('Booking error:', error);
+    showAlert('An error occurred while creating the booking. Please try again.', 'danger');
+  }
+}
+
+async function prepareOwnerBookingData() {
+  const bookingFor = document.getElementById('bookingFor').value;
+  const ticketTypeId = document.getElementById('ticketType').value;
+  const notes = document.getElementById('bookingNotes').value;
+  const pickupDestinationId = document.getElementById('pickupDestination').value;
+  const dropoffDestinationId = document.getElementById('dropoffDestination').value;
+  
+  if (!ticketTypeId) {
+    showAlert('Please select a ticket type', 'warning');
+    return null;
+  }
+  
+  if (!pickupDestinationId || !dropoffDestinationId) {
+    showAlert('Please select pickup and dropoff points', 'warning');
+    return null;
+  }
+  
+  // Get currency from selected ticket type
+  const ticketTypeSelect = document.getElementById('ticketType');
+  const selectedOption = ticketTypeSelect.options[ticketTypeSelect.selectedIndex];
+  const currency = selectedOption.dataset.currency;
+  
+  if (bookingFor === 'public') {
+    const phone = document.getElementById('contactPhone').value;
+    const name = document.getElementById('contactName').value;
+    
+    if (!phone || !name) {
+      showAlert('Please enter passenger phone and name', 'warning');
+      return null;
+    }
+    
+      return {
+    channel: 'PUBLIC',  // Public passenger booking
+    ticket_type_id: ticketTypeId,
+    currency: currency,
+    buyer_name: name,
+    buyer_phone: phone,
+    notes: notes,
+    pickup_destination_id: pickupDestinationId,
+    dropoff_destination_id: dropoffDestinationId,
+    seats: getSeatsForBooking()
+  };
+  } else {
+    const agentId = document.getElementById('agentSelect').value;
+    
+    if (!agentId) {
+      showAlert('Please select an agent', 'warning');
+      return null;
+    }
+    
+    return {
+      channel: 'AGENT',  // Agent booking
+      agent_id: agentId,
+      ticket_type_id: ticketTypeId,
+      currency: currency,
+      notes: notes,
+      pickup_destination_id: pickupDestinationId,
+      dropoff_destination_id: dropoffDestinationId,
+      seats: getSeatsForBooking()
+    };
+  }
+}
+
+async function prepareAgentBookingData() {
+  const ticketTypeId = document.getElementById('agentTicketType').value;
+  const confirmationType = document.getElementById('agentConfirmationType').value;
+  const notes = document.getElementById('agentBookingNotes').value;
+  const pickupDestinationId = document.getElementById('pickupDestination').value;
+  const dropoffDestinationId = document.getElementById('dropoffDestination').value;
+  
+  if (!ticketTypeId) {
+    showAlert('Please select a ticket type', 'warning');
+    return null;
+  }
+  
+  if (!pickupDestinationId || !dropoffDestinationId) {
+    showAlert('Please select pickup and dropoff points', 'warning');
+    return null;
+  }
+  
+  // Get currency from selected ticket type
+  const ticketTypeSelect = document.getElementById('agentTicketType');
+  const selectedOption = ticketTypeSelect.options[ticketTypeSelect.selectedIndex];
+  const currency = selectedOption.dataset.currency;
+  
+  return {
+    channel: 'AGENT',
+    ticket_type_id: ticketTypeId,
+    currency: currency,
+    confirmation_type: confirmationType,
+    notes: notes,
+    pickup_destination_id: pickupDestinationId,
+    dropoff_destination_id: dropoffDestinationId,
+    seats: getSeatsForBooking(),
+    // Agent books for themselves
+    buyer_name: '{{ current_user.name }}',
+    buyer_phone: '{{ current_user.phone }}'
+  };
+}
+
+async function preparePublicBookingData() {
+  const ticketTypeId = document.getElementById('publicTicketType').value;
+  const phone = document.getElementById('publicPhone').value;
+  const notes = document.getElementById('publicBookingNotes').value;
+  const pickupDestinationId = document.getElementById('pickupDestination').value;
+  const dropoffDestinationId = document.getElementById('dropoffDestination').value;
+  
+  if (!ticketTypeId) {
+    showAlert('Please select a ticket type', 'warning');
+    return null;
+  }
+  
+  if (!phone) {
+    showAlert('Please enter your phone number', 'warning');
+    return null;
+  }
+  
+  if (!pickupDestinationId || !dropoffDestinationId) {
+    showAlert('Please select pickup and dropoff points', 'warning');
+    return null;
+  }
+  
+  // Get currency from selected ticket type
+  const ticketTypeSelect = document.getElementById('publicTicketType');
+  const selectedOption = ticketTypeSelect.options[ticketTypeSelect.selectedIndex];
+  const currency = selectedOption.dataset.currency;
+  
+  return {
+    channel: 'PUBLIC',
+    ticket_type_id: ticketTypeId,
+    currency: currency,
+    notes: notes,
+    pickup_destination_id: pickupDestinationId,
+    dropoff_destination_id: dropoffDestinationId,
+    seats: getSeatsForBooking(),
+    // Public user books for themselves
+    buyer_name: '{{ current_user.name }}',
+    buyer_phone: phone
+  };
+}
+
+// Helper function to get seats for booking (handles both chart and count seating)
+function getSeatsForBooking() {
+  // Check if this is a chart-based boat (with assigned seating)
+  const isChartSeating = {{ 'true' if schedule.boat and schedule.boat.seating_type == 'chart' else 'false' }};
+  
+  if (isChartSeating) {
+    // For chart seating, return selected seats from seat map
+    return Array.from(seatState.selected);
+  } else {
+    // For count seating, return array of seat numbers based on quantity
+    const seatCount = getSeatCountForCurrentForm();
+    const seats = [];
+    for (let i = 1; i <= seatCount; i++) {
+      seats.push(`COUNT_${i}`);
+    }
+    return seats;
+  }
+}
+
+// Helper function to get seat count from the appropriate form
+function getSeatCountForCurrentForm() {
+  // Determine which form is currently visible and get seat count
+  if (document.getElementById('ownerBookingForm').style.display !== 'none') {
+    return parseInt(document.getElementById('seatCount').value) || 1;
+  } else if (document.getElementById('agentBookingForm').style.display !== 'none') {
+    return parseInt(document.getElementById('agentSeatCount').value) || 1;
+  } else if (document.getElementById('publicBookingForm').style.display !== 'none') {
+    return parseInt(document.getElementById('publicSeatCount').value) || 1;
+  }
+  return 1; // Default fallback
+}
+
+// Helper function to format seat display (handles both chart and count seating)
+function formatSeatsDisplay(seats) {
+  if (!seats || seats.length === 0) return 'No seats';
+  
+  // Check if this is a count-based boat
+  const isCountBased = {{ 'true' if schedule.boat and schedule.boat.seating_type == 'count' else 'false' }};
+  
+  if (isCountBased) {
+    // For count-based boats, show "X seats" instead of individual seat numbers
+    return `${seats.length} seat${seats.length > 1 ? 's' : ''}`;
+  } else {
+    // For chart-based boats, show individual seat numbers
+    return seats.join(', ');
+  }
+}
+
+// Helper function to format individual seat number display
+function formatSeatNumber(seatNumber) {
+  // Check if this is a count-based boat
+  const isCountBased = {{ 'true' if schedule.boat and schedule.boat.seating_type == 'count' else 'false' }};
+  
+  if (isCountBased && seatNumber.startsWith('COUNT_')) {
+    // For count-based boats, show seat number as just the number
+    return seatNumber.replace('COUNT_', '');
+  } else {
+    // For chart-based boats, show the full seat number
+    return seatNumber;
+  }
+}
+
+// Bookings Management Functions
+async function loadBookings(scheduleId) {
+  try {
+    const res = await fetch(`/schedules/${scheduleId}/bookings`);
+    const data = await res.json();
+    
+    if (!res.ok) {
+      showAlert(data.error || 'Failed to load bookings', 'danger');
+      return;
+    }
+    
+    renderBookings(data.bookings);
+  } catch (error) {
+    showAlert('Failed to load bookings. Please try again.', 'danger');
+  }
+}
+
+function renderBookings(bookings) {
+  const container = document.getElementById('bookingsContainer');
+  
+  if (!bookings || bookings.length === 0) {
+    container.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-ticket-alt fa-2x mb-2"></i>
+        <p>No bookings found for this schedule</p>
+      </div>
+    `;
+    return;
+  }
+  
+  const bookingsHtml = bookings.map(booking => `
+    <div class="booking-card mb-3 p-3 border rounded">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h6 class="mb-1">${booking.booking_ref}</h6>
+          <small class="text-muted">${booking.created_at}</small>
+        </div>
+        <div class="d-flex gap-1">
+          ${booking.status === 'confirmed' ? 
+            '<span class="badge bg-success">Ticket Issued</span>' : 
+            '<span class="badge bg-warning">Pending</span>'
+          }
+        </div>
+      </div>
+      
+      <div class="row g-2 mb-2">
+        <div class="col-md-6">
+          <small class="text-muted">Customer Type:</small>
+          <div class="fw-semibold">${booking.customer_type === 'public' ? 'Public' : 'Agent'}</div>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted">Price Type:</small>
+          <div class="fw-semibold">${booking.price_type === 'priced' ? 'Priced' : 'Complimentary'}</div>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted">Seats:</small>
+          <div class="fw-semibold">${formatSeatsDisplay(booking.seats)}</div>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted">Amount:</small>
+          <div class="fw-semibold">${booking.total_amount} ${booking.currency}</div>
+        </div>
+        <div class="col-md-6">
+          <small class="text-muted">Route:</small>
+          <div class="fw-semibold">${booking.route || 'Full route'}</div>
+        </div>
+      </div>
+      
+      ${booking.contact_name ? `
+        <div class="mb-2">
+          <small class="text-muted">Contact:</small>
+          <div class="fw-semibold">${booking.contact_name}</div>
+        </div>
+      ` : ''}
+      
+      ${booking.agent_name ? `
+        <div class="mb-2">
+          <small class="text-muted">Agent:</small>
+          <div class="fw-semibold">${booking.agent_name}</div>
+        </div>
+      ` : ''}
+      
+      ${booking.notes ? `
+        <div class="mb-2">
+          <small class="text-muted">Notes:</small>
+          <div class="fw-semibold">${booking.notes}</div>
+        </div>
+      ` : ''}
+      
+      <div class="d-flex gap-2 mt-3">
+        ${booking.status !== 'confirmed' ? 
+          `<button class="btn btn-sm btn-success" onclick="issueTicket(${booking.id}, '${booking.booking_ref}')">
+            <i class="fas fa-ticket-alt me-1"></i>Issue Ticket
+          </button>` : ''
+        }
+        <button class="btn btn-sm btn-danger" onclick="cancelBooking(${booking.id}, '${booking.booking_ref}')">
+          <i class="fas fa-times me-1"></i>Cancel
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  container.innerHTML = bookingsHtml;
+}
+
+async function issueTicket(bookingId, bookingRef) {
+  // First fetch booking details to calculate total
+  try {
+    const res = await fetch(`/schedules/{{ schedule.id }}/bookings`);
+    const data = await res.json();
+    
+    if (res.ok && data.bookings) {
+      const booking = data.bookings.find(b => b.id === bookingId);
+      if (booking) {
+        showPaymentMethodDialog(bookingId, bookingRef, booking);
+      } else {
+        showAlert('Booking not found', 'danger');
+      }
+    } else {
+      showAlert('Failed to load booking details', 'danger');
+    }
+  } catch (error) {
+    showAlert('Failed to load booking details', 'danger');
+  }
+}
+
+function showPaymentMethodDialog(bookingId, bookingRef, booking) {
+  // Use the total amount calculated by the backend
+  const seatCount = booking.seat_count;
+  const priceType = booking.price_type;
+  const currency = booking.currency;
+  const totalAmount = booking.total_amount;
+  
+  const modalHtml = `
+    <div class="modal fade payment-method-modal" id="paymentMethodModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-credit-card me-2"></i>Issue Ticket - Payment Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted mb-3">Please provide payment details to issue ticket for booking <strong>${bookingRef}</strong></p>
+            
+            <div class="mb-3">
+              <label class="form-label">Payment Method *</label>
+              <select id="paymentMethod" class="form-select" required>
+                <option value="">Select payment method</option>
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Ticket Details</label>
+              <div class="alert alert-light">
+                <div class="row g-2">
+                  <div class="col-6">
+                    <small class="text-muted">Seats:</small>
+                    <div class="fw-semibold">${seatCount} seat${seatCount > 1 ? 's' : ''}</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Price Type:</small>
+                    <div class="fw-semibold">${priceType === 'complimentary' ? 'Complimentary' : 'Priced'}</div>
+                  </div>
+                  <div class="col-12">
+                    <small class="text-muted">Total Amount:</small>
+                    <div class="fw-semibold text-success">${totalAmount} ${currency}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mb-3" id="referenceNumberGroup" style="display: none;">
+              <label class="form-label">Reference Number</label>
+              <input type="text" id="referenceNumber" class="form-control" placeholder="Bank transfer reference">
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label">Notes</label>
+              <textarea id="paymentNotes" class="form-control" rows="2" placeholder="Optional payment notes"></textarea>
+            </div>
+            
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle me-2"></i>
+              <strong>Commission Breakdown:</strong><br>
+              • Total Amount: ${totalAmount} ${currency}<br>
+              • App Commission: 10 ${currency}<br>
+              • Owner Receives: ${Math.max(0, totalAmount - 10)} ${currency}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-success" onclick="confirmIssueTicket(${bookingId}, '${bookingRef}')">
+              <i class="fas fa-ticket-alt me-2"></i>Issue Ticket
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  
+  const holder = document.createElement('div');
+  holder.innerHTML = modalHtml;
+  document.body.appendChild(holder);
+  const modal = new bootstrap.Modal(document.getElementById('paymentMethodModal'));
+  
+  // Show/hide reference number field based on payment method
+  const paymentMethodSelect = document.getElementById('paymentMethod');
+  const referenceNumberGroup = document.getElementById('referenceNumberGroup');
+  
+  paymentMethodSelect.addEventListener('change', function() {
+    if (this.value === 'bank_transfer') {
+      referenceNumberGroup.style.display = 'block';
+      document.getElementById('referenceNumber').required = true;
+    } else {
+      referenceNumberGroup.style.display = 'none';
+      document.getElementById('referenceNumber').required = false;
+    }
+  });
+  
+  modal.show();
+  document.getElementById('paymentMethodModal').addEventListener('hidden.bs.modal', () => holder.remove());
+}
+
+async function confirmIssueTicket(bookingId, bookingRef) {
+  const paymentMethod = document.getElementById('paymentMethod').value;
+  const referenceNumber = document.getElementById('referenceNumber').value;
+  const paymentNotes = document.getElementById('paymentNotes').value;
+  
+  if (!paymentMethod) {
+    showAlert('Please select a payment method', 'warning');
+    return;
+  }
+  
+  if (paymentMethod === 'bank_transfer' && !referenceNumber.trim()) {
+    showAlert('Reference number is required for bank transfers', 'warning');
+    return;
+  }
+  
+      try {
+      const res = await fetch(`/schedules/{{ schedule.id }}/bookings/${bookingId}/issue-ticket`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payment_method: paymentMethod,
+          reference_number: referenceNumber,
+          notes: paymentNotes
+        })
+      });
+    
+    const data = await res.json();
+    if (res.ok) {
+      const message = `Ticket issued successfully! Commission: MVR ${data.commission_amount}, Owner receives: MVR ${data.owner_amount}`;
+      
+      // Show success message with public URL
+      if (data.public_url) {
+        showAlert(`${message}<br><br><strong>Public Ticket URL:</strong><br><a href="${data.public_url}" target="_blank" class="text-decoration-none">${data.public_url}</a>`, 'success');
+      } else {
+        showAlert(message, 'success');
+      }
+      
+      // Close modal
+      bootstrap.Modal.getInstance(document.getElementById('paymentMethodModal')).hide();
+      // Reload bookings to update status
+      loadBookings({{ schedule.id }});
+    } else {
+      showAlert(data.error || 'Failed to issue ticket', 'danger');
+    }
+  } catch (error) {
+    showAlert('Failed to issue ticket. Please try again.', 'danger');
+  }
+}
+
+async function cancelBooking(bookingId, bookingRef) {
+  // Show cancellation options
+  const modalHtml = `
+    <div class="modal fade" id="cancelBookingModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="fas fa-times-circle me-2"></i>Cancel Booking ${bookingRef}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Cancellation Type</label>
+              <select id="cancellationType" class="form-select">
+                <option value="full">Cancel Entire Booking</option>
+                <option value="partial">Remove Specific Seats</option>
+              </select>
+            </div>
+            
+            <div id="seatSelectionSection" class="mb-3" style="display: none;">
+              <label class="form-label">Select Seats to Remove</label>
+              <div id="seatCheckboxes" class="d-flex flex-wrap gap-2">
+                <!-- Seat checkboxes will be populated here -->
+              </div>
+              <small class="text-muted">Check the seats you want to remove from this booking</small>
+            </div>
+            
+            <div class="alert alert-warning">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>Warning:</strong> This action cannot be undone and will free up the selected seats.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmCancellation(${bookingId}, '${bookingRef}')">
+              <i class="fas fa-times me-2"></i>Confirm Cancellation
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  
+  const holder = document.createElement('div');
+  holder.innerHTML = modalHtml;
+  document.body.appendChild(holder);
+  const modal = new bootstrap.Modal(document.getElementById('cancelBookingModal'));
+  
+  // Setup cancellation type change handler
+  const cancellationType = document.getElementById('cancellationType');
+  const seatSelectionSection = document.getElementById('seatSelectionSection');
+  
+  cancellationType.addEventListener('change', function() {
+    if (this.value === 'partial') {
+      seatSelectionSection.style.display = 'block';
+      loadSeatsForCancellation(bookingId);
+    } else {
+      seatSelectionSection.style.display = 'none';
+    }
+  });
+  
+  modal.show();
+  document.getElementById('cancelBookingModal').addEventListener('hidden.bs.modal', () => holder.remove());
+}
+
+async function loadSeatsForCancellation(bookingId) {
+  try {
+    // Get current bookings to find the specific booking and its seats
+    const res = await fetch(`/schedules/{{ schedule.id }}/bookings`);
+    const data = await res.json();
+    
+    if (res.ok && data.bookings) {
+      const booking = data.bookings.find(b => b.id === bookingId);
+      if (booking && booking.seats) {
+        const seatCheckboxes = document.getElementById('seatCheckboxes');
+        seatCheckboxes.innerHTML = '';
+        
+        booking.seats.forEach(seat => {
+          const checkboxDiv = document.createElement('div');
+          checkboxDiv.className = 'form-check';
+          checkboxDiv.innerHTML = `
+            <input class="form-check-input" type="checkbox" value="${seat}" id="seat_${seat}">
+            <label class="form-check-label" for="seat_${seat}">
+              Seat ${seat}
+            </label>
+          `;
+          seatCheckboxes.appendChild(checkboxDiv);
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error loading seats for cancellation:', error);
+  }
+}
+
+async function confirmCancellation(bookingId, bookingRef) {
+  const cancellationType = document.getElementById('cancellationType').value;
+  let seatsToRemove = [];
+  
+  if (cancellationType === 'partial') {
+    // Get selected seats
+    const checkboxes = document.querySelectorAll('#seatCheckboxes input[type="checkbox"]:checked');
+    seatsToRemove = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (seatsToRemove.length === 0) {
+      showAlert('Please select at least one seat to remove', 'warning');
+      return;
+    }
+  }
+  
+  try {
+    const res = await fetch(`/schedules/{{ schedule.id }}/bookings/${bookingId}/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seats: seatsToRemove })
+    });
+    
+    const data = await res.json();
+    if (res.ok) {
+      showAlert(data.message || 'Cancellation successful!', 'success');
+      
+      // Close modal
+      bootstrap.Modal.getInstance(document.getElementById('cancelBookingModal')).hide();
+      
+      // Reload bookings and refresh page to update seat map
+      loadBookings({{ schedule.id }});
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showAlert(data.error || 'Failed to cancel booking', 'danger');
+    }
+  } catch (error) {
+    showAlert('Failed to cancel booking. Please try again.', 'danger');
+  }
+}
+
+// Load tickets function
+async function loadTickets(scheduleId) {
+  try {
+    const ticketsContainer = document.getElementById('ticketsContainer');
+    ticketsContainer.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+        <p>Loading tickets...</p>
+      </div>
+    `;
+    
+    const res = await fetch(`/schedules/api/schedules/${scheduleId}/issued-tickets`);
+    const data = await res.json();
+    
+    if (res.ok && data.success) {
+      if (data.tickets && data.tickets.length > 0) {
+        // Group tickets by booking reference
+        const groupedTickets = {};
+        data.tickets.forEach(ticket => {
+          if (!groupedTickets[ticket.booking_ref]) {
+            groupedTickets[ticket.booking_ref] = [];
+          }
+          groupedTickets[ticket.booking_ref].push(ticket);
+        });
+        
+        let ticketsHtml = `
+          <div class="alert alert-success mb-3">
+            <i class="fas fa-ticket-alt me-2"></i>
+            <strong>${data.total_tickets} tickets</strong> issued for ${Object.keys(groupedTickets).length} bookings
+          </div>
+        `;
+        
+        // Display tickets grouped by booking
+        Object.keys(groupedTickets).forEach(bookingRef => {
+          const tickets = groupedTickets[bookingRef];
+          const firstTicket = tickets[0];
+          
+          // Calculate total for this booking
+          const bookingTotal = tickets.reduce((sum, ticket) => sum + ticket.ticket_type_price, 0);
+          
+          ticketsHtml += `
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h6 class="mb-0">
+                    <i class="fas fa-bookmark me-2"></i>Booking: ${bookingRef}
+                  </h6>
+                  <span class="badge bg-${firstTicket.channel === 'AGENT' ? 'warning' : 'info'}">
+                    ${firstTicket.channel}
+                  </span>
+                </div>
+                <small class="text-muted">
+                  ${firstTicket.passenger_name} • ${firstTicket.passenger_phone}
+                  ${firstTicket.agent_name ? ` • Agent: ${firstTicket.agent_name}` : ''}
+                </small>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Seat</th>
+                        <th>Ticket Type</th>
+                        <th>Price</th>
+                        <th>Payment</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+          `;
+          
+          tickets.forEach(ticket => {
+            const issuedDate = ticket.issued_at ? new Date(ticket.issued_at).toLocaleString() : 'N/A';
+            const isTravelled = ticket.travel_status === 'TRAVELLED';
+            const statusBadge = isTravelled ? 
+              '<span class="badge bg-success">Travelled</span>' : 
+              '<span class="badge bg-warning">Active</span>';
+            
+            ticketsHtml += `
+              <tr>
+                <td><strong>${formatSeatNumber(ticket.seat_number)}</strong></td>
+                <td>${ticket.ticket_type_name}</td>
+                <td>${ticket.ticket_type_price} ${ticket.currency}</td>
+                <td>
+                  <small>
+                    ${ticket.payment_method}<br>
+                    ${ticket.payment_reference ? `Ref: ${ticket.payment_reference}` : ''}
+                  </small>
+                </td>
+                <td>${statusBadge}</td>
+                <td>
+                  ${!isTravelled ? 
+                    `<button class="btn btn-sm btn-outline-success" onclick="markTicketAsTravelled('${ticket.ticket_id}', '${ticket.seat_number}')">
+                      <i class="fas fa-check me-1"></i>Mark Travelled
+                    </button>` : 
+                    '<small class="text-muted">Completed</small>'
+                  }
+                </td>
+              </tr>
+            `;
+          });
+          
+          ticketsHtml += `
+                    </tbody>
+                  </table>
+                </div>
+                <div class="card-footer bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Issued: ${tickets[0].issued_at ? new Date(tickets[0].issued_at).toLocaleString() : 'N/A'}</small>
+                    <strong>Total: ${bookingTotal.toFixed(2)} ${firstTicket.currency}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        ticketsContainer.innerHTML = ticketsHtml;
+      } else {
+        ticketsContainer.innerHTML = `
+          <div class="text-center text-muted py-4">
+            <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+            <h6 class="text-muted">No tickets issued yet</h6>
+            <p class="text-muted">Tickets will appear here once they are issued and confirmed.</p>
+          </div>
+        `;
+      }
+    } else {
+      ticketsContainer.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Failed to load tickets: ${data.error || 'Unknown error'}
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Error loading tickets:', error);
+    document.getElementById('ticketsContainer').innerHTML = `
+      <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        Failed to load tickets. Please try again.
+      </div>
+    `;
+  }
+}
+
+// Mark ticket as travelled
+async function markTicketAsTravelled(ticketId, seatNumber) {
+  if (!confirm(`Mark ticket for seat ${seatNumber} as travelled?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/schedules/api/tickets/${ticketId}/mark-travelled`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok && data.success) {
+      showAlert(`Ticket for seat ${seatNumber} marked as travelled successfully!`, 'success');
+      // Refresh the tickets display
+      loadTickets({{ schedule.id }});
+    } else {
+      showAlert(data.error || 'Failed to mark ticket as travelled', 'danger');
+    }
+  } catch (error) {
+    console.error('Error marking ticket as travelled:', error);
+    showAlert('Network error. Please try again.', 'danger');
+  }
+}
+
+// Route selection function
+function updateRouteInfo() {
+  const pickupSelect = document.getElementById('pickupDestination');
+  const dropoffSelect = document.getElementById('dropoffDestination');
+  const routeSummary = document.getElementById('routeSummary');
+  const routeText = document.getElementById('routeText');
+  const departureTime = document.getElementById('departureTime');
+  const routeDuration = document.getElementById('routeDuration');
+  
+  if (pickupSelect.value && dropoffSelect.value) {
+    const pickupOption = pickupSelect.options[pickupSelect.selectedIndex];
+    const dropoffOption = dropoffSelect.options[dropoffSelect.selectedIndex];
+    
+    const pickupName = pickupOption.text.split(' (')[0];
+    const dropoffName = dropoffOption.text.split(' (')[0];
+    const pickupTime = pickupOption.dataset.time;
+    const dropoffTime = dropoffOption.dataset.time;
+    
+    const pickupSeq = parseInt(pickupOption.dataset.sequence);
+    const dropoffSeq = parseInt(dropoffOption.dataset.sequence);
+    
+    if (pickupSeq >= dropoffSeq) {
+      showAlert('Dropoff point must be after pickup point in the route', 'warning');
+      dropoffSelect.value = '';
+      routeSummary.style.display = 'none';
+      return;
+    }
+    
+    // Calculate route duration (simplified - you can enhance this)
+    let duration = '';
+    if (pickupTime && dropoffTime) {
+      const pickupHour = parseInt(pickupTime.split(':')[0]);
+      const pickupMin = parseInt(pickupTime.split(':')[1]);
+      const dropoffHour = parseInt(dropoffTime.split(':')[0]);
+      const dropoffMin = parseInt(dropoffTime.split(':')[1]);
+      
+      let totalMinutes = (dropoffHour * 60 + dropoffMin) - (pickupHour * 60 + pickupMin);
+      if (totalMinutes < 0) totalMinutes += 24 * 60; // Handle overnight trips
+      
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      duration = `${hours}h ${minutes}m`;
+    }
+    
+    routeText.textContent = `${pickupName} → ${dropoffName}`;
+    departureTime.textContent = pickupTime || 'TBD';
+    routeDuration.textContent = duration || 'TBD';
+    routeSummary.style.display = 'block';
+    
+    // Enable booking button if route is selected
+    document.getElementById('confirmBookingBtn').disabled = false;
+    
+    // Refresh ticket types when route changes (in case route affects pricing)
+    if (window.currentTicketTypes) {
+      populateTicketTypes(window.currentTicketTypes);
+    }
+  } else {
+    routeSummary.style.display = 'none';
+    document.getElementById('confirmBookingBtn').disabled = true;
+  }
+}
+
+// Load bookings when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  loadBookings({{ schedule.id }});
+});
+</script>
+{% endblock %} 

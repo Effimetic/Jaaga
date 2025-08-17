@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}{{ boat.name }} - Nashath Booking{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style View Boat Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">{{ boat.name }}</h4>
+        <p class="page-subtitle">Boat Details</p>
+      </div>
+    </div>
+    <a href="{{ url_for('boat_management.edit_boat', boat_id=boat.id) }}" class="edit-btn">
+      <i class="fas fa-edit"></i>
+    </a>
+  </div>
+
+  <!-- Boat Status Card -->
+  <div class="status-card">
+    <div class="status-content">
+      <div class="status-icon">
+        <i class="fas fa-ship"></i>
+      </div>
+      <div class="status-info">
+        <div class="status-badge {% if boat.is_active %}active{% else %}inactive{% endif %}">
+          {% if boat.is_active %}Active{% else %}Inactive{% endif %}
+        </div>
+        <div class="status-text">
+          {% if boat.is_active %}
+            This boat is currently active and available for schedules
+          {% else %}
+            This boat is currently inactive and cannot be scheduled
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Boat Details -->
+  <div class="details-section">
+    <h5 class="section-title">Boat Information</h5>
+    
+    <div class="details-grid">
+      <div class="detail-card">
+        <div class="detail-icon">
+          <i class="fas fa-tag"></i>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Boat Name</div>
+          <div class="detail-value">{{ boat.name }}</div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-icon">
+          <i class="fas fa-chair"></i>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Seating Type</div>
+          <div class="detail-value">
+            {% if boat.seating_type == 'total' %}
+              Total Seat Count
+            {% else %}
+              Seat Chart
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Total Seats</div>
+          <div class="detail-value">{{ boat.total_seats }}</div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-icon">
+          <i class="fas fa-calendar"></i>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Created</div>
+          <div class="detail-value">{{ boat.created_at.strftime('%B %d, %Y') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if boat.seating_type == 'chart' and boat.seating_chart %}
+  <!-- Seat Chart Section -->
+  <div class="seat-chart-section">
+    <h5 class="section-title">Seat Layout</h5>
+    
+    <div class="chart-info">
+      <div class="info-icon">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <div class="info-text">
+        This boat uses a custom seat chart layout. <strong>Green boxes are seats, empty spaces are walkways.</strong>
+      </div>
+    </div>
+    
+    <div class="seat-chart-container">
+      <div id="seatChartDisplay" class="seat-chart-display"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick Actions -->
+  <div class="actions-section">
+    <h5 class="section-title">Quick Actions</h5>
+    
+    <div class="actions-grid">
+      <a href="{{ url_for('boat_management.edit_boat', boat_id=boat.id) }}" class="action-card">
+        <div class="action-icon">
+          <i class="fas fa-edit"></i>
+        </div>
+        <div class="action-content">
+          <h6>Edit Boat</h6>
+          <p>Modify boat details and settings</p>
+        </div>
+        <div class="action-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('scheduling.schedules') }}" class="action-card">
+        <div class="action-icon">
+          <i class="fas fa-calendar-plus"></i>
+        </div>
+        <div class="action-content">
+          <h6>Create Schedule</h6>
+          <p>Schedule trips for this boat</p>
+        </div>
+        <div class="action-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+
+      <a href="{{ url_for('boat_management.boats') }}" class="action-card">
+        <div class="action-icon">
+          <i class="fas fa-list"></i>
+        </div>
+        <div class="action-content">
+          <h6>View All Boats</h6>
+          <p>Back to boat management</p>
+        </div>
+        <div class="action-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .edit-btn {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-decoration: none;
+    font-size: 1.125rem;
+    transition: transform 0.2s ease;
+  }
+
+  .edit-btn:hover {
+    transform: scale(1.05);
+    color: white;
+    text-decoration: none;
+  }
+
+  .status-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .status-content {
+    display: flex;
+    align-items: center;
+  }
+
+  .status-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  .status-info {
+    flex: 1;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .status-badge.active {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .status-badge.inactive {
+    background: #f8d7da;
+    color: #721c24;
+  }
+
+  .status-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+    line-height: 1.4;
+  }
+
+  .details-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.125rem;
+  }
+
+  .details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .detail-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .detail-icon {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.75rem;
+    color: #6c757d;
+  }
+
+  .detail-content {
+    flex: 1;
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+
+  .detail-value {
+    font-size: 0.875rem;
+    color: #212529;
+    font-weight: 600;
+  }
+
+  .seat-chart-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .chart-info {
+    background: #e7f3ff;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .info-icon {
+    color: #0d6efd;
+    margin-right: 0.75rem;
+    margin-top: 0.125rem;
+  }
+
+  .info-text {
+    font-size: 0.875rem;
+    color: #0d6efd;
+    line-height: 1.4;
+  }
+
+  .seat-chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .seat-chart-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .seat-chart-display .d-flex {
+    gap: 0.25rem;
+  }
+
+  .seat-preview {
+    min-width: 35px !important;
+    min-height: 35px !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .actions-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .actions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .action-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s ease;
+  }
+
+  .action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .action-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: white;
+    font-size: 1.25rem;
+  }
+
+  .action-content {
+    flex: 1;
+  }
+
+  .action-content h6 {
+    margin: 0 0 0.25rem 0;
+    font-weight: 600;
+    color: #212529;
+    font-size: 1rem;
+  }
+
+  .action-content p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .action-arrow {
+    color: #6c757d;
+    font-size: 0.875rem;
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+    
+    .details-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .details-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .detail-card {
+      padding: 0.75rem;
+    }
+    
+    .seat-preview {
+      min-width: 30px !important;
+      min-height: 30px !important;
+      font-size: 0.7rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{% if boat.seating_type == 'chart' and boat.seating_chart %}
+<script>
+// Display seat chart if available
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        const chartData = JSON.parse('{{ boat.seating_chart | safe }}');
+        const display = document.getElementById('seatChartDisplay');
+        
+        // Handle new grid-based format
+        if (chartData.gridData) {
+            // New format - show grid with walkways visible
+            chartData.gridData.forEach(function(row) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'd-flex justify-content-center';
+                
+                row.forEach(function(box) {
+                    if (box.isWalkway) {
+                        // Walkway - show as empty space
+                        const walkwayDiv = document.createElement('div');
+                        walkwayDiv.className = 'mx-1';
+                        walkwayDiv.style.minWidth = '35px';
+                        walkwayDiv.style.minHeight = '35px';
+                        walkwayDiv.style.display = 'flex';
+                        walkwayDiv.style.alignItems = 'center';
+                        walkwayDiv.style.justifyContent = 'center';
+                        walkwayDiv.innerHTML = '<span class="text-muted">·</span>';
+                        rowDiv.appendChild(walkwayDiv);
+                    } else {
+                        // Seat - find the seat number from seatChartData
+                        let seatNumber = '';
+                        if (chartData.seatChartData) {
+                            for (let seatRow of chartData.seatChartData) {
+                                for (let seat of seatRow) {
+                                    if (seat.row === box.row && seat.col === box.col) {
+                                        seatNumber = seat.number;
+                                        break;
+                                    }
+                                }
+                                if (seatNumber) break;
+                            }
+                        }
+                        
+                        const seatDiv = document.createElement('div');
+                        seatDiv.className = 'seat-preview mx-1 p-2 border rounded bg-success text-white text-center';
+                        seatDiv.style.minWidth = '35px';
+                        seatDiv.style.minHeight = '35px';
+                        seatDiv.style.display = 'flex';
+                        seatDiv.style.alignItems = 'center';
+                        seatDiv.style.justifyContent = 'center';
+                        seatDiv.textContent = seatNumber || 'S';
+                        rowDiv.appendChild(seatDiv);
+                    }
+                });
+                
+                display.appendChild(rowDiv);
+            });
+        } else if (chartData.seatChartData) {
+            // Legacy format with seatChartData only
+            chartData.seatChartData.forEach(function(row) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'd-flex justify-content-center';
+                
+                row.forEach(function(seat) {
+                    if (!seat.isWalkway) {
+                        const seatDiv = document.createElement('div');
+                        seatDiv.className = 'seat-preview mx-1 p-2 border rounded bg-success text-white text-center';
+                        seatDiv.style.minWidth = '35px';
+                        seatDiv.style.minHeight = '35px';
+                        seatDiv.style.display = 'flex';
+                        seatDiv.style.alignItems = 'center';
+                        seatDiv.style.justifyContent = 'center';
+                        seatDiv.textContent = seat.number;
+                        rowDiv.appendChild(seatDiv);
+                    } else {
+                        // Walkway - add empty space
+                        const walkwayDiv = document.createElement('div');
+                        walkwayDiv.className = 'mx-1';
+                        walkwayDiv.style.minWidth = '35px';
+                        walkwayDiv.style.minHeight = '35px';
+                        walkwayDiv.style.display = 'flex';
+                        walkwayDiv.style.alignItems = 'center';
+                        walkwayDiv.style.justifyContent = 'center';
+                        walkwayDiv.innerHTML = '<span class="text-muted">·</span>';
+                        rowDiv.appendChild(walkwayDiv);
+                    }
+                });
+                
+                display.appendChild(rowDiv);
+            });
+        } else {
+            // Legacy format
+            chartData.forEach(function(row) {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'd-flex justify-content-center';
+                
+                row.forEach(function(seat) {
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat-preview mx-1 p-2 border rounded bg-success text-white text-center';
+                    seatDiv.style.minWidth = '35px';
+                    seatDiv.style.minHeight = '35px';
+                    seatDiv.style.display = 'flex';
+                    seatDiv.style.alignItems = 'center';
+                    seatDiv.style.justifyContent = 'center';
+                    seatDiv.textContent = seat.number;
+                    rowDiv.appendChild(seatDiv);
+                });
+                
+                display.appendChild(rowDiv);
+            });
+        }
+    } catch (e) {
+        console.error('Error parsing seat chart:', e);
+        document.getElementById('seatChartDisplay').innerHTML = '<p class="text-muted">Error loading seat chart</p>';
+    }
+});
+</script>
+{% endif %}
+{% endblock %} 

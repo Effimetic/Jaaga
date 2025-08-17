@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ schedule.name }} - Schedule{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="fas fa-edit me-2"></i>Edit Schedule: {{ schedule.name }}
+                        </h4>
+                        <div>
+                            <a href="{{ url_for('scheduling.view_schedule', schedule_id=schedule.id) }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Schedule
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if schedule.schedule_date < today %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Past Schedule:</strong> This schedule is in the past and cannot be edited.
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url_for('scheduling.view_schedule', schedule_id=schedule.id) }}" class="btn btn-primary">
+                                <i class="fas fa-eye me-2"></i>View Schedule
+                            </a>
+                        </div>
+                    {% else %}
+                        <form id="editScheduleForm">
+                            <!-- Schedule Name -->
+                            <div class="mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-tag me-2"></i>Schedule Name
+                                        </h5>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="scheduleName" class="form-label">Schedule Name</label>
+                                                <input type="text" class="form-control" id="scheduleName" name="schedule_name" 
+                                                       value="{{ schedule.name }}" required>
+                                                <div class="form-text">Enter a descriptive name for this schedule</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Schedule Date</label>
+                                                <input type="text" class="form-control" value="{{ schedule.schedule_date.strftime('%B %d, %Y') }}" readonly>
+                                                <div class="form-text">Schedule date cannot be changed</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Destinations -->
+                            <div class="mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-route me-2"></i>Destinations
+                                        </h5>
+                                        <div id="destinationsContainer">
+                                            {% for destination in schedule.destinations %}
+                                            <div class="destination-row border rounded p-3 mb-3" data-index="{{ loop.index0 }}">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Destination {{ loop.index }}</label>
+                                                        <input type="text" class="form-control destination-name" 
+                                                               value="{{ destination.island_name }}" required>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Departure Time</label>
+                                                        <input type="time" class="form-control departure-time" 
+                                                               value="{{ destination.departure_time.strftime('%H:%M') if destination.departure_time else '' }}">
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">Arrival Time</label>
+                                                        <input type="time" class="form-control arrival-time" 
+                                                               value="{{ destination.arrival_time.strftime('%H:%M') if destination.arrival_time else '' }}">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Type</label>
+                                                        <div class="d-flex gap-2">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input pickup-check" type="checkbox" 
+                                                                       {% if destination.is_pickup %}checked{% endif %}>
+                                                                <label class="form-check-label">Pickup</label>
+                                                            </div>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input dropoff-check" type="checkbox" 
+                                                                       {% if destination.is_dropoff %}checked{% endif %}>
+                                                                <label class="form-check-label">Dropoff</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">&nbsp;</label>
+                                                        <button type="button" class="btn btn-danger btn-sm remove-destination" 
+                                                                {% if schedule.destinations|length == 1 %}disabled{% endif %}>
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary" id="addDestination">
+                                            <i class="fas fa-plus me-2"></i>Add Destination
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Blocked Seats -->
+                            <div class="mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-ban me-2"></i>Blocked Seats
+                                        </h5>
+                                        <p class="text-muted">Select seats that should not be available for public booking</p>
+                                        
+                                        {% if schedule.boat.seating_type == 'chart' %}
+                                            <!-- Chart-based seating -->
+                                            <div class="seat-chart-container">
+                                                <div class="seat-chart" id="seatChart">
+                                                    {% for row in range(1, (schedule.boat.total_seats // 4) + 1) %}
+                                                    <div class="seat-row">
+                                                        {% for col in range(1, 5) %}
+                                                        {% set seat_num = (row - 1) * 4 + col %}
+                                                        {% if seat_num <= schedule.boat.total_seats %}
+                                                            {% set is_blocked = false %}
+                                                            {% for blocked_seat in schedule.blocked_seats %}
+                                                                {% if blocked_seat.seat_number == seat_num %}
+                                                                    {% set is_blocked = true %}
+                                                                {% endif %}
+                                                            {% endfor %}
+                                                            <button type="button" class="seat-btn {% if is_blocked %}blocked{% endif %}" 
+                                                                    data-seat="{{ seat_num }}" 
+                                                                    {% if seat_num in [5, 9, 13, 17, 21] %}style="margin-right: 20px;"{% endif %}>
+                                                                {{ seat_num }}
+                                                            </button>
+                                                        {% endif %}
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <!-- Total count seating -->
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label for="blockedCount" class="form-label">Number of Blocked Seats</label>
+                                                    <input type="number" class="form-control" id="blockedCount" 
+                                                           min="0" max="{{ schedule.boat.total_seats }}" 
+                                                           value="{{ schedule.blocked_seats|length }}">
+                                                    <div class="form-text">Enter the number of seats to block from public booking</div>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Booking Configuration -->
+                            <div class="mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-cog me-2"></i>Booking Configuration
+                                        </h5>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="confirmationType" class="form-label">Booking Confirmation</label>
+                                                <select class="form-select" id="confirmationType" name="confirmation_type">
+                                                    <option value="immediate" {% if schedule.confirmation_type == 'immediate' %}selected{% endif %}>Immediate Confirmation</option>
+                                                    <option value="manual" {% if schedule.confirmation_type == 'manual' %}selected{% endif %}>Manual Booking Confirmation</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="isPublic" class="form-label">Public Visibility</label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="isPublic" name="is_public" 
+                                                           {% if schedule.is_public %}checked{% endif %}>
+                                                    <label class="form-check-label" for="isPublic">
+                                                        Show this schedule to the public
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pricing Configuration -->
+                            <div class="mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <h5 class="card-title">
+                                            <i class="fas fa-ticket-alt me-2"></i>Ticket Types & Tax Configuration
+                                        </h5>
+                                        <!-- Public Ticket Types Selection -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Public Ticket Types</label>
+                                            <div id="publicTicketTypesContainer">
+                                                <div class="text-center py-3">
+                                                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                                                    <p class="text-muted mt-2">Loading ticket types...</p>
+                                                </div>
+                                            </div>
+                                            <div class="form-text">
+                                                <i class="fas fa-globe me-1"></i>
+                                                Select ticket types available for public bookings
+                                            </div>
+                                        </div>
+                                            <div class="col-md-6">
+                                                <label for="agentRate" class="form-label">Agent Rate</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control" id="agentRate" name="agent_rate" 
+                                                           min="0" step="0.01" value="{{ schedule.agent_rate or '' }}">
+                                                    <select class="form-select" id="agentCurrency" name="agent_currency" style="max-width: 100px;">
+                                                        <option value="MVR" {% if schedule.agent_currency == 'MVR' %}selected{% endif %}>MVR</option>
+                                                        <option value="USD" {% if schedule.agent_currency == 'USD' %}selected{% endif %}>USD</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('scheduling.view_schedule', schedule_id=schedule.id) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let destinationIndex = {{ schedule.destinations|length }};
+
+// Load ticket types and tax profiles when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadTicketTypes('public');
+    loadTicketTypes('agent');
+    loadTaxProfiles();
+    loadCurrentConfiguration();
+});
+
+// Load current configuration
+async function loadCurrentConfiguration() {
+    try {
+        // Load current ticket types for this schedule
+        const response = await fetch(`/api/schedules/${scheduleData.id}/ticket-types`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Mark currently selected ticket types
+            data.ticket_types.forEach(ticketType => {
+                const checkbox = document.querySelector(`input[value="${ticketType.id}"][data-channel="${ticketType.channel}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+            
+            // Update preview
+            updateTicketTypesPreview();
+        }
+    } catch (error) {
+        console.error('Error loading current configuration:', error);
+    }
+}
+
+// Load available ticket types for the current owner
+async function loadTicketTypes(channel) {
+    try {
+        const response = await fetch('/api/ticket-types');
+        const data = await response.json();
+        
+        if (response.ok) {
+            renderTicketTypes(data.ticket_types, channel);
+        } else {
+            showAlert('Failed to load ticket types', 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading ticket types:', error);
+        showAlert('Failed to load ticket types', 'danger');
+    }
+}
+
+// Render ticket types as checkboxes
+function renderTicketTypes(ticketTypes, channel) {
+    const containerId = channel === 'public' ? 'publicTicketTypesContainer' : 'agentTicketTypesContainer';
+    const container = document.getElementById(containerId);
+    
+    if (!ticketTypes || ticketTypes.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No ticket types found. Please create ticket types in your settings first.
+                <a href="/owner/settings" class="btn btn-sm btn-outline-warning ms-2">Go to Settings</a>
+            </div>
+        `;
+        return;
+    }
+    
+    const html = ticketTypes.map(type => `
+        <div class="form-check mb-2">
+            <input class="form-check-input ${channel}-ticket-type-checkbox" type="checkbox" 
+                   id="${channel}_ticket_type_${type.id}" value="${type.id}" 
+                   data-name="${type.name}" data-price="${type.base_price}" data-currency="${type.currency}" data-code="${type.code}" data-channel="${channel}">
+            <label class="form-check-label" for="${channel}_ticket_type_${type.id}">
+                <strong>${type.name}</strong> (${type.code}) - ${type.base_price} ${type.currency}
+                ${type.refundable ? '<span class="badge bg-success ms-1">Refundable</span>' : '<span class="badge bg-secondary ms-1">Non-refundable</span>'}
+            </label>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+    
+    // Add event listeners for ticket types preview
+    document.querySelectorAll(`.${channel}-ticket-type-checkbox`).forEach(checkbox => {
+        checkbox.addEventListener('change', updateTicketTypesPreview);
+    });
+}
+
+// Load available tax profiles for the current owner
+async function loadTaxProfiles() {
+    try {
+        const response = await fetch('/api/tax-profiles');
+        const data = await response.json();
+        
+        if (response.ok) {
+            renderTaxProfiles(data.tax_profiles);
+        } else {
+            showAlert('Failed to load tax profiles', 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading tax profiles:', error);
+        showAlert('Failed to load tax profiles', 'danger');
+    }
+}
+
+// Render tax profiles in dropdown
+function renderTaxProfiles(taxProfiles) {
+    const container = document.getElementById('taxProfilesContainer');
+    
+    if (!taxProfiles || taxProfiles.length === 0) {
+        container.innerHTML = '<option value="">No tax profiles available</option>';
+        return;
+    }
+    
+    const html = taxProfiles.map(profile => 
+        `<option value="${profile.id}">${profile.name}</option>`
+    ).join('');
+    
+    container.innerHTML = html;
+    
+    // Add event listener for ticket types preview
+    document.getElementById('taxProfile').addEventListener('change', updateTicketTypesPreview);
+}
+
+// Update ticket types preview when selections change
+function updateTicketTypesPreview() {
+    const selectedPublicTypes = Array.from(document.querySelectorAll('.public-ticket-type-checkbox:checked'));
+    const selectedAgentTypes = Array.from(document.querySelectorAll('.agent-ticket-type-checkbox:checked'));
+    const taxProfileId = document.getElementById('taxProfile').value;
+    
+    if (selectedPublicTypes.length === 0 && selectedAgentTypes.length === 0) {
+        document.getElementById('ticketTypesPreview').style.display = 'none';
+        return;
+    }
+    
+    // Show individual ticket types by channel
+    const publicTypeDetails = selectedPublicTypes.map(checkbox => ({
+        price: parseFloat(checkbox.dataset.price),
+        currency: checkbox.dataset.currency,
+        name: checkbox.dataset.name,
+        code: checkbox.dataset.code,
+        channel: 'Public'
+    }));
+    
+    const agentTypeDetails = selectedAgentTypes.map(checkbox => ({
+        price: parseFloat(checkbox.dataset.price),
+        currency: checkbox.dataset.currency,
+        name: checkbox.dataset.name,
+        code: checkbox.dataset.code,
+        channel: 'Agent'
+    }));
+    
+    // Show ticket types preview
+    const previewContent = document.getElementById('ticketTypesPreviewContent');
+    previewContent.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <strong>Available Ticket Types for This Schedule:</strong>
+                
+                ${publicTypeDetails.length > 0 ? `
+                    <div class="mt-2">
+                        <span class="badge bg-primary">🌐 Public</span>
+                        ${publicTypeDetails.map(type => `
+                            <div class="ticket-type-item">
+                                <span class="badge bg-info me-2">${type.code}</span>
+                                <strong>${type.name}</strong> - ${type.price} ${type.currency}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                ${agentTypeDetails.length > 0 ? `
+                    <div class="mt-2">
+                        <span class="badge bg-success">👔 Agent</span>
+                        ${agentTypeDetails.map(type => `
+                            <div class="ticket-type-item">
+                                <span class="badge bg-info me-2">${type.code}</span>
+                                <strong>${type.name}</strong> - ${type.price} ${type.currency}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : ''}
+                
+                <div class="text-muted small mt-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Customers will see ticket types based on their channel (Public/Agent)
+                </div>
+            </div>
+            <div class="col-md-4">
+                <strong>Tax Profile:</strong>
+                <div>${taxProfileId ? 'Selected' : 'None'}</div>
+                <div class="text-muted small">
+                    ${taxProfileId ? 'Taxes will be calculated automatically' : 'No taxes will be applied'}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('ticketTypesPreview').style.display = 'block';
+}
+
+// Add destination
+document.getElementById('addDestination').addEventListener('click', function() {
+    const container = document.getElementById('destinationsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'destination-row border rounded p-3 mb-3';
+    newRow.setAttribute('data-index', destinationIndex);
+    
+    newRow.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Destination ${destinationIndex + 1}</label>
+                <input type="text" class="form-control destination-name" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Departure Time</label>
+                <input type="time" class="form-control departure-time">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Arrival Time</label>
+                <input type="time" class="form-control arrival-time">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Type</label>
+                <div class="d-flex gap-2">
+                    <div class="form-check">
+                        <input class="form-check-input pickup-check" type="checkbox" checked>
+                        <label class="form-check-label">Pickup</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input dropoff-check" type="checkbox" checked>
+                        <label class="form-check-label">Dropoff</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm remove-destination">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newRow);
+    destinationIndex++;
+    
+    // Enable remove buttons if more than one destination
+    document.querySelectorAll('.remove-destination').forEach(btn => {
+        btn.disabled = false;
+    });
+});
+
+// Remove destination
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-destination')) {
+        const row = e.target.closest('.destination-row');
+        const container = document.getElementById('destinationsContainer');
+        
+        if (container.children.length > 1) {
+            row.remove();
+            
+            // Disable remove buttons if only one destination left
+            if (container.children.length === 1) {
+                document.querySelectorAll('.remove-destination').forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+        }
+    }
+});
+
+// Seat chart functionality
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('seat-btn')) {
+        e.target.classList.toggle('blocked');
+    }
+});
+
+// Form submission
+document.getElementById('editScheduleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect destinations data
+    const destinations = [];
+    document.querySelectorAll('.destination-row').forEach((row, index) => {
+        const name = row.querySelector('.destination-name').value;
+        const departureTime = row.querySelector('.departure-time').value;
+        const arrivalTime = row.querySelector('.arrival-time').value;
+        const isPickup = row.querySelector('.pickup-check').checked;
+        const isDropoff = row.querySelector('.dropoff-check').checked;
+        
+        destinations.push({
+            island_name: name,
+            departure_time: departureTime || null,
+            arrival_time: arrivalTime || null,
+            is_pickup: isPickup,
+            is_dropoff: isDropoff,
+            sequence_order: index + 1
+        });
+    });
+    
+    // Collect blocked seats data
+    let blockedSeats = [];
+    {% if schedule.boat.seating_type == 'chart' %}
+        document.querySelectorAll('.seat-btn.blocked').forEach(btn => {
+            blockedSeats.push({
+                seat_number: parseInt(btn.dataset.seat),
+                reason: 'Owner reserved'
+            });
+        });
+    {% else %}
+        const blockedCount = parseInt(document.getElementById('blockedCount').value) || 0;
+        for (let i = 1; i <= blockedCount; i++) {
+            blockedSeats.push({
+                seat_number: i,
+                reason: 'Owner reserved'
+            });
+        }
+    {% endif %}
+    
+    // Collect ticket types data
+    const selectedPublicTicketTypes = Array.from(document.querySelectorAll('.public-ticket-type-checkbox:checked'));
+    const selectedAgentTicketTypes = Array.from(document.querySelectorAll('.agent-ticket-type-checkbox:checked'));
+    
+    if (selectedPublicTicketTypes.length === 0 && selectedAgentTicketTypes.length === 0) {
+        showAlert('Please select at least one ticket type for either public or agent bookings', 'warning');
+        return;
+    }
+    
+    // Prepare form data
+    const formData = {
+        schedule_name: document.getElementById('scheduleName').value,
+        destinations: destinations,
+        blocked_seats: blockedSeats,
+        confirmation_type: 'immediate', // Default for edit
+        is_public: true, // Default for edit
+        public_ticket_type_ids: selectedPublicTicketTypes.map(cb => parseInt(cb.value)),
+        agent_ticket_type_ids: selectedAgentTicketTypes.map(cb => parseInt(cb.value)),
+        tax_profile_id: document.getElementById('taxProfile').value || null
+    };
+    
+    // Submit form
+    fetch('{{ url_for("scheduling.edit_schedule", schedule_id=schedule.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = '{{ url_for("scheduling.view_schedule", schedule_id=schedule.id) }}';
+            }, 1500);
+        } else {
+            showAlert(data.error || 'Failed to update schedule', 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Network error. Please try again.', 'danger');
+    });
+    });
+}
+
+// Show alert function
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Schedule data for JavaScript
+const scheduleData = {{ schedule|tojson }};
+</script>
+
+<style>
+.seat-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.seat-row {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.seat-btn {
+    width: 40px;
+    height: 40px;
+    border: 2px solid #dee2e6;
+    background-color: #fff;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.seat-btn:hover {
+    background-color: #e9ecef;
+}
+
+.seat-btn.blocked {
+    background-color: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.seat-btn.blocked:hover {
+    background-color: #c82333;
+}
+
+.ticket-type-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.ticket-type-item:last-child {
+    border-bottom: none;
+}
+
+.ticket-type-item .badge {
+    font-size: 0.8em;
+}
+</style>
+{% endblock %} 

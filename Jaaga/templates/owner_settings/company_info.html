@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Company Information - Settings{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style Company Info Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">Company Information</h4>
+        <p class="page-subtitle">Update your business details and branding</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <form id="companyForm">
+      <div class="form-group">
+        <label for="companyName" class="form-label">Company Name *</label>
+        <input type="text" class="form-input" id="companyName" 
+               value="{{ settings.company_name }}" placeholder="Enter company name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="companyLogo" class="form-label">Company Logo</label>
+        <div class="file-upload">
+          <input type="file" class="form-input" id="companyLogo" accept="image/*">
+          <div class="upload-info">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span>Upload your company logo (PNG, JPG, GIF)</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="companyDescription" class="form-label">Company Description</label>
+        <textarea class="form-input" id="companyDescription" rows="4" 
+                  placeholder="Describe your boat service...">{{ settings.company_description or '' }}</textarea>
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-save me-2"></i>Save Company Info
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background: #f8f9fa;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .file-upload {
+    position: relative;
+  }
+
+  .file-upload input[type="file"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .upload-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #e7f3ff;
+    border: 2px dashed #b3d9ff;
+    border-radius: 10px;
+    color: #0d6efd;
+    font-size: 0.875rem;
+  }
+
+  .upload-info i {
+    font-size: 1.25rem;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+  }
+</style>
+
+<script>
+document.getElementById('companyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        company_name: document.getElementById('companyName').value,
+        company_description: document.getElementById('companyDescription').value
+    };
+    
+    const logoFile = document.getElementById('companyLogo').files[0];
+    if (logoFile) {
+        // Convert file to base64
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            data.company_logo = e.target.result;
+            submitCompanyData(data);
+        };
+        reader.readAsDataURL(logoFile);
+    } else {
+        submitCompanyData(data);
+    }
+});
+
+function submitCompanyData(data) {
+    fetch('{{ url_for("owner_settings.update_company_info") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert('Company information updated successfully!', 'success');
+        } else {
+            showAlert(data.error || 'Failed to update company information', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while updating company information', 'error');
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.mobile-app-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %} 

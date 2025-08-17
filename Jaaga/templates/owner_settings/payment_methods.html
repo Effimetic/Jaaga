@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Methods - Settings{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style Payment Methods Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">Payment Methods</h4>
+        <p class="page-subtitle">Configure payment options for your customers</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <form id="paymentMethodsForm">
+      <div class="form-section">
+        <h6 class="section-title">Standard Payment Methods</h6>
+        
+        {% if not settings.is_transfer_configured() or not settings.is_bml_configured() %}
+        <div class="config-notice">
+          <i class="fas fa-info-circle"></i>
+          <span>Some payment methods require configuration before they can be enabled.</span>
+        </div>
+        {% endif %}
+        
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" id="cashPayment" class="form-checkbox" 
+                   {% if settings.payment_methods.cash %}checked{% endif %}>
+            <label for="cashPayment" class="checkbox-label">
+              <i class="fas fa-money-bill-wave"></i>
+              <span>Cash Payment</span>
+            </label>
+          </div>
+          
+          <div class="checkbox-item {% if not settings.is_transfer_configured() %}disabled{% endif %}">
+            <input type="checkbox" id="transferPayment" class="form-checkbox" 
+                   {% if settings.payment_methods.transfer %}checked{% endif %}
+                   {% if not settings.is_transfer_configured() %}disabled{% endif %}>
+            <label for="transferPayment" class="checkbox-label">
+              <i class="fas fa-university"></i>
+              <span>Bank Transfer</span>
+              {% if not settings.is_transfer_configured() %}
+                <small class="config-message">Configure bank details first</small>
+              {% endif %}
+            </label>
+          </div>
+          
+          <div class="checkbox-item {% if not settings.is_bml_configured() %}disabled{% endif %}">
+            <input type="checkbox" id="bmlGatewayPayment" class="form-checkbox" 
+                   {% if settings.payment_methods.bml_gateway %}checked{% endif %}
+                   {% if not settings.is_bml_configured() %}disabled{% endif %}>
+            <label for="bmlGatewayPayment" class="checkbox-label">
+              <i class="fas fa-qrcode"></i>
+              <span>BML Gateway (QR Code)</span>
+              {% if not settings.is_bml_configured() %}
+                <small class="config-message">Configure BML Gateway first</small>
+              {% endif %}
+            </label>
+          </div>
+          
+          <div class="checkbox-item">
+            <input type="checkbox" id="otherPayment" class="form-checkbox" 
+                   {% if settings.payment_methods.other %}checked{% endif %}>
+            <label for="otherPayment" class="checkbox-label">
+              <i class="fas fa-plus"></i>
+              <span>Other Payment Methods</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h6 class="section-title">Custom Payment Methods</h6>
+        <div id="customPaymentMethods">
+          {% for method in settings.other_payment_methods %}
+          <div class="input-group">
+            <input type="text" class="form-input custom-payment-method" 
+                   value="{{ method }}" placeholder="Payment method name">
+            <button type="button" class="remove-btn" onclick="removePaymentMethod(this)" title="Remove payment method">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="add-btn" onclick="addPaymentMethod()">
+          <i class="fas fa-plus me-2"></i>Add Payment Method
+        </button>
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-save me-2"></i>Save Payment Methods
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .form-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+  }
+
+  .form-checkbox {
+    margin-right: 0.75rem;
+    width: 18px;
+    height: 18px;
+    accent-color: #667eea;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #495057;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .checkbox-label i {
+    color: #667eea;
+    width: 16px;
+  }
+
+  .checkbox-item.disabled {
+    opacity: 0.6;
+    background: #f1f3f4;
+  }
+
+  .checkbox-item.disabled .checkbox-label {
+    cursor: not-allowed;
+  }
+
+  .checkbox-item.disabled .checkbox-label i {
+    color: #6c757d;
+  }
+
+  .config-message {
+    display: block;
+    font-size: 0.75rem;
+    color: #dc3545;
+    margin-top: 0.25rem;
+    font-style: italic;
+  }
+
+  .config-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #856404;
+  }
+
+  .config-notice i {
+    color: #f39c12;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .input-group .form-input {
+    flex: 1;
+  }
+
+  .remove-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8d7da;
+    color: #dc3545;
+    border: none;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .remove-btn:hover {
+    background: #f1aeb5;
+  }
+
+  .add-btn {
+    background: #e7f3ff;
+    color: #0d6efd;
+    border: 1px solid #b3d9ff;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .add-btn:hover {
+    background: #d1e7ff;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background: #f8f9fa;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+  }
+</style>
+
+<script>
+// Payment methods functions
+function addPaymentMethod() {
+    const container = document.getElementById('customPaymentMethods');
+    const div = document.createElement('div');
+    div.className = 'input-group';
+    div.innerHTML = `
+        <input type="text" class="form-input custom-payment-method" placeholder="Payment method name">
+        <button type="button" class="remove-btn" onclick="removePaymentMethod(this)" title="Remove payment method">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+    container.appendChild(div);
+}
+
+function removePaymentMethod(button) {
+    button.closest('.input-group').remove();
+}
+
+// Prevent disabled checkboxes from being checked
+document.addEventListener('DOMContentLoaded', function() {
+    const disabledCheckboxes = document.querySelectorAll('.checkbox-item.disabled input[type="checkbox"]');
+    disabledCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function(e) {
+            if (this.disabled) {
+                e.preventDefault();
+                this.checked = false;
+                return false;
+            }
+        });
+    });
+});
+
+document.getElementById('paymentMethodsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+        cash: document.getElementById('cashPayment').checked,
+        transfer: document.getElementById('transferPayment').checked,
+        bml_gateway: document.getElementById('bmlGatewayPayment').checked,
+        other: document.getElementById('otherPayment').checked,
+        other_payment_methods: []
+    };
+    
+    // Get custom payment methods
+    document.querySelectorAll('.custom-payment-method').forEach(input => {
+        if (input.value.trim()) {
+            data.other_payment_methods.push(input.value.trim());
+        }
+    });
+    
+    fetch('{{ url_for("owner_settings.update_payment_methods") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert('Payment methods updated successfully!', 'success');
+        } else {
+            showAlert(data.error || 'Failed to update payment methods', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while updating payment methods', 'error');
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.mobile-app-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %} 
