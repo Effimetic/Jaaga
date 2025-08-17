@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Nashath Booking - Speed Boat Ticketing{% endblock %}</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --secondary: #6c757d;
+      --text-primary: #212529;
+      --text-secondary: #6c757d;
+      --border: #e9ecef;
+      --bg: #f8f9fa;
+      --card-bg: #fff;
+    }
+
+    body {
+      background-color: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding-bottom: 80px;
+    }
+
+    .app-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 1050;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .app-header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .header-btn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem;
+      color: white;
+    }
+
+    .mobile-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+
+
+    footer {
+      background: var(--text-primary);
+      color: #fff;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    /* Slide Menu Styles */
+    .slide-menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1040;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .slide-menu-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .slide-menu {
+      position: fixed;
+      top: 0;
+      left: -300px;
+      width: 300px;
+      height: 100%;
+      background: white;
+      z-index: 1050;
+      transition: left 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+    }
+
+    .slide-menu.active {
+      left: 0;
+    }
+
+    .slide-menu-header {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .user-avatar {
+      font-size: 2.5rem;
+      margin-right: 1rem;
+    }
+
+    .user-details h5 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .user-role {
+      margin: 0.25rem 0 0 0;
+      font-size: 0.875rem;
+      opacity: 0.9;
+    }
+
+    .close-menu-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .close-menu-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .slide-menu-content {
+      padding: 1rem 0;
+    }
+
+    .menu-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .menu-section-title {
+      color: #6c757d;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 1rem 0.5rem 1rem;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      color: #495057;
+      text-decoration: none;
+      transition: background 0.2s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .menu-item:hover {
+      background: #f8f9fa;
+      color: #495057;
+      text-decoration: none;
+      border-left-color: #667eea;
+    }
+
+    .menu-item i {
+      width: 20px;
+      margin-right: 0.75rem;
+      font-size: 1rem;
+    }
+
+    .menu-item-danger {
+      color: #dc3545;
+    }
+
+    .menu-item-danger:hover {
+      background: #f8d7da;
+      color: #dc3545;
+      border-left-color: #dc3545;
+    }
+
+    @media (min-width: 768px) {
+      main {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Unified App Header -->
+  <header class="app-header">
+    <div class="container">
+      <h1 class="app-title">
+        <i class="fas fa-ship me-2"></i>Nashath Booking
+      </h1>
+      <div class="header-actions">
+        {% if current_user.is_authenticated %}
+          <button class="header-btn" onclick="toggleUserMenu()" title="User Menu">
+            <i class="fas fa-user"></i>
+          </button>
+        {% else %}
+          <a href="{{ url_for('main.login') }}" class="header-btn">
+            <i class="fas fa-sign-in-alt"></i>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Slide Menu Overlay -->
+  <div id="slideMenuOverlay" class="slide-menu-overlay" onclick="closeSlideMenu()"></div>
+
+  <!-- Slide Menu -->
+  {% if current_user.is_authenticated %}
+  <div id="slideMenu" class="slide-menu">
+    <div class="slide-menu-header">
+      <div class="user-info">
+        <div class="user-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="user-details">
+          <h5>{{ current_user.name }}</h5>
+          <p class="user-role">
+            {% if current_user.role == 'public' %}
+              <i class="fas fa-user me-1"></i>Public User
+            {% elif current_user.role == 'agent' %}
+              <i class="fas fa-building me-1"></i>Agent User
+            {% elif current_user.role == 'owner' %}
+              <i class="fas fa-ship me-1"></i>Boat Owner
+            {% elif current_user.role == 'admin' %}
+              <i class="fas fa-crown me-1"></i>Administrator
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <button class="close-menu-btn" onclick="closeSlideMenu()" title="Close Menu">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="slide-menu-content">
+      <div class="menu-section">
+        <h6 class="menu-section-title">Navigation</h6>
+        <a href="{{ url_for('main.dashboard') }}" class="menu-item">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="menu-item">
+          <i class="fas fa-user"></i>
+          <span>Profile</span>
+        </a>
+        <a href="#" class="menu-item">
+          <i class="fas fa-ticket-alt"></i>
+          <span>My Bookings</span>
+        </a>
+      </div>
+      
+      {% if current_user.role == 'owner' %}
+      <div class="menu-section">
+        <h6 class="menu-section-title">Owner Tools</h6>
+        <a href="{{ url_for('boat_management.boats') }}" class="menu-item">
+          <i class="fas fa-ship"></i>
+          <span>My Boats</span>
+        </a>
+        <a href="{{ url_for('scheduling.schedules') }}" class="menu-item">
+          <i class="fas fa-calendar-alt"></i>
+          <span>Schedules</span>
+        </a>
+        <a href="{{ url_for('owner_settings.settings') }}" class="menu-item">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </a>
+      </div>
+      {% endif %}
+      
+      <div class="menu-section">
+        <a href="{{ url_for('main.logout') }}" class="menu-item menu-item-danger">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main Content -->
+  <main class="container pt-3">
+    {% block content %}{% endblock %}
+  </main>
+
+
+
+  
+
+  <!-- Bootstrap Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    function toggleUserMenu() {
+      const slideMenu = document.getElementById('slideMenu');
+      const overlay = document.getElementById('slideMenuOverlay');
+      
+      if (slideMenu && overlay) {
+        slideMenu.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeSlideMenu() {
+      const slideMenu = document.getElementById('slideMenu');
+      const overlay = document.getElementById('slideMenuOverlay');
+      
+      if (slideMenu && overlay) {
+        slideMenu.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    // Close menu on escape key
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        closeSlideMenu();
+      }
+    });
+
+    function showAlert(message, type = 'success') {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show my-3`;
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.querySelector('main').prepend(alertDiv);
+      setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    function showLoading(button) {
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+    }
+
+    function hideLoading(button, text) {
+      button.disabled = false;
+      button.innerHTML = text;
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

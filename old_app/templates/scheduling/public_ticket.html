@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket - {{ booking.code }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg: #f8f9fa;
+      --card: #fff;
+      --text: #111;
+      --muted: #555;
+      --border: #ddd;
+      --radius: 12px;
+      --shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    body{
+      margin:0; padding:16px;
+      background: var(--bg);
+      font-family: Inter, sans-serif;
+      color: var(--text);
+    }
+
+    .wrap{
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .ticket{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* Header */
+    .ticket__header{
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .ticket__title{
+      font-weight: 700;
+      font-size: 16px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .booking-code{
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 2px;
+    }
+    .status{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* Section */
+    .section{
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section__title{
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .row{
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    .label{ color: var(--muted); }
+    .value{ font-weight: 500; text-align: right; }
+
+    /* Route */
+    .route{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size: 13px;
+    }
+    .chip{
+      background: #f1f1f1;
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+
+    /* Ticket list */
+    .seat{
+      display:flex;
+      justify-content: space-between;
+      font-size: 14px;
+      padding: 4px 0;
+    }
+    .price{ font-weight: 600; }
+
+    /* Total */
+    .total{
+      display:flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 15px;
+      padding-top: 4px;
+    }
+
+    /* QR */
+    .qr{
+      text-align: center;
+      padding: 16px;
+      border-top: 1px dashed var(--border);
+    }
+    .qr img{
+      width: 120px;
+      height: 120px;
+      display:block;
+      margin: 0 auto 6px;
+    }
+    .qr small{
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* Footer */
+    .footer{
+      text-align: center;
+      padding: 12px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* Print */
+    @media print{
+      body{ background:#fff; }
+      .wrap{ margin:0; padding:0; }
+      .ticket{ border:none; box-shadow:none; border-radius:0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="ticket">
+      <!-- Header -->
+      <div class="ticket__header">
+        <div class="ticket__title">Boat Ticket</div>
+        <div class="booking-code">{{ booking.code }}</div>
+        <div class="status">Confirmed · {{ schedule.boat.name|truncate(18) }}</div>
+      </div>
+
+             <!-- Schedule -->
+       <div class="section">
+         <div class="section__title">Schedule</div>
+         <div class="row"><span class="label">Date</span><span class="value">{{ schedule.schedule_date.strftime('%d/%m/%Y') }}</span></div>
+         <div class="row"><span class="label">Departure</span><span class="value">{{ booking.departure_time.strftime('%H:%M') if booking.departure_time else 'TBD' }}</span></div>
+       </div>
+
+      <!-- Passenger -->
+      <div class="section">
+        <div class="section__title">Passenger</div>
+        <div class="row"><span class="label">Name</span><span class="value">{{ booking.buyer_name|truncate(25) }}</span></div>
+        <div class="row"><span class="label">Phone</span><span class="value">{{ booking.buyer_phone }}</span></div>
+        {% if agent_name %}
+        <div class="row"><span class="label">Agent</span><span class="value">{{ agent_name|truncate(20) }}</span></div>
+        {% endif %}
+      </div>
+
+             <!-- Route -->
+       <div class="section">
+         <div class="section__title">Your Route</div>
+         <div class="route">
+           <span class="chip">{{ booking.pickup_destination.island_name }}</span>
+           <span>→</span>
+           <span class="chip">{{ booking.dropoff_destination.island_name }}</span>
+         </div>
+         <div class="mt-2 small text-muted">
+           <span class="me-3"><i class="fas fa-clock me-1"></i>Departure: {{ booking.departure_time.strftime('%H:%M') if booking.departure_time else 'TBD' }}</span>
+         </div>
+       </div>
+
+      <!-- Tickets -->
+      <div class="section">
+        <div class="section__title">Tickets</div>
+        {% for ticket in tickets %}
+        <div class="seat">
+          <span>Seat {{ ticket.seat_number }} · {{ ticket.ticket_type_name|truncate(15) }}</span>
+          <span class="price">{{ ticket.ticket_type_price }} {{ ticket.currency }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Payment -->
+      {% if payment_transaction %}
+      <div class="section">
+        <div class="section__title">Payment</div>
+        <div class="row"><span class="label">Method</span><span class="value">{{ payment_transaction.payment_method|title }}</span></div>
+        {% if payment_transaction.payment_reference %}
+        <div class="row"><span class="label">Ref</span><span class="value">{{ payment_transaction.payment_reference|truncate(20) }}</span></div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Total -->
+      <div class="section">
+        <div class="total">
+          <span>Total</span>
+          <span>{{ tickets|sum(attribute='ticket_type_price') }} {{ tickets[0].currency if tickets else booking.currency }}</span>
+        </div>
+      </div>
+
+      <!-- QR -->
+      <div class="qr">
+        <img src="data:image/png;base64,{{ qr_code_base64 }}" alt="QR Code">
+        <small>{{ booking.code }}</small>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        Valid for scheduled trip only · Arrive 30 min before departure<br>
+        Generated: {{ booking.meta.get('ticket_issued_at', '')[:19] if booking.meta and booking.meta.get('ticket_issued_at') else 'N/A' }}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

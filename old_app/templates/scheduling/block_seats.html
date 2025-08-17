@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}{% if edit_mode %}Edit Schedule - Step 3{% else %}Block Seats - Step 3{% endif %}{% endblock %}
+
+{% block content %}
+<!-- Edit mode variables -->
+{% set edit_mode = edit_mode or false %}
+{% set edit_schedule_id = edit_schedule_id or '' %}
+{% set preloaded_blocked_seats = preloaded_blocked_seats or [] %}
+{% set preloaded_blocked_count = preloaded_blocked_count or 0 %}
+
+<div class="mobile-app-container">
+  <div class="page-header">
+    <div class="header-content">
+      <h4 class="page-title"><i class="fas fa-{% if edit_mode %}edit{% else %}chair{% endif %} me-2"></i>{% if edit_mode %}Edit Schedule{% else %}Block Seats{% endif %}</h4>
+      <p class="page-subtitle">{% if edit_mode %}Step 3 of 5 • Update blocked seats{% else %}Step 3 of 4 • {{ boat.name }}{% endif %}</p>
+    </div>
+    <a href="{% if edit_mode %}{{ url_for('scheduling.select_boat') }}{% else %}{{ url_for('scheduling.select_boat') }}{% endif %}" class="add-btn" title="Back"><i class="fas fa-arrow-left"></i></a>
+  </div>
+
+  <div class="form-card">
+    <div class="text-muted mb-3">Select seats that should not be sold publicly.</div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-info">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-info-circle me-2"></i>Boat Information
+                                    </h5>
+                                    <p class="mb-1"><strong>Boat:</strong> {{ boat.name }}</p>
+                                    <p class="mb-1"><strong>Total Seats:</strong> {{ boat.total_seats }}</p>
+                                    <p class="mb-0"><strong>Seating Type:</strong> {{ boat.seating_type|title }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-warning">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Blocked Seats
+                                    </h5>
+                                    <p class="mb-1"><strong>Blocked:</strong> <span id="blockedCount">0</span></p>
+                                    <p class="mb-1"><strong>Available:</strong> <span id="availableCount">{{ boat.total_seats }}</span></p>
+                                    <p class="mb-0 text-muted">These seats won't be sold to the public</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if boat.seating_type == 'chart' and seating_chart %}
+                        <!-- Seat Chart Interface -->
+                        <div class="seat-chart-container">
+                            <h5 class="mb-3">
+                                <i class="fas fa-th me-2"></i>Seat Chart
+                            </h5>
+                            <div id="seatChart" class="seat-chart mb-3">
+                                <!-- Seat chart will be rendered here -->
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Total Seat Count Input -->
+                        <div class="total-seats-input">
+                            <h5 class="mb-3">
+                                <i class="fas fa-calculator me-2"></i>Block Seats by Count
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="blockedSeatsCount" class="form-label">Number of Seats to Block</label>
+                                    <input type="number" class="form-control" id="blockedSeatsCount" 
+                                           min="0" max="{{ boat.total_seats }}" value="{{ preloaded_blocked_count }}">
+                                    <div class="form-text">Enter how many seats should be blocked from public sale</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-info">
+                                        <div class="card-body">
+                                            <h6 class="card-title">Summary</h6>
+                                            <p class="mb-1"><strong>Total Seats:</strong> {{ boat.total_seats }}</p>
+                                            <p class="mb-1"><strong>Blocked:</strong> <span id="blockedCountDisplay">0</span></p>
+                                            <p class="mb-0"><strong>Available:</strong> <span id="availableCountDisplay">{{ boat.total_seats }}</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <form id="blockSeatsForm">
+                        <input type="hidden" id="blockedSeats" name="blocked_seats" value="[]">
+                        <input type="hidden" id="blockedCountInput" name="blocked_count" value="0">
+                        
+                        <div class="actions">
+                          <a href="{% if edit_mode %}{{ url_for('scheduling.select_boat') }}{% else %}{{ url_for('scheduling.select_boat') }}{% endif %}" class="cancel-link"><i class="fas fa-arrow-left me-2"></i>{% if edit_mode %}Back to boat{% else %}Back to boat{% endif %}</a>
+                          <button type="submit" class="submit-btn"><i class="fas fa-arrow-right me-2"></i>{% if edit_mode %}Continue to destinations{% else %}Continue to destinations{% endif %}</button>
+                        </div>
+                    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let blockedSeats = [];
+let totalSeats = {{ boat.total_seats }};
+let seatingType = '{{ boat.seating_type }}';
+let seatingChartData = {% if seating_chart %}{{ seating_chart|tojson }}{% else %}null{% endif %};
+
+// Initialize seat interface
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're in edit mode and preload blocked seats data
+    const editMode = {{ edit_mode|tojson }};
+    const preloadedBlockedSeats = {{ preloaded_blocked_seats|tojson }};
+    const preloadedBlockedCount = {{ preloaded_blocked_count|tojson }};
+    
+    if (editMode && preloadedBlockedSeats && preloadedBlockedSeats.length > 0) {
+        // Preload blocked seats data
+        blockedSeats = preloadedBlockedSeats.map(seat => seat.seat_number);
+        
+        // Update hidden form fields
+        const blockedSeatsField = document.getElementById('blockedSeats');
+        const blockedCountInputField = document.getElementById('blockedCountInput');
+        if (blockedSeatsField) blockedSeatsField.value = JSON.stringify(preloadedBlockedSeats);
+        if (blockedCountInputField) blockedCountInputField.value = preloadedBlockedCount;
+        
+        // Update display counts - check if elements exist first
+        const blockedCountElement = document.getElementById('blockedCount');
+        const availableCountElement = document.getElementById('availableCount');
+        const blockedCountDisplayElement = document.getElementById('blockedCountDisplay');
+        const availableCountDisplayElement = document.getElementById('availableCountDisplay');
+        
+        if (blockedCountElement) blockedCountElement.textContent = preloadedBlockedCount;
+        if (availableCountElement) availableCountElement.textContent = totalSeats - preloadedBlockedCount;
+        if (blockedCountDisplayElement) blockedCountDisplayElement.textContent = preloadedBlockedCount;
+        if (availableCountDisplayElement) availableCountDisplayElement.textContent = totalSeats - preloadedBlockedCount;
+    }
+    
+    if (seatingType === 'chart' && seatingChartData) {
+        renderSeatChart();
+    } else {
+        setupTotalSeatsInput();
+    }
+    
+    // Update counts after initialization
+    updateCounts();
+});
+
+function renderSeatChart() {
+    const seatChart = document.getElementById('seatChart');
+    const chartData = seatingChartData;
+    
+    console.log('Chart data:', chartData);
+    console.log('Blocked seats:', blockedSeats);
+    console.log('Total seats:', totalSeats);
+    
+    if (!seatChart) {
+        console.error('Seat chart container not found');
+        return;
+    }
+    
+    seatChart.innerHTML = '';
+    
+    if (chartData && chartData.gridData) {
+        // Use gridData to render the complete layout with walkways
+        const gridData = chartData.gridData;
+        
+        gridData.forEach((row, rowIndex) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'seat-row d-flex justify-content-center mb-2';
+            
+            row.forEach((box, colIndex) => {
+                if (box.isWalkway) {
+                    // This is a walkway - show as dot
+                    const walkwayDiv = document.createElement('div');
+                    walkwayDiv.className = 'walkway mx-1';
+                    walkwayDiv.style.minWidth = '40px';
+                    walkwayDiv.style.minHeight = '40px';
+                    walkwayDiv.style.display = 'flex';
+                    walkwayDiv.style.alignItems = 'center';
+                    walkwayDiv.style.justifyContent = 'center';
+                    walkwayDiv.innerHTML = '<span class="text-muted">·</span>';
+                    rowDiv.appendChild(walkwayDiv);
+                } else if (box.seatNumber) {
+                    // This is a seat
+                    const isBlocked = blockedSeats.includes(box.seatNumber);
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat-item mx-1';
+                    seatDiv.innerHTML = `
+                        <button type="button" class="btn ${isBlocked ? 'btn-danger' : 'btn-outline-primary'} seat-btn" 
+                                data-seat="${box.seatNumber}" onclick="toggleSeat('${box.seatNumber}')">
+                            ${box.seatNumber}
+                        </button>
+                    `;
+                    rowDiv.appendChild(seatDiv);
+                } else {
+                    // Empty space - add spacing
+                    const spaceDiv = document.createElement('div');
+                    spaceDiv.className = 'mx-1';
+                    spaceDiv.style.minWidth = '40px';
+                    spaceDiv.style.minHeight = '40px';
+                    rowDiv.appendChild(spaceDiv);
+                }
+            });
+            
+            seatChart.appendChild(rowDiv);
+        });
+    } else if (chartData && chartData.seatChartData) {
+        // Fallback to seatChartData if gridData is not available
+        const seatChartData = chartData.seatChartData;
+        
+        seatChartData.forEach((row, rowIndex) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'seat-row d-flex justify-content-center mb-2';
+            
+            row.forEach((seat, seatIndex) => {
+                if (seat.number && !seat.isWalkway) {
+                    // This is a seat
+                    const isBlocked = blockedSeats.includes(seat.number);
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat-item mx-1';
+                    seatDiv.innerHTML = `
+                        <button type="button" class="btn ${isBlocked ? 'btn-danger' : 'btn-outline-primary'} seat-btn" 
+                                data-seat="${seat.number}" onclick="toggleSeat('${seat.number}')">
+                            ${seat.number}
+                        </button>
+                    `;
+                    rowDiv.appendChild(seatDiv);
+                } else if (seat.isWalkway) {
+                    // This is a walkway - show as dot
+                    const walkwayDiv = document.createElement('div');
+                    walkwayDiv.className = 'walkway mx-1';
+                    walkwayDiv.style.minWidth = '40px';
+                    walkwayDiv.style.minHeight = '40px';
+                    walkwayDiv.style.display = 'flex';
+                    walkwayDiv.style.alignItems = 'center';
+                    walkwayDiv.style.justifyContent = 'center';
+                    walkwayDiv.innerHTML = '<span class="text-muted">·</span>';
+                    rowDiv.appendChild(walkwayDiv);
+                } else {
+                    // Empty space - add spacing
+                    const spaceDiv = document.createElement('div');
+                    spaceDiv.className = 'mx-1';
+                    spaceDiv.style.minWidth = '40px';
+                    spaceDiv.style.minHeight = '40px';
+                    rowDiv.appendChild(spaceDiv);
+                }
+            });
+            
+            seatChart.appendChild(rowDiv);
+        });
+    } else if (Array.isArray(chartData)) {
+        // Legacy format - array of arrays - show seats and walkways with dots
+        chartData.forEach((row, rowIndex) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'seat-row d-flex justify-content-center mb-2';
+            
+            row.forEach((seat, seatIndex) => {
+                if (seat && seat.number && !seat.isWalkway) {
+                    // This is a seat
+                    const isBlocked = blockedSeats.includes(seat.number);
+                    const seatDiv = document.createElement('div');
+                    seatDiv.className = 'seat-item mx-1';
+                    seatDiv.innerHTML = `
+                        <button type="button" class="btn ${isBlocked ? 'btn-danger' : 'btn-outline-primary'} seat-btn" 
+                                data-seat="${seat.number}" onclick="toggleSeat('${seat.number}')">
+                            ${seat.number}
+                        </button>
+                    `;
+                    rowDiv.appendChild(seatDiv);
+                } else if (seat && seat.isWalkway) {
+                    // This is a walkway - show as dot
+                    const walkwayDiv = document.createElement('div');
+                    walkwayDiv.className = 'walkway mx-1';
+                    walkwayDiv.style.minWidth = '40px';
+                    walkwayDiv.style.minHeight = '40px';
+                    walkwayDiv.style.display = 'flex';
+                    walkwayDiv.style.alignItems = 'center';
+                    walkwayDiv.style.justifyContent = 'center';
+                    walkwayDiv.innerHTML = '<span class="text-muted">·</span>';
+                    rowDiv.appendChild(walkwayDiv);
+                } else {
+                    // Empty space - add spacing
+                    const spaceDiv = document.createElement('div');
+                    spaceDiv.className = 'mx-1';
+                    spaceDiv.style.minWidth = '40px';
+                    spaceDiv.style.minHeight = '40px';
+                    rowDiv.appendChild(spaceDiv);
+                }
+            });
+            
+            seatChart.appendChild(rowDiv);
+        });
+    } else {
+        // Fallback to total seat count input if chart data is invalid
+        console.warn('Invalid seat chart data, falling back to total seat count input');
+        setupTotalSeatsInput();
+    }
+}
+
+function setupTotalSeatsInput() {
+    const blockedSeatsCountInput = document.getElementById('blockedSeatsCount');
+    if (blockedSeatsCountInput) {
+        // Initialize with current value (for edit mode)
+        const initialBlockedCount = parseInt(blockedSeatsCountInput.value) || 0;
+        if (initialBlockedCount > 0) {
+            const availableCount = totalSeats - initialBlockedCount;
+            document.getElementById('blockedCountDisplay').textContent = initialBlockedCount;
+            document.getElementById('availableCountDisplay').textContent = availableCount;
+        }
+        
+        blockedSeatsCountInput.addEventListener('input', function() {
+            const blockedCount = parseInt(this.value) || 0;
+            const availableCount = totalSeats - blockedCount;
+            
+            document.getElementById('blockedCountDisplay').textContent = blockedCount;
+            document.getElementById('availableCountDisplay').textContent = availableCount;
+            
+            // Update the hidden form fields
+            document.getElementById('blockedCountInput').value = blockedCount;
+            document.getElementById('blockedSeats').value = JSON.stringify([]);
+        });
+    }
+}
+
+function toggleSeat(seatNumber) {
+    const seatBtn = document.querySelector(`[data-seat="${seatNumber}"]`);
+    const index = blockedSeats.indexOf(seatNumber);
+    
+    if (index > -1) {
+        // Unblock seat
+        blockedSeats.splice(index, 1);
+        seatBtn.classList.remove('btn-danger');
+        seatBtn.classList.add('btn-outline-primary');
+    } else {
+        // Block seat
+        blockedSeats.push(seatNumber);
+        seatBtn.classList.remove('btn-outline-primary');
+        seatBtn.classList.add('btn-danger');
+    }
+    
+    updateCounts();
+}
+
+function updateCounts() {
+    const blockedCount = blockedSeats.length;
+    const availableCount = totalSeats - blockedCount;
+    
+    // Update display counts - check if elements exist first
+    const blockedCountElement = document.getElementById('blockedCount');
+    const availableCountElement = document.getElementById('availableCount');
+    const blockedSeatsField = document.getElementById('blockedSeats');
+    const blockedCountInputField = document.getElementById('blockedCountInput');
+    
+    if (blockedCountElement) blockedCountElement.textContent = blockedCount;
+    if (availableCountElement) availableCountElement.textContent = availableCount;
+    if (blockedSeatsField) blockedSeatsField.value = JSON.stringify(blockedSeats);
+    if (blockedCountInputField) blockedCountInputField.value = blockedCount;
+}
+
+document.getElementById('blockSeatsForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const button = document.querySelector('button[type="submit"]');
+    const originalText = button.innerHTML;
+    
+    // Get blocked count based on seating type
+    let blockedCount = 0;
+    let blockedSeatsData = [];
+    
+    if (seatingType === 'chart' && seatingChartData) {
+        // Chart-based seating - use selected seats
+        blockedCount = blockedSeats.length;
+        blockedSeatsData = blockedSeats.map(seat => ({ seat_number: seat, reason: 'Owner reserved' }));
+    } else {
+        // Total seat count - use input value
+        const blockedSeatsCountInput = document.getElementById('blockedSeatsCount');
+        blockedCount = parseInt(blockedSeatsCountInput.value) || 0;
+        blockedSeatsData = []; // No specific seats for total count
+    }
+    
+    showLoading(button);
+    
+    try {
+        const response = await fetch('/schedules/block-seats', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                blocked_seats: blockedSeatsData,
+                blocked_count: blockedCount
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showAlert(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1500);
+        } else {
+            showAlert(data.error || 'Failed to configure seats', 'danger');
+        }
+    } catch (error) {
+        showAlert('Network error. Please try again.', 'danger');
+    } finally {
+        hideLoading(button, originalText);
+    }
+});
+</script>
+
+<style>
+  .mobile-app-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 1rem; background: #fff; border: 1px solid #e9ecef; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .header-content { flex: 1; }
+  .page-title { margin: 0; font-size: 1.125rem; font-weight: 600; color: #212529; }
+  .page-subtitle { margin: 0.25rem 0 0; color: #6c757d; font-size: 0.85rem; }
+  .add-btn { width: 40px; height: 40px; background: #f1f3f5; color: #495057; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; text-decoration: none; }
+  .form-card { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .actions { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1rem; }
+  .submit-btn { border: none; border-radius: 12px; padding: 0.6rem 0.9rem; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 600; }
+  .cancel-link { align-self: center; color: #6c757d; text-decoration: none; }
+  .cancel-link:hover { text-decoration: underline; }
+
+  .seat-chart {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 20px;
+    background-color: #f8f9fa;
+}
+
+.seat-btn {
+    min-width: 50px;
+    height: 40px;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.seat-btn:hover {
+    transform: scale(1.05);
+}
+
+.walkway {
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %} 

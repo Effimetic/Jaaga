@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Bank Transfer - Settings{% endblock %}
+
+{% block content %}
+<!-- Mobile App Style Bank Transfer Page -->
+<div class="mobile-app-container">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="back-btn" onclick="history.back()">
+        <i class="fas fa-arrow-left"></i>
+      </div>
+      <div class="header-info">
+        <h4 class="page-title">Bank Transfer</h4>
+        <p class="page-subtitle">Configure bank account settings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Container -->
+  <div class="form-container">
+    <form id="bankTransferForm">
+      <div class="form-group">
+        <label for="bankName" class="form-label">Bank Name *</label>
+        <input type="text" class="form-input" id="bankName" required
+               value="{{ settings.bank_name or '' }}" placeholder="Enter bank name">
+      </div>
+      
+      <div class="form-group">
+        <label for="accountNumber" class="form-label">Account Number *</label>
+        <input type="text" class="form-input" id="accountNumber" required
+               value="{{ settings.bank_account_number or '' }}" placeholder="Enter account number">
+      </div>
+      
+      <div class="form-group">
+        <label for="accountHolder" class="form-label">Account Holder Name *</label>
+        <input type="text" class="form-input" id="accountHolder" required
+               value="{{ settings.bank_account_name or '' }}" placeholder="Enter account holder name">
+      </div>
+      
+      <div class="form-group">
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="autoVerification" 
+                 {% if settings.transfer_auto_verification %}checked{% endif %}>
+          <label class="form-check-label" for="autoVerification">
+            Enable automatic transfer verification
+          </label>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-save me-2"></i>Save Bank Transfer Settings
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mobile-app-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+  }
+
+  .back-btn {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .back-btn:hover {
+    background: #e9ecef;
+  }
+
+  .header-info {
+    flex: 1;
+  }
+
+  .page-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+  }
+
+  .page-subtitle {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6c757d;
+  }
+
+  .form-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background: #f8f9fa;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+  }
+
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+
+  .form-check-input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #667eea;
+  }
+
+  .form-check-label {
+    font-size: 0.875rem;
+    color: #495057;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .submit-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  .submit-btn:hover {
+    transform: translateY(-2px);
+  }
+
+  @media (min-width: 768px) {
+    .mobile-app-container {
+      max-width: 800px;
+    }
+  }
+</style>
+
+<script>
+document.getElementById('bankTransferForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Validate required fields
+    const bankName = document.getElementById('bankName').value.trim();
+    const accountNumber = document.getElementById('accountNumber').value.trim();
+    const accountHolder = document.getElementById('accountHolder').value.trim();
+    
+    if (!bankName) {
+        showAlert('Bank name is required', 'error');
+        document.getElementById('bankName').focus();
+        return;
+    }
+    
+    if (!accountNumber) {
+        showAlert('Account number is required', 'error');
+        document.getElementById('accountNumber').focus();
+        return;
+    }
+    
+    if (!accountHolder) {
+        showAlert('Account holder name is required', 'error');
+        document.getElementById('accountHolder').focus();
+        return;
+    }
+    
+    const data = {
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_holder: accountHolder,
+        auto_verification: document.getElementById('autoVerification').checked
+    };
+    
+    fetch('{{ url_for("owner_settings.update_bank_transfer") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.message) {
+            showAlert('Bank transfer settings updated successfully!', 'success');
+        } else {
+            showAlert(data.error || 'Failed to update bank transfer settings', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('An error occurred while updating bank transfer settings', 'error');
+    });
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.mobile-app-container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %} 
