@@ -28,29 +28,24 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
   };
 
   const handleTabPress = (tabName: string) => {
-    if (tabName === "Profile") {
-      if (!user) {
-        // Show login/register options for non-authenticated users
-        Alert.alert(
-          "Profile",
-          "Please login or register to access your profile",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Login", onPress: () => navigation?.navigate("Login") },
-            { text: "Register", onPress: () => navigation?.navigate("Register") },
-          ]
-        );
-      } else {
-        // Navigate to profile for authenticated users
-        navigation?.navigate("Profile");
-      }
-    } else {
-      setActiveTab(tabName);
-      // TODO: Handle other tab navigation
+    console.log('🔄 Tab pressed:', tabName);
+    console.log('🔄 Current active tab:', activeTab);
+    
+    // Always set the active tab first
+    setActiveTab(tabName);
+    console.log('🔄 Setting active tab to:', tabName);
+    
+    // Handle any special navigation if needed
+    if (tabName === "Profile" && user) {
+      // For logged-in users, we could optionally navigate to a full profile screen
+      // But for now, just show the tab content
+      console.log("Profile tab selected for logged-in user");
     }
   };
 
   const renderTabContent = () => {
+    console.log('🔄 Rendering tab content for:', activeTab);
+    
     switch (activeTab) {
       case "Home":
         return (
