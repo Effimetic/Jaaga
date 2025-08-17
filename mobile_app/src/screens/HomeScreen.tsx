@@ -161,12 +161,66 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                   <Text style={styles.userPhone}>{user.phone}</Text>
                 </View>
                 
+                {/* Quick Links for Logged-in Users */}
+                <View style={styles.quickLinks}>
+                  <Text style={styles.quickLinksTitle}>Quick Actions</Text>
+                  
+                  <TouchableOpacity 
+                    style={styles.quickLinkButton}
+                    onPress={() => navigation?.navigate("Dashboard")}
+                  >
+                    <FontAwesome5 name="tachometer-alt" size={20} color="#007AFF" />
+                    <Text style={styles.quickLinkText}>Dashboard</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.quickLinkButton}
+                    onPress={() => navigation?.navigate("MyBoats")}
+                  >
+                    <FontAwesome5 name="ship" size={20} color="#10B981" />
+                    <Text style={styles.quickLinkText}>My Boats</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.quickLinkButton}
+                    onPress={() => navigation?.navigate("Schedules")}
+                  >
+                    <FontAwesome5 name="calendar-alt" size={20} color="#F59E0B" />
+                    <Text style={styles.quickLinkText}>Schedules</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.quickLinkButton}
+                    onPress={() => navigation?.navigate("Settings")}
+                  >
+                    <FontAwesome5 name="cog" size={20} color="#6B7280" />
+                    <Text style={styles.quickLinkText}>Settings</Text>
+                  </TouchableOpacity>
+                </View>
+                
                 <TouchableOpacity 
-                  style={styles.profileButton}
-                  onPress={() => navigation?.navigate("Dashboard")}
+                  style={styles.logoutButton}
+                  onPress={() => {
+                    // Handle logout
+                    Alert.alert(
+                      "Logout",
+                      "Are you sure you want to logout?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { 
+                          text: "Logout", 
+                          style: "destructive",
+                          onPress: () => {
+                            // TODO: Implement logout functionality
+                            Alert.alert("Logout", "Logout functionality will be implemented here");
+                          }
+                        }
+                      ]
+                    );
+                  }}
                 >
-                  <FontAwesome5 name="tachometer-alt" size={16} color="white" />
-                  <Text style={styles.profileButtonText}>Go to Dashboard</Text>
+                  <FontAwesome5 name="sign-out-alt" size={16} color="white" />
+                  <Text style={styles.logoutButtonText}>Logout</Text>
                 </TouchableOpacity>
               </>
             ) : (
@@ -191,6 +245,22 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                     <Text style={styles.authButtonText}>Register</Text>
                   </TouchableOpacity>
                 </View>
+                
+                <View style={styles.guestInfo}>
+                  <Text style={styles.guestInfoTitle}>Why Create an Account?</Text>
+                  <View style={styles.guestInfoItem}>
+                    <FontAwesome5 name="check-circle" size={16} color="#10B981" />
+                    <Text style={styles.guestInfoText}>Book and manage your trips</Text>
+                  </View>
+                  <View style={styles.guestInfoItem}>
+                    <FontAwesome5 name="check-circle" size={16} color="#10B981" />
+                    <Text style={styles.guestInfoText}>View booking history</Text>
+                  </View>
+                  <View style={styles.guestInfoItem}>
+                    <FontAwesome5 name="check-circle" size={16} color="#10B981" />
+                    <Text style={styles.guestInfoText}>Get notifications and updates</Text>
+                  </View>
+                </View>
               </>
             )}
           </View>
@@ -209,16 +279,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
           <FontAwesome name="ship" size={24} color="#007AFF" />
           <Text style={styles.headerTitle}>Nashath Booking</Text>
         </View>
-        {!user ? (
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.loginButton} onPress={() => navigation?.navigate("Login")}>
-              <Text style={styles.loginButtonText}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.registerButton} onPress={() => navigation?.navigate("Register")}>
-              <Text style={styles.registerButtonText}>Register</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+        {user && (
           <TouchableOpacity style={styles.userButton} onPress={() => navigation?.navigate("Dashboard")}>
             <FontAwesome name="user-circle" size={24} color="#007AFF" />
           </TouchableOpacity>
@@ -270,32 +331,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginLeft: 8,
   },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  loginButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#007AFF',
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  registerButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#10B981',
-  },
-  registerButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
+
   userButton: {
     padding: 8,
   },
@@ -413,17 +449,7 @@ const styles = StyleSheet.create({
   },
   userName: { fontSize: 18, fontWeight: "700", color: "#111827", marginTop: 8 },
   userPhone: { fontSize: 14, color: "#6b7280", marginTop: 4 },
-  profileButton: {
-    width: '100%',
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: "#2563eb",
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  profileButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+
   authOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -442,5 +468,64 @@ const styles = StyleSheet.create({
   authButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   registerButtonStyle: {
     backgroundColor: "#10B981",
+  },
+  quickLinks: {
+    width: '100%',
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  quickLinksTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  quickLinkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    marginBottom: 10,
+    paddingHorizontal: 12,
+  },
+  quickLinkText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+    marginLeft: 10,
+  },
+  logoutButton: {
+    width: '100%',
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  logoutButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  guestInfo: {
+    width: '100%',
+    marginTop: 16,
+    paddingHorizontal: 10,
+  },
+  guestInfoTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  guestInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  guestInfoText: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginLeft: 8,
   },
 });
