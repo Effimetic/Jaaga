@@ -1,14 +1,5 @@
-// SearchScreen.tsx
-// Expo React Native version of your "Welcome / Search Boats" page
-// - Wire API via process.env.EXPO_PUBLIC_API_URL (see notes below)
-// - Replace mock lists/fetches with your real endpoints
-
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Image,
-  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,408 +7,376 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { FontAwesome5, FontAwesome } from "@expo/vector-icons";
-
-// ---------- CONFIG ----------
-import { apiService } from "../services/apiService";
 import { useAuth } from "../contexts/AuthContext";
 
-type IslandKey =
-  | "male"
-  | "hulhumale"
-  | "villimale"
-  | "maafushi"
-  | "gulhi"
-  | "thulusdhoo";
-
-const ISLAND_LABELS: Record<IslandKey, string> = {
-  male: "Male",
-  hulhumale: "Hulhumale",
-  villimale: "Villimale",
-  maafushi: "Maafushi",
-  gulhi: "Gulhi",
-  thulusdhoo: "Thulusdhoo",
-};
-
-// TO options depend on FROM (like your script)
-const TO_BY_FROM: Partial<Record<IslandKey, IslandKey[]>> = {
-  male: ["maafushi", "gulhi", "thulusdhoo", "hulhumale", "villimale"],
-  // add more mappings if needed
-};
-
-// Mock data (replace with API data if desired)
-const POPULAR_ROUTES = [
-  { from: "Male", to: "Maafushi", price: "150", duration: "45", desc: "Popular tourist destination" },
-  { from: "Male", to: "Gulhi", price: "120", duration: "35", desc: "Perfect for day trips and snorkeling" },
-  { from: "Male", to: "Thulusdhoo", price: "180", duration: "60", desc: "Famous for surfing and beaches" },
-];
-
-const BOATS = [
-  { name: "Alpha", seats: 25 },
-  { name: "Beta", seats: 30 },
-  { name: "Gamma", seats: 20 },
-  { name: "Delta", seats: 35 },
-];
-
-// ---------- SCREEN ----------
-export default function SearchScreen({ navigation }: { navigation?: any }) {
+export default function HomeScreen({ navigation }: { navigation?: any }) {
   const { user } = useAuth();
-  const [fromIsland, setFromIsland] = useState<IslandKey | "">("");
-  const [toIsland, setToIsland] = useState<IslandKey | "">("");
-  const [passengers, setPassengers] = useState<string>("1");
-  const [date, setDate] = useState<string>("");
-  const [isSearching, setIsSearching] = useState(false);
+  const [destination, setDestination] = useState("");
+  const [activeTab, setActiveTab] = useState("Home");
 
-  const toOptions = useMemo<IslandKey[]>(() => {
-    if (!fromIsland) return [];
-    const list = TO_BY_FROM[fromIsland] || [];
-    // reset TO if not in new list
-    if (toIsland && !list.includes(toIsland)) setToIsland("");
-    return list;
-  }, [fromIsland, toIsland]);
-
-  const handleSearch = async () => {
-    if (!fromIsland || !toIsland || !date || !passengers) {
-      Alert.alert("Missing fields", "Please fill in all fields to search for schedules.");
+  const handleSearch = () => {
+    if (!destination.trim()) {
+      Alert.alert("Destination Required", "Please enter where you want to go.");
       return;
     }
-    if (fromIsland === toIsland) {
-      Alert.alert("Invalid route", "From and To cannot be the same.");
-      return;
-    }
-
-    setIsSearching(true);
     
-    try {
-      // Search for schedules
-      const searchParams = {
-        from: ISLAND_LABELS[fromIsland],
-        to: ISLAND_LABELS[toIsland],
-        date: date,
-        passengers: parseInt(passengers)
-      };
-      
-      const response = await apiService.searchSchedules(searchParams);
-      
-      if (response.success) {
-        // Navigate to schedules with results
-        navigation?.navigate("Schedules", {
-          searchResults: response.data,
-          searchParams: searchParams
-        });
+    Alert.alert("Search", `Searching for trips to ${destination}`);
+    // TODO: Implement search functionality
+  };
+
+  const handleTabPress = (tabName: string) => {
+    if (tabName === "Profile") {
+      if (!user) {
+        // Show login/register options for non-authenticated users
+        Alert.alert(
+          "Profile",
+          "Please login or register to access your profile",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Login", onPress: () => navigation?.navigate("Login") },
+            { text: "Register", onPress: () => navigation?.navigate("Register") },
+          ]
+        );
       } else {
-        Alert.alert("No Results", "No schedules found for your search criteria.");
+        // Navigate to profile for authenticated users
+        navigation?.navigate("Profile");
       }
-    } catch (error: any) {
-      Alert.alert("Search Error", error.message || "Failed to search schedules");
-    } finally {
-      setIsSearching(false);
+    } else {
+      setActiveTab(tabName);
+      // TODO: Handle other tab navigation
     }
   };
 
-  const handleQuickLogin = () => {
-    if (navigation) {
-      navigation.navigate("Login");
-    }
-  };
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "Home":
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Welcome to Nashath Booking</Text>
+            <Text style={styles.tabSubtitle}>
+              Your gateway to exploring the beautiful islands of Maldives by sea
+            </Text>
+            
+            {/* Search Section */}
+            <View style={styles.searchSection}>
+              <Text style={styles.searchLabel}>Where do you want to go?</Text>
+              <View style={styles.searchInputContainer}>
+                <FontAwesome5 name="map-marker-alt" size={20} color="#007AFF" style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Enter destination (e.g., Maafushi, Gulhi, Thulusdhoo)"
+                  value={destination}
+                  onChangeText={setDestination}
+                  placeholderTextColor="#999"
+                />
+              </View>
+              <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+                <FontAwesome5 name="search" size={16} color="white" />
+                <Text style={styles.searchButtonText}>Search Trips</Text>
+              </TouchableOpacity>
+            </View>
 
-  const handleLoginPress = () => {
-    if (navigation) {
-      navigation.navigate("Login");
-    }
-  };
-
-  const handleRegisterPress = () => {
-    if (navigation) {
-      navigation.navigate("Register");
+            {/* Quick Info */}
+            <View style={styles.quickInfo}>
+              <View style={styles.infoCard}>
+                <FontAwesome5 name="ship" size={24} color="#007AFF" />
+                <Text style={styles.infoTitle}>Speed Boats</Text>
+                <Text style={styles.infoText}>Fast and comfortable travel</Text>
+              </View>
+              <View style={styles.infoCard}>
+                <FontAwesome5 name="island-tropical" size={24} color="#10B981" />
+                <Text style={styles.infoTitle}>Beautiful Islands</Text>
+                <Text style={styles.infoText}>Explore paradise destinations</Text>
+              </View>
+            </View>
+          </View>
+        );
+      
+      case "Boats":
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Available Boats</Text>
+            <Text style={styles.tabSubtitle}>Modern speed boats for your journey</Text>
+            
+            <View style={styles.boatsList}>
+              <View style={styles.boatCard}>
+                <FontAwesome5 name="ship" size={40} color="#007AFF" />
+                <Text style={styles.boatName}>Speed Boat Alpha</Text>
+                <Text style={styles.boatDetails}>25 seats • Air conditioned</Text>
+              </View>
+              <View style={styles.boatCard}>
+                <FontAwesome5 name="ship" size={40} color="#10B981" />
+                <Text style={styles.boatName}>Speed Boat Beta</Text>
+                <Text style={styles.boatDetails}>30 seats • Premium service</Text>
+              </View>
+              <View style={styles.boatCard}>
+                <FontAwesome5 name="ship" size={40} color="#F59E0B" />
+                <Text style={styles.boatName}>Speed Boat Gamma</Text>
+                <Text style={styles.boatDetails}>20 seats • Express service</Text>
+              </View>
+            </View>
+          </View>
+        );
+      
+      case "Destinations":
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Popular Destinations</Text>
+            <Text style={styles.tabSubtitle}>Discover amazing islands in Maldives</Text>
+            
+            <View style={styles.destinationsList}>
+              <View style={styles.destinationCard}>
+                <FontAwesome5 name="island-tropical" size={40} color="#10B981" />
+                <Text style={styles.destinationName}>Maafushi</Text>
+                <Text style={styles.destinationDetails}>Famous for water sports and beaches</Text>
+              </View>
+              <View style={styles.destinationCard}>
+                <FontAwesome5 name="island-tropical" size={40} color="#007AFF" />
+                <Text style={styles.destinationName}>Gulhi</Text>
+                <Text style={styles.destinationDetails}>Perfect for snorkeling and diving</Text>
+              </View>
+              <View style={styles.destinationCard}>
+                <FontAwesome5 name="island-tropical" size={40} color="#F59E0B" />
+                <Text style={styles.destinationName}>Thulusdhoo</Text>
+                <Text style={styles.destinationDetails}>Surfing paradise with crystal waters</Text>
+              </View>
+            </View>
+          </View>
+        );
+      
+      case "Profile":
+        return (
+          <View style={styles.tabContent}>
+            {user ? (
+              <>
+                <Text style={styles.tabTitle}>Welcome Back!</Text>
+                <Text style={styles.tabSubtitle}>Manage your account and bookings</Text>
+                
+                <View style={styles.profileInfo}>
+                  <FontAwesome5 name="user-circle" size={60} color="#007AFF" />
+                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text style={styles.userPhone}>{user.phone}</Text>
+                </View>
+                
+                <TouchableOpacity 
+                  style={styles.profileButton}
+                  onPress={() => navigation?.navigate("Dashboard")}
+                >
+                  <FontAwesome5 name="tachometer-alt" size={16} color="white" />
+                  <Text style={styles.profileButtonText}>Go to Dashboard</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.tabTitle}>Profile</Text>
+                <Text style={styles.tabSubtitle}>Login or register to access your profile</Text>
+                
+                <View style={styles.authOptions}>
+                  <TouchableOpacity 
+                    style={styles.authButton}
+                    onPress={() => navigation?.navigate("Login")}
+                  >
+                    <FontAwesome5 name="sign-in-alt" size={16} color="white" />
+                    <Text style={styles.authButtonText}>Login</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.authButton, styles.registerButtonStyle]}
+                    onPress={() => navigation?.navigate("Register")}
+                  >
+                    <FontAwesome5 name="user-plus" size={16} color="white" />
+                    <Text style={styles.authButtonText}>Register</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        );
+      
+      default:
+        return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Header with Login/Register */}
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <FontAwesome name="ship" size={24} color="#007AFF" />
-            <Text style={styles.headerTitle}>Nashath Booking</Text>
-          </View>
-          {!user ? (
-            <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-                <Text style={styles.loginButtonText}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.registerButton} onPress={handleRegisterPress}>
-                <Text style={styles.registerButtonText}>Register</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={styles.userButton} onPress={() => navigation?.navigate("Dashboard")}>
-              <FontAwesome name="user-circle" size={24} color="#007AFF" />
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <FontAwesome name="ship" size={24} color="#007AFF" />
+          <Text style={styles.headerTitle}>Nashath Booking</Text>
+        </View>
+        {!user ? (
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.loginButton} onPress={() => navigation?.navigate("Login")}>
+              <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>
-            <FontAwesome name="ship" size={20} style={styles.primary} />{" "}
-            Discover Maldives by Sea
-          </Text>
-          <Text style={styles.heroSubtitle}>
-            Book speed boat tickets to explore the beautiful islands of Maldives
-          </Text>
-        </View>
-
-        {/* Search Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardHeaderText}>Search for Boats</Text>
-          </View>
-          <View style={styles.cardBody}>
-            {/* FROM */}
-            <Text style={styles.label}>From</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder="Select departure island"
-                value={fromIsland ? ISLAND_LABELS[fromIsland] : ""}
-                onFocus={() => {
-                  // Show island selection modal or navigate to selection screen
-                  Alert.alert("Select Island", "From: " + Object.values(ISLAND_LABELS).join(", "));
-                }}
-              />
-            </View>
-
-            {/* TO */}
-            <Text style={styles.label}>To</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder="Select destination island"
-                value={toIsland ? ISLAND_LABELS[toIsland] : ""}
-                onFocus={() => {
-                  if (!fromIsland) {
-                    Alert.alert("Error", "Please select departure island first");
-                    return;
-                  }
-                  // Show island selection modal
-                  Alert.alert("Select Island", "To: " + toOptions.map(k => ISLAND_LABELS[k]).join(", "));
-                }}
-                editable={!!fromIsland}
-              />
-            </View>
-
-            {/* DATE */}
-            <Text style={styles.label}>Travel Date</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder="YYYY-MM-DD"
-                value={date}
-                onChangeText={setDate}
-              />
-            </View>
-
-            {/* PASSENGERS */}
-            <Text style={styles.label}>Passengers</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                placeholder="Number of passengers"
-                value={passengers}
-                onChangeText={setPassengers}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleSearch}>
-              {isSearching ? (
-                <Text style={styles.btnText}>Searching...</Text>
-              ) : (
-                <>
-                  <FontAwesome5 name="search" size={16} style={styles.btnIcon} />
-                  <Text style={styles.btnText}>Search Schedules</Text>
-                </>
-              )}
+            <TouchableOpacity style={styles.registerButton} onPress={() => navigation?.navigate("Register")}>
+              <Text style={styles.registerButtonText}>Register</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        ) : (
+          <TouchableOpacity style={styles.userButton} onPress={() => navigation?.navigate("Dashboard")}>
+            <FontAwesome name="user-circle" size={24} color="#007AFF" />
+          </TouchableOpacity>
+        )}
+      </View>
 
-        {/* Popular Routes */}
-        <View style={styles.sectionCenter}>
-          <Text style={styles.sectionTitle}>Popular Routes</Text>
-          <Text style={styles.sectionSub}>Most traveled routes in the Maldives</Text>
-        </View>
-        <FlatList
-          data={POPULAR_ROUTES}
-          scrollEnabled={false}
-          keyExtractor={(_, i) => `route-${i}`}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.row}>
-                <Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400",
-                  }}
-                  style={styles.cardImg}
-                />
-                <View style={styles.cardCol}>
-                  <Text style={styles.cardTitle}>
-                    {item.from} → {item.to}{" "}
-                    <Text style={styles.badgeSuccess}>MVR {item.price}</Text>
-                  </Text>
-                  <Text style={styles.muted}>
-                    <FontAwesome5 name="clock" /> {item.duration} minutes
-                  </Text>
-                  <Text style={styles.smallMuted}>{item.desc}</Text>
-                </View>
-              </View>
-            </View>
-          )}
-        />
-
-        {/* Available Boats */}
-        <View style={styles.sectionCenter}>
-          <Text style={styles.sectionTitle}>Available Boats</Text>
-          <Text style={styles.sectionSub}>Modern speed boats with comfortable seating</Text>
-        </View>
-        <FlatList
-          data={BOATS}
-          scrollEnabled={false}
-          keyExtractor={(b) => b.name}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.row}>
-                <Image
-                  source={{
-                    uri: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400",
-                  }}
-                  style={styles.cardImg}
-                />
-                <View style={styles.cardCol}>
-                  <Text style={styles.cardTitle}>Speed Boat {item.name}</Text>
-                  <Text style={styles.muted}>
-                    <FontAwesome5 name="user-friends" /> {item.seats} passengers
-                  </Text>
-                  <View style={styles.badgeRow}>
-                    <Text style={[styles.badge, styles.bgSuccess]}>AC</Text>
-                    <Text style={[styles.badge, styles.bgInfo]}>WiFi</Text>
-                    <Text style={[styles.badge, styles.bgWarn]}>Refreshments</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          )}
-        />
-
-        {/* Features */}
-        <View style={styles.sectionCenter}>
-          <Text style={styles.sectionTitle}>Why Choose Nashath Booking?</Text>
-          <Text style={styles.sectionSub}>
-            Experience seamless speed boat ticketing across the Maldives
-          </Text>
-        </View>
-
-        <View style={styles.featureItem}>
-          <View style={styles.circleIcon}>
-            <FontAwesome5 name="sms" size={18} color="#fff" />
-          </View>
-          <View style={styles.featureText}>
-            <Text style={styles.featureTitle}>Easy SMS Login</Text>
-            <Text style={styles.smallMuted}>
-              Quick and secure login with SMS verification. No passwords to remember!
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        {["Home", "Boats", "Destinations", "Profile"].map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            style={[styles.tab, activeTab === tab && styles.activeTab]}
+            onPress={() => handleTabPress(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab}
             </Text>
-          </View>
-        </View>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-        <View style={styles.featureItem}>
-          <View style={styles.circleIcon}>
-            <FontAwesome5 name="credit-card" size={18} color="#fff" />
-          </View>
-          <View style={styles.featureText}>
-            <Text style={styles.featureTitle}>Secure Payments</Text>
-            <Text style={styles.smallMuted}>
-              Multiple payment options including BML integration.
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.featureItem}>
-          <View style={styles.circleIcon}>
-            <FontAwesome5 name="qrcode" size={18} color="#fff" />
-          </View>
-          <View style={styles.featureText}>
-            <Text style={styles.featureTitle}>QR Code Tickets</Text>
-            <Text style={styles.smallMuted}>
-              Digital tickets with QR codes for easy validation and boarding.
-            </Text>
-          </View>
-        </View>
+      {/* Tab Content */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        {renderTabContent()}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ---------- STYLES ----------
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f6f8fa" },
-  container: { padding: 16, gap: 12 },
-  primary: { color: "#2563eb" },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
+    marginLeft: 8,
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   loginButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: '#F3F4F6',
-  },
-  loginButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  registerButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 6,
     backgroundColor: '#007AFF',
   },
-  registerButtonText: {
+  loginButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+  },
+  registerButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   userButton: {
     padding: 8,
   },
-
-  hero: { alignItems: "center", paddingVertical: 8 },
-  heroTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  heroSubtitle: { fontSize: 13, color: "#6b7280", marginTop: 6, textAlign: "center" },
-
-  card: {
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#007AFF',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  activeTabText: {
+    color: '#007AFF',
+  },
+  content: { flex: 1 },
+  contentContainer: { padding: 16, gap: 12 },
+  tabContent: { alignItems: "center", paddingVertical: 8 },
+  tabTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
+  tabSubtitle: { fontSize: 13, color: "#6b7280", marginTop: 6, textAlign: "center" },
+  searchSection: {
+    width: '100%',
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  searchLabel: { fontWeight: "600", color: "#374151", marginTop: 8, marginBottom: 6, fontSize: 14 },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    backgroundColor: "#fff",
+  },
+  searchIcon: { marginLeft: 12, marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: "#111827",
+  },
+  searchButton: {
+    width: '100%',
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    marginTop: 12,
+  },
+  searchButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  quickInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 16,
+  },
+  infoCard: {
+    alignItems: 'center',
+    width: '30%',
+  },
+  infoTitle: { fontWeight: "700", color: "#111827", marginTop: 8 },
+  infoText: { color: "#6b7280", marginTop: 4 },
+  boatsList: { width: '100%', marginTop: 16 },
+  boatCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
     overflow: "hidden",
@@ -426,85 +385,62 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
-  },
-  cardHeader: {
-    paddingVertical: 10,
-    backgroundColor: "#f3f4f6",
-    alignItems: "center",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
-  cardHeaderText: { fontWeight: "700", color: "#111827" },
-  cardBody: { padding: 12 },
-
-  label: { fontWeight: "600", color: "#374151", marginTop: 8, marginBottom: 6, fontSize: 14 },
-  inputWrap: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: "#fff",
-  },
-  input: {
-    paddingHorizontal: 12,
+    alignItems: 'center',
     paddingVertical: 12,
-    fontSize: 16,
-    color: "#111827",
+    marginBottom: 12,
   },
-
-  btn: {
+  boatName: { fontWeight: "700", color: "#111827", marginTop: 8 },
+  boatDetails: { color: "#6b7280", marginTop: 4 },
+  destinationsList: { width: '100%', marginTop: 16 },
+  destinationCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 12,
+  },
+  destinationName: { fontWeight: "700", color: "#111827", marginTop: 8 },
+  destinationDetails: { color: "#6b7280", marginTop: 4 },
+  profileInfo: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  userName: { fontSize: 18, fontWeight: "700", color: "#111827", marginTop: 8 },
+  userPhone: { fontSize: 14, color: "#6b7280", marginTop: 4 },
+  profileButton: {
+    width: '100%',
     height: 46,
     borderRadius: 8,
-    marginTop: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  btnPrimary: { backgroundColor: "#2563eb" },
-  btnIcon: { color: "#fff", marginRight: 8 },
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-
-  sectionCenter: { alignItems: "center", marginTop: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
-  sectionSub: { fontSize: 12, color: "#6b7280", marginTop: 4 },
-
-  row: { flexDirection: "row" },
-  cardImg: { width: 110, height: 100, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 },
-  cardCol: { flex: 1, padding: 12 },
-  cardTitle: { fontWeight: "700", color: "#111827" },
-  muted: { color: "#6b7280", marginTop: 4 },
-  smallMuted: { color: "#9aa0a6", fontSize: 12, marginTop: 4 },
-
-  badgeSuccess: {
-    backgroundColor: "#16a34a",
-    color: "#fff",
-    fontSize: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  badgeRow: { flexDirection: "row", gap: 6, marginTop: 6 },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    fontSize: 12,
-    overflow: "hidden",
-  },
-  bgSuccess: { backgroundColor: "#16a34a", color: "#fff" },
-  bgInfo: { backgroundColor: "#38bdf8", color: "#0f172a" },
-  bgWarn: { backgroundColor: "#f59e0b", color: "#0f172a" },
-
-  circleIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
     backgroundColor: "#2563eb",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    flexDirection: "row",
+    marginTop: 12,
   },
-  featureItem: { flexDirection: "row", alignItems: "center", marginTop: 10 },
-  featureText: { flex: 1 },
-  featureTitle: { fontWeight: "700", color: "#111827", marginBottom: 2 },
+  profileButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  authOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginTop: 16,
+  },
+  authButton: {
+    flex: 1,
+    height: 46,
+    borderRadius: 8,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 5,
+  },
+  authButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  registerButtonStyle: {
+    backgroundColor: "#10B981",
+  },
 });
