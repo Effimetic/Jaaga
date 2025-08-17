@@ -233,6 +233,44 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
               </TouchableOpacity>
             )}
 
+            {/* Agent Owners - Only for agents */}
+            {user.role === 'agent' && (
+              <TouchableOpacity
+                style={styles.appOption}
+                onPress={() => navigation.navigate('AgentOwners')}
+              >
+                <View style={styles.optionIcon}>
+                  <FontAwesome5 name="handshake" size={20} color="#007AFF" />
+                </View>
+                <View style={styles.optionContent}>
+                  <Text style={styles.optionTitle}>Connected Owners</Text>
+                  <Text style={styles.optionSubtitle}>View boat owners you can book from</Text>
+                </View>
+                <View style={styles.optionArrow}>
+                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                </View>
+              </TouchableOpacity>
+            )}
+
+            {/* Agent Connections - Only for owners */}
+            {user.role === 'owner' && (
+              <TouchableOpacity
+                style={styles.appOption}
+                onPress={() => navigation.navigate('AgentConnections')}
+              >
+                <View style={styles.optionIcon}>
+                  <FontAwesome5 name="user-tie" size={20} color="#007AFF" />
+                </View>
+                <View style={styles.optionContent}>
+                  <Text style={styles.optionTitle}>Agent Connections</Text>
+                  <Text style={styles.optionSubtitle}>Manage agent credit relationships</Text>
+                </View>
+                <View style={styles.optionArrow}>
+                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                </View>
+              </TouchableOpacity>
+            )}
+
             {/* Settings - For all users */}
             <TouchableOpacity
               style={styles.appOption}

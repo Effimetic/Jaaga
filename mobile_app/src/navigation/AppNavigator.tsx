@@ -18,6 +18,8 @@ import ViewBoatScreen from '../screens/ViewBoatScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MyBookingsScreen from '../screens/MyBookingsScreen';
 import { Ionicons } from '@expo/vector-icons';
+import AgentOwnersScreen from '../screens/AgentOwnersScreen';
+import AgentConnectionsScreen from '../screens/AgentConnectionsScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -32,9 +34,12 @@ export type RootStackParamList = {
   ViewBoat: { boatId: number };
   Settings: undefined;
   MyBookings: undefined;
+  AgentOwners: undefined;
+  AgentConnections: undefined;
 };
 
 export type MainTabParamList = {
+  Home: undefined;
   Schedules: undefined;
   Profile: undefined;
 };
@@ -49,7 +54,9 @@ const MainTabNavigator: React.FC = () => {
         tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
 
-          if (route.name === 'Schedules') {
+          if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home-outline';
+          } else if (route.name === 'Schedules') {
             iconName = focused ? 'calendar' : 'calendar-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
@@ -64,6 +71,7 @@ const MainTabNavigator: React.FC = () => {
         headerShown: false,
       })}
     >
+      <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Schedules" component={SchedulesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -97,6 +105,8 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="ViewBoat" component={ViewBoatScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+            <Stack.Screen name="AgentOwners" component={AgentOwnersScreen} />
+            <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
           </>
         ) : null}
       </Stack.Navigator>

@@ -4,7 +4,7 @@ from models.unified_booking import (
     Booking, BookingTicket, SeatAssignment, TicketType, 
     ScheduleTicketType, TaxProfile
 )
-from models.scheduling import Schedule
+from models.scheduling import Schedule, ScheduleDestination
 from models.owner_settings import AppOwnerSettings
 from models import db
 from services.pricing_engine import PricingEngine
@@ -29,6 +29,13 @@ class UnifiedBookingService:
             Booking object
         """
         try:
+            # Validate required fields
+            if not booking_data.get('buyer_name') or not booking_data.get('buyer_phone'):
+                raise ValueError("Buyer name and phone are required")
+            
+            if not booking_data.get('tickets'):
+                raise ValueError("At least one ticket is required")
+            
             # Validate ticket types
             ticket_type_ids = [ticket['ticket_type_id'] for ticket in booking_data['tickets']]
             if not self.pricing_engine.validate_ticket_types(ticket_type_ids):
@@ -42,24 +49,36 @@ class UnifiedBookingService:
             
             pricing = self.pricing_engine.calculate_booking_price(
                 ticket_requests,
-                channel=booking_data['channel'],
+                channel=booking_data.get('channel', 'PUBLIC'),
                 agent_id=booking_data.get('agent_id')
             )
             
             # Generate unique booking code
             booking_code = Booking.generate_code()
             
+            # Get pickup and dropoff destinations (first and last for now)
+            schedule = Schedule.query.get(self.schedule_id)
+            destinations = schedule.destinations
+            pickup_dest = destinations[0] if destinations else None
+            dropoff_dest = destinations[-1] if destinations else None
+            
+            if not pickup_dest or not dropoff_dest:
+                raise ValueError("Schedule must have at least one destination")
+            
             # Create booking
             booking = Booking(
                 code=booking_code,
                 owner_id=self.owner_id,
                 schedule_id=self.schedule_id,
-                channel=booking_data['channel'],
+                channel=booking_data.get('channel', 'PUBLIC'),
                 created_by_user_id=booking_data.get('created_by_user_id'),
                 agent_id=booking_data.get('agent_id'),
                 buyer_name=booking_data['buyer_name'],
                 buyer_phone=booking_data['buyer_phone'],
                 buyer_national_id=booking_data.get('buyer_national_id'),
+                pickup_destination_id=pickup_dest.id,
+                dropoff_destination_id=dropoff_dest.id,
+                departure_time=datetime.combine(schedule.schedule_date, pickup_dest.departure_time) if pickup_dest.departure_time else None,
                 line_items=json.dumps(pricing['line_items']),
                 subtotal=pricing['subtotal'],
                 tax_total=pricing['tax_total'],
@@ -67,7 +86,7 @@ class UnifiedBookingService:
                 grand_total=pricing['grand_total'],
                 currency=pricing['currency'],
                 payment_status='PENDING',
-                fulfillment_status='UNCONFIRMED',
+                fulfillment_status='CONFIRMED',  # Auto-confirm for now
                 finance_status='UNPOSTED',
                 meta=json.dumps(booking_data.get('meta', {}))
             )
@@ -84,7 +103,8 @@ class UnifiedBookingService:
                     ticket_type_id=ticket_data['ticket_type_id'],
                     passenger_name=ticket_data['passenger_name'],
                     passenger_phone=ticket_data.get('passenger_phone'),
-                    fare_base_price_snapshot=ticket_type.base_price
+                    fare_base_price_snapshot=ticket_type.base_price,
+                    seat_no=ticket_data.get('seat_no', str(i + 1))  # Simple seat assignment
                 )
                 
                 db.session.add(booking_ticket)
@@ -236,6 +256,9 @@ class UnifiedBookingService:
         # Parse line items
         line_items = json.loads(booking.line_items or '[]')
         
+        # Get schedule info
+        schedule = Schedule.query.get(booking.schedule_id)
+        
         # Get ticket details
         tickets = []
         for ticket in booking.tickets:
@@ -256,6 +279,22 @@ class UnifiedBookingService:
             'channel': booking.channel,
             'buyer_name': booking.buyer_name,
             'buyer_phone': booking.buyer_phone,
+            'buyer_national_id': booking.buyer_national_id,
+            'schedule': {
+                'id': schedule.id,
+                'name': schedule.name,
+                'schedule_date': schedule.schedule_date.isoformat(),
+                'boat_name': schedule.boat.name if schedule.boat else 'Unknown'
+            } if schedule else None,
+            'pickup_destination': {
+                'id': booking.pickup_destination.id,
+                'island_name': booking.pickup_destination.island_name
+            } if booking.pickup_destination else None,
+            'dropoff_destination': {
+                'id': booking.dropoff_destination.id,
+                'island_name': booking.dropoff_destination.island_name
+            } if booking.dropoff_destination else None,
+            'departure_time': booking.departure_time.isoformat() if booking.departure_time else None,
             'status': {
                 'payment': booking.payment_status,
                 'fulfillment': booking.fulfillment_status,

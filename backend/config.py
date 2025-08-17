@@ -6,31 +6,21 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-jwt-secret-key-here')
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     
     # Check if demo mode is enabled
-    DEMO_MODE = os.getenv('DEMO_MODE', 'true').lower() == 'true'  # Default to true for development
+    DEMO_MODE = os.getenv('DEMO_MODE', 'true').lower() == 'true'
     
     if DEMO_MODE:
         # Use SQLite for demo mode
-        SQLALCHEMY_DATABASE_URI = 'sqlite:///demo.db'
+        SQLALCHEMY_DATABASE_URI = 'sqlite:///nashath_booking.db'
         print("🔧 Demo mode enabled - using SQLite database")
     else:
-        # Use MySQL for production with complete configuration
-        DB_USER = os.getenv('DB_USER', 'admin')
-        DB_PASSWORD = os.getenv('DB_PASSWORD', 'lu8.Ilev<e:cD)S*Z2tUi2YtDCen')
-        DB_WRITE_HOST = os.getenv('DB_WRITE_HOST', 'database-1.cluster-cjs8wgise5y9.ap-southeast-1.rds.amazonaws.com')
-        DB_READ_HOST = os.getenv('DB_READ_HOST', 'database-1.cluster-ro-cjs8wgise5y9.ap-southeast-1.rds.amazonaws.com')
-        DB_PORT = os.getenv('DB_PORT', '3306')
-        DB_NAME = os.getenv('DB_NAME', 'NashathBooking')
-        DB_SSL = os.getenv('DB_SSL', 'true')
-        
-        # Build MySQL connection string with all parameters
-        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_WRITE_HOST}:{DB_PORT}/{DB_NAME}?ssl_mode=REQUIRED"
-        print("🌐 Production mode - using MySQL database")
-        print(f"   Host: {DB_WRITE_HOST}")
-        print(f"   Port: {DB_PORT}")
-        print(f"   Database: {DB_NAME}")
-        print(f"   SSL: {DB_SSL}")
+        # Use database URL from environment
+        SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///nashath_booking.db')
+        print("🌐 Production mode - using configured database")
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    FLASK_ENV = os.getenv('FLASK_ENV', 'development') 
+    FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+
+from datetime import timedelta

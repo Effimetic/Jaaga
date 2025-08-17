@@ -4,7 +4,7 @@ from models import db
 from models.owner_settings import OwnerSettings, PaymentTransaction, StaffUser
 from models.user import User
 from services.bml_gateway import BMLGatewayService, mvr_to_cents
-# from services.transfer_verification import TransferVerificationService  # Temporarily commented out due to OpenCV dependency
+from models.owner_settings import OwnerAgentConnection
 import os
 import base64
 from datetime import datetime
@@ -109,6 +109,103 @@ def update_settings():
         
     except Exception as e:
         return jsonify({'error': f'Failed to update settings: {str(e)}'}), 500
+@owner_settings_bp.route('/agent-connections', methods=['GET'])
+@jwt_required()
+def get_agent_connections():
+    """Get agent connections for owner"""
+    try:
+        phone = get_jwt_identity()
+        user = User.query.filter_by(phone=phone).first()
+        
+        if not user or user.role != 'owner':
+            return jsonify({'error': 'Access denied. Only boat owners can access agent connections.'}), 403
+        
+        connections = OwnerAgentConnection.query.filter_by(owner_id=user.id).all()
+        
+        connections_data = []
+        for conn in connections:
+            connections_data.append({
+                'id': conn.id,
+                'agent': {
+                    'id': conn.agent.id,
+                    'name': conn.agent.name,
+                    'phone': conn.agent.phone
+                },
+                'currency': conn.currency,
+                'credit_limit': float(conn.credit_limit),
+                'current_balance': float(conn.current_balance),
+                'status': conn.status,
+                'created_at': conn.created_at.isoformat() if conn.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': connections_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get agent connections: {str(e)}'}), 500
+
+@owner_settings_bp.route('/agent-connections', methods=['POST'])
+@jwt_required()
+def create_agent_connection():
+    """Create new agent connection"""
+    try:
+        phone = get_jwt_identity()
+        user = User.query.filter_by(phone=phone).first()
+        
+        if not user or user.role != 'owner':
+            return jsonify({'error': 'Access denied. Only boat owners can create agent connections.'}), 403
+        
+        data = request.get_json()
+        agent_phone = data.get('agent_phone', '').strip()
+        credit_limit = data.get('credit_limit', 0)
+        currency = data.get('currency', 'MVR')
+        
+        if not agent_phone:
+            return jsonify({'error': 'Agent phone number is required'}), 400
+        
+        # Find agent user
+        agent = User.query.filter_by(phone=agent_phone, role='agent').first()
+        if not agent:
+            return jsonify({'error': 'Agent not found or user is not an agent'}), 404
+        
+        # Check if connection already exists
+        existing = OwnerAgentConnection.query.filter_by(
+            owner_id=user.id,
+            agent_id=agent.id
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Connection with this agent already exists'}), 400
+        
+        # Create connection
+        connection = OwnerAgentConnection(
+            owner_id=user.id,
+            agent_id=agent.id,
+            currency=currency,
+            credit_limit=credit_limit,
+            current_balance=0,
+            status='approved'
+        )
+        
+        db.session.add(connection)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Agent connection created successfully',
+            'connection': {
+                'id': connection.id,
+                'agent_name': agent.name,
+                'agent_phone': agent.phone,
+                'credit_limit': float(connection.credit_limit),
+                'status': connection.status
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to create agent connection: {str(e)}'}), 500
 
 # Staff Management Routes
 @owner_settings_bp.route('/staff', methods=['GET'])

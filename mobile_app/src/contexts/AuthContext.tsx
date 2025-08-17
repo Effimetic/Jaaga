@@ -86,11 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await apiService.verifyToken(phone, token);
       
       if (result.success) {
-        // Store the access token and user data
-        const userData = {
-          id: 1, // This will be updated when we get profile
-          phone: result.phone,
-          name: `User_${result.phone.slice(-4)}`,
+        // Use user data from verification response
+        const userData = result.user ? {
+          id: result.user.id,
+          phone: result.user.phone,
+          name: result.user.name,
+          role: result.user.role,
+          authenticated: true
+        } : {
+          id: 1,
+          phone: result.phone || phone,
+          name: `User_${phone.slice(-4)}`,
           role: 'public',
           authenticated: true
         };
@@ -98,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Store token for API requests
         await userService.setCurrentUserSession(userData, result.access_token);
         
-        // Get actual profile data
+        // Try to get updated profile data
         try {
           const profile = await apiService.getProfile();
           if (profile.success) {
@@ -111,10 +117,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
             await userService.setCurrentUserSession(updatedUserData, result.access_token);
             setUser(updatedUserData);
+          } else {
+            setUser(userData);
           }
         } catch (profileError) {
           console.error('Error getting profile:', profileError);
-          // Use basic user data if profile fetch fails
           setUser(userData);
         }
         

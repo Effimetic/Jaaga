@@ -20,8 +20,8 @@ import {
 import { FontAwesome5, FontAwesome } from "@expo/vector-icons";
 
 // ---------- CONFIG ----------
-const API_BASE =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://your-backend.example.com";
+import { apiService } from "../services/apiService";
+import { useAuth } from "../contexts/AuthContext";
 
 type IslandKey =
   | "male"
@@ -62,10 +62,12 @@ const BOATS = [
 
 // ---------- SCREEN ----------
 export default function SearchScreen({ navigation }: { navigation?: any }) {
+  const { user } = useAuth();
   const [fromIsland, setFromIsland] = useState<IslandKey | "">("");
   const [toIsland, setToIsland] = useState<IslandKey | "">("");
   const [passengers, setPassengers] = useState<string>("1");
   const [date, setDate] = useState<string>("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const toOptions = useMemo<IslandKey[]>(() => {
     if (!fromIsland) return [];
@@ -77,7 +79,7 @@ export default function SearchScreen({ navigation }: { navigation?: any }) {
 
   const handleSearch = async () => {
     if (!fromIsland || !toIsland || !date || !passengers) {
-      Alert.alert("Missing fields", "Please fill in all fields.");
+      Alert.alert("Missing fields", "Please fill in all fields to search for schedules.");
       return;
     }
     if (fromIsland === toIsland) {
@@ -85,24 +87,39 @@ export default function SearchScreen({ navigation }: { navigation?: any }) {
       return;
     }
 
-    // Check if user is logged in
-    if (!navigation) {
-      Alert.alert("Login Required", "Please login to search for schedules and book tickets.");
-      return;
+    setIsSearching(true);
+    
+    try {
+      // Search for schedules
+      const searchParams = {
+        from: ISLAND_LABELS[fromIsland],
+        to: ISLAND_LABELS[toIsland],
+        date: date,
+        passengers: parseInt(passengers)
+      };
+      
+      const response = await apiService.searchSchedules(searchParams);
+      
+      if (response.success) {
+        // Navigate to schedules with results
+        navigation?.navigate("Schedules", {
+          searchResults: response.data,
+          searchParams: searchParams
+        });
+      } else {
+        Alert.alert("No Results", "No schedules found for your search criteria.");
+      }
+    } catch (error: any) {
+      Alert.alert("Search Error", error.message || "Failed to search schedules");
+    } finally {
+      setIsSearching(false);
     }
+  };
 
-    // Navigate to schedules list with search parameters
-    navigation.navigate("Schedules", {
-      from: fromIsland,
-      to: toIsland,
-      date: date,
-      passengers,
-    });
-
-    Alert.alert(
-      "Searching…",
-      `From ${ISLAND_LABELS[fromIsland]} to ${ISLAND_LABELS[toIsland]} on ${date} for ${passengers} passenger(s).`
-    );
+  const handleQuickLogin = () => {
+    if (navigation) {
+      navigation.navigate("Login");
+    }
   };
 
   const handleLoginPress = () => {
@@ -126,17 +143,21 @@ export default function SearchScreen({ navigation }: { navigation?: any }) {
             <FontAwesome name="ship" size={24} color="#007AFF" />
             <Text style={styles.headerTitle}>Nashath Booking</Text>
           </View>
-          <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
-              <Text style={styles.loginButtonText}>Login</Text>
+          {!user ? (
+            <View style={styles.headerRight}>
+              <TouchableOpacity style={styles.loginButton} onPress={handleLoginPress}>
+                <Text style={styles.loginButtonText}>Login</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.registerButton} onPress={handleRegisterPress}>
+                <Text style={styles.registerButtonText}>Register</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity style={styles.userButton} onPress={() => navigation?.navigate("Dashboard")}>
+              <FontAwesome name="user-circle" size={24} color="#007AFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.registerButton} onPress={handleRegisterPress}>
-              <Text style={styles.registerButtonText}>Register</Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
-
-
 
         {/* Hero */}
         <View style={styles.hero}>
@@ -212,8 +233,14 @@ export default function SearchScreen({ navigation }: { navigation?: any }) {
             </View>
 
             <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleSearch}>
-              <FontAwesome5 name="search" size={16} style={styles.btnIcon} />
-              <Text style={styles.btnText}>Search Boats</Text>
+              {isSearching ? (
+                <Text style={styles.btnText}>Searching...</Text>
+              ) : (
+                <>
+                  <FontAwesome5 name="search" size={16} style={styles.btnIcon} />
+                  <Text style={styles.btnText}>Search Schedules</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -381,6 +408,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  userButton: {
+    padding: 8,
   },
 
   hero: { alignItems: "center", paddingVertical: 8 },

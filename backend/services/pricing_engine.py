@@ -9,7 +9,12 @@ class PricingEngine:
     def __init__(self, owner_id, schedule_id):
         self.owner_id = owner_id
         self.schedule_id = schedule_id
+        # Get or create app settings
         self.app_settings = AppOwnerSettings.query.filter_by(is_active=True).first()
+        if not self.app_settings:
+            self.app_settings = AppOwnerSettings(commission_rate=10.00, is_active=True)
+            db.session.add(self.app_settings)
+            db.session.commit()
         
     def calculate_booking_price(self, ticket_requests, channel='PUBLIC', agent_id=None):
         """
@@ -33,16 +38,11 @@ class PricingEngine:
             if not schedule_ticket_types:
                 raise ValueError("No active ticket types found for this schedule")
             
-            # Get tax profile
-            schedule = db.session.query(db.func.coalesce(
-                db.session.query(Schedule.tax_profile_id)
-                .filter_by(id=self.schedule_id)
-                .scalar(), None
-            )).scalar()
-            
+            # Get schedule and tax profile
+            schedule = Schedule.query.get(self.schedule_id)
             tax_profile = None
-            if schedule:
-                tax_profile = TaxProfile.query.get(schedule)
+            if schedule and schedule.tax_profile_id:
+                tax_profile = TaxProfile.query.get(schedule.tax_profile_id)
             
             # Calculate line items
             line_items = []
@@ -105,7 +105,7 @@ class PricingEngine:
             # Add app owner fee
             app_fee = Decimal('0')
             if self.app_settings:
-                app_fee = Decimal(str(self.app_settings.per_booking_fee_mvr))
+                app_fee = Decimal(str(self.app_settings.commission_rate))
             
             # Add app fee to line items
             if app_fee > 0:

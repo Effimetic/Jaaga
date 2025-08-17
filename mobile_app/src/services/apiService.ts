@@ -71,6 +71,21 @@ class ApiService {
     }
   }
 
+  // Search schedules (public endpoint)
+  async searchSchedules(params: {
+    from?: string;
+    to?: string;
+    date?: string;
+    passengers?: number;
+  }): Promise<any> {
+    try {
+      const response = await axios.get(`${this.baseURL}/schedules/search`, { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to search schedules');
+    }
+  }
+
   // Schedule endpoints
   async getSchedules(params?: {
     page?: number;
@@ -83,6 +98,24 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get schedules');
+    }
+  }
+
+  async getAgentSchedules(): Promise<any> {
+    try {
+      const response = await this.api.get('/bookings/agent-schedules');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent schedules');
+    }
+  }
+
+  async getAgentOwners(): Promise<any> {
+    try {
+      const response = await this.api.get('/bookings/agent-owners');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get connected owners');
     }
   }
 
@@ -171,7 +204,7 @@ class ApiService {
   // Booking endpoints
   async getBookings(params?: any): Promise<any> {
     try {
-      const response = await this.api.get('/bookings', { params });
+      const response = await this.api.get('/bookings/bookings', { params });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get bookings');
@@ -198,7 +231,7 @@ class ApiService {
 
   async getBookingByCode(code: string): Promise<any> {
     try {
-      const response = await this.api.get(`/bookings/bookings/code/${code}`);
+      const response = await axios.get(`${this.baseURL}/bookings/code/${code}`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get booking');
@@ -208,7 +241,7 @@ class ApiService {
   // Get schedule ticket types
   async getScheduleTicketTypes(scheduleId: number): Promise<any> {
     try {
-      const response = await this.api.get(`/schedules/api/schedules/${scheduleId}/ticket-types`);
+      const response = await this.api.get(`/schedules/schedules/${scheduleId}/ticket-types`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get schedule ticket types');
@@ -265,7 +298,7 @@ class ApiService {
   // Islands and destinations
   async getIslands(): Promise<any> {
     try {
-      const response = await this.api.get('/schedules/api/islands');
+      const response = await axios.get(`${this.baseURL}/schedules/api/islands`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get islands');
@@ -274,7 +307,7 @@ class ApiService {
 
   async getDestinations(): Promise<any> {
     try {
-      const response = await this.api.get('/schedules/api/destinations');
+      const response = await axios.get(`${this.baseURL}/schedules/api/destinations`);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get destinations');
@@ -284,7 +317,7 @@ class ApiService {
   // Registration endpoint
   async register(userData: any): Promise<any> {
     try {
-      const response = await this.api.post('/register', userData);
+      const response = await axios.post(`${this.baseURL}/register`, userData);
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Registration failed');
@@ -335,6 +368,25 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to create staff user');
+    }
+  }
+
+  // Agent connection endpoints
+  async getAgentConnections(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/agent-connections');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent connections');
+    }
+  }
+
+  async createAgentConnection(connectionData: any): Promise<any> {
+    try {
+      const response = await this.api.post('/owner-settings/agent-connections', connectionData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to create agent connection');
     }
   }
 }

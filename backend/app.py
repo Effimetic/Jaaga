@@ -32,6 +32,48 @@ from services.sms_service import sms_service
 # Import routes
 from routes import main, boat_management, owner_settings, scheduling, unified_booking
 
+@app.route('/api/register', methods=['POST'])
+def register():
+    """User registration endpoint"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        phone = data.get('phone', '').strip()
+        role = data.get('role', 'public')
+        
+        if not name or not phone:
+            return jsonify({'error': 'Name and phone are required'}), 400
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(phone=phone).first()
+        if existing_user:
+            return jsonify({'error': 'User with this phone number already exists'}), 400
+        
+        # Create new user
+        user = User(
+            name=name, 
+            email=email if email else None, 
+            phone=phone, 
+            role=role
+        )
+        db.session.add(user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful',
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'phone': user.phone,
+                'role': user.role
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
+
 # Register blueprints
 app.register_blueprint(main.main_bp, url_prefix='/api')
 app.register_blueprint(boat_management.boat_bp, url_prefix='/api/boats')

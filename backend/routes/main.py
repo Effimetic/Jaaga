@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, date
 from models.user import User, LoginToken
 from models.boat_management import Boat
 from models.scheduling import Schedule
+from flask_jwt_extended import create_access_token
 from models import db
 import secrets
 import string
@@ -94,6 +95,8 @@ def verify_token():
     return jsonify({
         'success': True,
         'message': 'Login successful',
+        'access_token': create_access_token(identity=phone),
+        'phone': phone,
         'user': {
             'id': user.id,
             'phone': user.phone,
@@ -221,3 +224,45 @@ def update_user_profile():
         
     except Exception as e:
         return jsonify({'error': f'Failed to update profile: {str(e)}'}), 500 
+
+@main_bp.route('/register', methods=['POST'])
+def register():
+    """User registration endpoint"""
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        phone = data.get('phone', '').strip()
+        role = data.get('role', 'public')
+        
+        if not name or not phone:
+            return jsonify({'error': 'Name and phone are required'}), 400
+        
+        # Check if user already exists
+        existing_user = User.query.filter_by(phone=phone).first()
+        if existing_user:
+            return jsonify({'error': 'User with this phone number already exists'}), 400
+        
+        # Create new user
+        user = User(
+            name=name, 
+            email=email if email else None, 
+            phone=phone, 
+            role=role
+        )
+        db.session.add(user)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Registration successful',
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'phone': user.phone,
+                'role': user.role
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500

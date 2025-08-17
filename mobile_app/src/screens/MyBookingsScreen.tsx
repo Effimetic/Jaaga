@@ -38,12 +38,12 @@ export default function MyBookingsScreen({ navigation }: { navigation: any }) {
       setIsLoading(true);
       const response = await apiService.getBookings();
       if (response.success) {
-        setBookings(response.data || response.bookings || []);
+        setBookings(response.data || []);
       } else {
-        Alert.alert('Error', 'Failed to load bookings');
+        console.error('Failed to load bookings:', response.error);
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to load bookings');
+      console.error('Error loading bookings:', error);
     } finally {
       setIsLoading(false);
     }
@@ -94,17 +94,17 @@ export default function MyBookingsScreen({ navigation }: { navigation: any }) {
     <TouchableOpacity
       style={styles.bookingCard}
       onPress={() => {
-        Alert.alert(
-          'Booking Details',
-          `Booking Code: ${item.code}\nStatus: ${item.fulfillment_status}\nAmount: ${item.currency} ${item.grand_total}`
-        );
+        // Navigate to booking details or show more info
+        navigation.navigate('BookingDetails', { bookingId: item.id });
       }}
     >
       <View style={styles.bookingHeader}>
         <View style={styles.bookingInfo}>
           <Text style={styles.bookingCode}>{item.code}</Text>
           <Text style={styles.bookingSchedule}>{item.schedule_name}</Text>
-          <Text style={styles.bookingDate}>{formatDate(item.schedule_date)}</Text>
+          <Text style={styles.bookingDate}>
+            {item.schedule_date ? formatDate(item.schedule_date) : 'Date TBD'}
+          </Text>
         </View>
         <View style={styles.bookingStatus}>
           <View style={[
@@ -126,7 +126,7 @@ export default function MyBookingsScreen({ navigation }: { navigation: any }) {
       <View style={styles.bookingDetails}>
         <View style={styles.detailRow}>
           <FontAwesome5 name="ship" size={14} color="#6B7280" />
-          <Text style={styles.detailText}>{item.boat_name}</Text>
+          <Text style={styles.detailText}>{item.boat_name || 'Unknown Boat'}</Text>
         </View>
         
         <View style={styles.detailRow}>
@@ -136,7 +136,14 @@ export default function MyBookingsScreen({ navigation }: { navigation: any }) {
         
         <View style={styles.detailRow}>
           <FontAwesome5 name="money-bill" size={14} color="#6B7280" />
-          <Text style={styles.detailText}>{item.currency} {item.grand_total}</Text>
+          <Text style={styles.detailText}>{item.currency} {item.grand_total.toFixed(2)}</Text>
+        </View>
+        
+        <View style={styles.detailRow}>
+          <FontAwesome5 name="calendar" size={14} color="#6B7280" />
+          <Text style={styles.detailText}>
+            Booked: {formatDate(item.created_at)}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -153,10 +160,10 @@ export default function MyBookingsScreen({ navigation }: { navigation: any }) {
       </Text>
       <TouchableOpacity
         style={styles.emptyActionBtn}
-        onPress={() => navigation.navigate('Schedules')}
+        onPress={() => navigation.navigate('Home')}
       >
         <FontAwesome5 name="search" size={16} color="#FFF" />
-        <Text style={styles.emptyActionText}>Find Schedules</Text>
+        <Text style={styles.emptyActionText}>Search Schedules</Text>
       </TouchableOpacity>
     </View>
   );
