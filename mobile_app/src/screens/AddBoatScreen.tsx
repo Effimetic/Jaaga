@@ -243,22 +243,35 @@ export default function AddBoatScreen({ navigation }: { navigation: any }) {
   };
 
   const renderGridBox = (box: SeatGridBox, row: number, col: number) => {
+    if (box.isWalkway) {
+      // Render walkway as empty space
+      return (
+        <TouchableOpacity
+          key={`${row}-${col}`}
+          style={styles.walkwaySpace}
+          onPress={() => toggleBox(row, col)}
+        >
+          <Text style={styles.walkwayDot}>·</Text>
+        </TouchableOpacity>
+      );
+    }
+    
     return (
       <TouchableOpacity
         key={`${row}-${col}`}
         style={[
           styles.gridBox,
-          box.isWalkway ? styles.walkwayBox : styles.seatBox,
+          styles.seatBox,
           box.status === 'damaged' ? styles.damagedBox : null
         ]}
         onPress={() => toggleBox(row, col)}
       >
         <Text style={[
           styles.gridBoxText,
-          box.isWalkway ? styles.walkwayText : styles.seatText,
+          styles.seatText,
           box.status === 'damaged' ? styles.damagedText : null
         ]}>
-          {box.isWalkway ? 'W' : (box.seatNumber || 'S')}
+          {box.seatNumber || 'S'}
         </Text>
       </TouchableOpacity>
     );
@@ -489,7 +502,7 @@ export default function AddBoatScreen({ navigation }: { navigation: any }) {
                 <View style={styles.gridInfo}>
                   <FontAwesome5 name="lightbulb" size={16} color="#007AFF" style={styles.gridInfoIcon} />
                   <Text style={styles.gridInfoText}>
-                    Click boxes to toggle between seats and walkways. Green = Seat, Yellow = Walkway.
+                    Click boxes to toggle between seats and walkways. Green = Seat, Empty = Walkway.
                   </Text>
                 </View>
 
@@ -864,9 +877,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderColor: '#059669',
   },
-  walkwayBox: {
-    backgroundColor: '#F59E0B',
-    borderColor: '#D97706',
+  walkwaySpace: {
+    width: 35,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  walkwayDot: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontWeight: '300',
   },
   damagedBox: {
     backgroundColor: '#EF4444',
@@ -877,9 +898,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   seatText: {
-    color: '#FFF',
-  },
-  walkwayText: {
     color: '#FFF',
   },
   damagedText: {
