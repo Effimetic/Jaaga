@@ -75,6 +75,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
   };
 
   const getRoleDisplay = (role: string) => {
+    const normalizedRole = role?.toLowerCase();
     switch (role) {
       case 'public':
         return { icon: 'user', label: 'Public User', color: '#10B981' };

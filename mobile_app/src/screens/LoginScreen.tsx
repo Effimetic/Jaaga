@@ -110,6 +110,7 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
         // Try to get profile data
         try {
           const profile = await apiService.getProfile();
+          console.log('Profile API response:', profile);
           if (profile.success) {
             const userData = {
               id: profile.profile.id,
@@ -118,13 +119,14 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
               role: profile.profile.role,
               authenticated: true
             };
+            console.log('Setting user data from profile:', userData);
             await userService.setCurrentUserSession(userData, response.access_token);
             // Update AuthContext user state
             setUser(userData);
             console.log('Profile loaded, user state updated:', userData);
           }
         } catch (profileError) {
-          console.log('Profile load failed, using basic user data');
+          console.log('Profile load failed, using basic user data:', profileError);
           // Set basic user data in AuthContext
           setUser(tempUser);
           console.log('Basic user state set:', tempUser);

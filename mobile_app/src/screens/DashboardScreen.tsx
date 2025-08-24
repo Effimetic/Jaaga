@@ -64,14 +64,18 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       
       // Get current user
       const currentUser = await userService.getCurrentUser();
+      console.log('🔄 DashboardScreen: Current user from storage:', currentUser);
       if (currentUser) {
         // setUser(currentUser); // This line is removed as per the new_code
       }
 
       // Get dashboard stats if user is owner
-      if (currentUser?.role === 'owner') {
+      const userRole = currentUser?.role?.toLowerCase();
+      console.log('🔄 DashboardScreen: User role for stats:', userRole);
+      if (userRole === 'owner') {
         try {
           const statsResponse = await apiService.getDashboardStats();
+          console.log('🔄 DashboardScreen: Stats response:', statsResponse);
           if (statsResponse.success) {
             setStats(statsResponse.stats || statsResponse.data || {});
           }
@@ -532,30 +536,9 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation?.goBack()}
-          >
-            <FontAwesome5 name="arrow-left" size={20} color="#007AFF" />
-          </TouchableOpacity>
           <Text style={styles.headerTitle}>Dashboard</Text>
-          <TouchableOpacity
-            style={[styles.logoutButton, { 
-              backgroundColor: '#EF4444', 
-              borderRadius: 8, 
-              padding: 8,
-              borderWidth: 2,
-              borderColor: '#DC2626'
-            }]} 
-            onPress={() => {
-              console.log('🔄 DashboardScreen: Corner logout button pressed!');
-              Alert.alert('Test', 'Corner logout button pressed!');
-              handleLogout();
-            }}
-            activeOpacity={0.7}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <FontAwesome5 name="sign-out-alt" size={20} color="white" />
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
           </TouchableOpacity>
         </View>
 
@@ -592,6 +575,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,
+    paddingHorizontal: 4,
   },
   headerTitle: {
     fontSize: 24,
@@ -600,17 +584,6 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 8,
-    minWidth: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backButton: {
-    padding: 8,
-    minWidth: 40,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   userProfileHeader: {

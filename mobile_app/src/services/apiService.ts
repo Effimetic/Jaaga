@@ -75,6 +75,17 @@ class ApiService {
     }
   }
 
+  async logout(): Promise<any> {
+    try {
+      const response = await this.api.post('/auth/logout');
+      return response.data;
+    } catch (error: any) {
+      // Don't throw error for logout - continue with local logout
+      console.log('API logout failed:', error.response?.data?.error || 'Failed to logout');
+      return { success: false };
+    }
+  }
+
   // Search schedules (public endpoint)
   async searchSchedules(params: {
     from?: string;
