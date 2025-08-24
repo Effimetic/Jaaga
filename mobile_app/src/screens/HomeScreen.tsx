@@ -23,29 +23,21 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
       return;
     }
     
-    // For now, show alert since search functionality will be implemented later
-    Alert.alert("Search", `Searching for trips to ${destination.trim()}`);
+    // Navigate to search screen with destination
+    navigation?.navigate("SearchScreen", { destination: destination.trim() });
   };
 
   const handleTabPress = (tabName: string) => {
     console.log('🔄 Tab pressed:', tabName);
-    console.log('🔄 Current active tab:', activeTab);
-    
-    // Always set the active tab first
     setActiveTab(tabName);
-    console.log('🔄 Setting active tab to:', tabName);
     
-    // Handle any special navigation if needed
+    // Handle navigation for specific tabs
     if (tabName === "Profile" && user) {
-      // For logged-in users, we could optionally navigate to a full profile screen
-      // But for now, just show the tab content
-      console.log("Profile tab selected for logged-in user");
+      navigation?.navigate("Profile");
     }
   };
 
   const renderTabContent = () => {
-    console.log('🔄 Rendering tab content for:', activeTab);
-    
     switch (activeTab) {
       case "Home":
         return (
@@ -105,10 +97,10 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                     </TouchableOpacity>
                   )}
                   
-                  {user.role === 'owner' && (
+                  {(user.role === 'owner' || user.role === 'OWNER') && (
                     <TouchableOpacity
                       style={styles.quickActionCard}
-                      onPress={() => navigation?.navigate("Schedules")}
+                      onPress={() => navigation?.navigate("ScheduleManagement")}
                     >
                       <FontAwesome5 name="calendar-alt" size={20} color="#F59E0B" />
                       <Text style={styles.quickActionText}>Schedules</Text>
@@ -118,17 +110,59 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
               </View>
             )}
 
-            {/* Quick Info */}
-            <View style={styles.quickInfo}>
-              <View style={styles.infoCard}>
-                <FontAwesome5 name="ship" size={24} color="#007AFF" />
-                <Text style={styles.infoTitle}>Speed Boats</Text>
-                <Text style={styles.infoText}>Fast and comfortable travel</Text>
+            {/* Authentication Section for Non-logged Users */}
+            {!user && (
+              <View style={styles.authSection}>
+                <Text style={styles.authTitle}>Get Started</Text>
+                <Text style={styles.authSubtitle}>Login or register to book tickets</Text>
+                
+                <View style={styles.authButtons}>
+                  <TouchableOpacity 
+                    style={styles.authButton}
+                    onPress={() => navigation?.navigate("Login")}
+                  >
+                    <FontAwesome5 name="sign-in-alt" size={16} color="white" />
+                    <Text style={styles.authButtonText}>Login</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.authButton, styles.registerButton]}
+                    onPress={() => navigation?.navigate("Register")}
+                  >
+                    <FontAwesome5 name="user-plus" size={16} color="white" />
+                    <Text style={styles.authButtonText}>Register</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={styles.infoCard}>
-                <FontAwesome5 name="island-tropical" size={24} color="#10B981" />
-                <Text style={styles.infoTitle}>Beautiful Islands</Text>
-                <Text style={styles.infoText}>Explore paradise destinations</Text>
+            )}
+
+            {/* Features Section */}
+            <View style={styles.featuresSection}>
+              <Text style={styles.featuresTitle}>Why Choose Nashath Booking?</Text>
+              <View style={styles.featuresList}>
+                <View style={styles.featureItem}>
+                  <FontAwesome5 name="sms" size={20} color="#007AFF" />
+                  <View style={styles.featureContent}>
+                    <Text style={styles.featureTitle}>Easy SMS Login</Text>
+                    <Text style={styles.featureText}>Quick and secure login with SMS verification</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.featureItem}>
+                  <FontAwesome5 name="credit-card" size={20} color="#10B981" />
+                  <View style={styles.featureContent}>
+                    <Text style={styles.featureTitle}>Secure Payments</Text>
+                    <Text style={styles.featureText}>Multiple payment options including BML integration</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.featureItem}>
+                  <FontAwesome5 name="qrcode" size={20} color="#F59E0B" />
+                  <View style={styles.featureContent}>
+                    <Text style={styles.featureTitle}>QR Code Tickets</Text>
+                    <Text style={styles.featureText}>Digital tickets with QR codes for easy validation</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
@@ -168,17 +202,17 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
             
             <View style={styles.destinationsList}>
               <View style={styles.destinationCard}>
-                <FontAwesome5 name="island-tropical" size={40} color="#10B981" />
+                <FontAwesome5 name="umbrella-beach" size={40} color="#10B981" />
                 <Text style={styles.destinationName}>Maafushi</Text>
                 <Text style={styles.destinationDetails}>Famous for water sports and beaches</Text>
               </View>
               <View style={styles.destinationCard}>
-                <FontAwesome5 name="island-tropical" size={40} color="#007AFF" />
+                <FontAwesome5 name="umbrella-beach" size={40} color="#007AFF" />
                 <Text style={styles.destinationName}>Gulhi</Text>
                 <Text style={styles.destinationDetails}>Perfect for snorkeling and diving</Text>
               </View>
               <View style={styles.destinationCard}>
-                <FontAwesome5 name="island-tropical" size={40} color="#F59E0B" />
+                <FontAwesome5 name="umbrella-beach" size={40} color="#F59E0B" />
                 <Text style={styles.destinationName}>Thulusdhoo</Text>
                 <Text style={styles.destinationDetails}>Surfing paradise with crystal waters</Text>
               </View>
@@ -198,6 +232,14 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                   <FontAwesome5 name="user-circle" size={60} color="#007AFF" />
                   <Text style={styles.userName}>{user.name}</Text>
                   <Text style={styles.userPhone}>{user.phone}</Text>
+                  <Text style={styles.userRole}>
+                    {user.role === 'public' && 'Public User'}
+                    {user.role === 'agent' && 'Agent User'}
+                    {user.role === 'owner' && 'Boat Owner'}
+                    {user.role === 'PUBLIC' && 'Public User'}
+                    {user.role === 'AGENT' && 'Agent User'}
+                    {user.role === 'OWNER' && 'Boat Owner'}
+                  </Text>
                 </View>
                 
                 {/* Quick Links for Logged-in Users */}
@@ -212,7 +254,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                     <Text style={styles.quickLinkText}>Dashboard</Text>
                   </TouchableOpacity>
                   
-                  {user.role === 'owner' && (
+                  {canAccessFeature('boat_management') && (
                     <TouchableOpacity 
                       style={styles.quickLinkButton}
                       onPress={() => navigation?.navigate("MyBoats")}
@@ -238,31 +280,6 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                     <Text style={styles.quickLinkText}>Settings</Text>
                   </TouchableOpacity>
                 </View>
-                
-                <TouchableOpacity 
-                  style={styles.logoutButton}
-                  onPress={() => {
-                    // Handle logout
-                    Alert.alert(
-                      "Logout",
-                      "Are you sure you want to logout?",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        { 
-                          text: "Logout", 
-                          style: "destructive",
-                          onPress: () => {
-                            // TODO: Implement logout functionality
-                            Alert.alert("Logout", "Logout functionality will be implemented here");
-                          }
-                        }
-                      ]
-                    );
-                  }}
-                >
-                  <FontAwesome5 name="sign-out-alt" size={16} color="white" />
-                  <Text style={styles.logoutButtonText}>Logout</Text>
-                </TouchableOpacity>
               </>
             ) : (
               <>
@@ -308,7 +325,12 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
         );
       
       default:
-        return null;
+        return (
+          <View style={styles.tabContent}>
+            <Text style={styles.tabTitle}>Coming Soon</Text>
+            <Text style={styles.tabSubtitle}>This section is under development</Text>
+          </View>
+        );
     }
   };
 
@@ -321,7 +343,10 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
           <Text style={styles.headerTitle}>Nashath Booking</Text>
         </View>
         {user && (
-          <TouchableOpacity style={styles.userButton} onPress={() => navigation?.navigate("Dashboard")}>
+          <TouchableOpacity 
+            style={styles.userButton} 
+            onPress={() => navigation?.navigate("Dashboard")}
+          >
             <FontAwesome name="user-circle" size={24} color="#007AFF" />
           </TouchableOpacity>
         )}
@@ -351,7 +376,8 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f6f8fa" },
+  safe: { flex: 1, backgroundColor: "#F8F9FA" },
+  
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -372,10 +398,10 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginLeft: 8,
   },
-
   userButton: {
     padding: 8,
   },
+
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -401,67 +427,97 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#007AFF',
   },
+
   content: { flex: 1 },
-  contentContainer: { padding: 16, gap: 12 },
-  tabContent: { alignItems: "center", paddingVertical: 8 },
-  tabTitle: { fontSize: 20, fontWeight: "700", color: "#111827" },
-  tabSubtitle: { fontSize: 13, color: "#6b7280", marginTop: 6, textAlign: "center" },
+  contentContainer: { padding: 16 },
+  
+  tabContent: { 
+    alignItems: "center", 
+    paddingVertical: 8,
+    minHeight: 400,
+  },
+  tabTitle: { 
+    fontSize: 24, 
+    fontWeight: "700", 
+    color: "#111827",
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  tabSubtitle: { 
+    fontSize: 14, 
+    color: "#6b7280", 
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
+  },
+
   searchSection: {
     width: '100%',
-    marginTop: 16,
-    alignItems: 'center',
+    marginBottom: 32,
   },
-  searchLabel: { fontWeight: "600", color: "#374151", marginTop: 8, marginBottom: 6, fontSize: 14 },
+  searchLabel: { 
+    fontWeight: "600", 
+    color: "#374151", 
+    marginBottom: 12, 
+    fontSize: 16,
+    textAlign: 'center',
+  },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    borderRadius: 8,
+    borderRadius: 12,
     backgroundColor: "#fff",
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
-  searchIcon: { marginLeft: 12, marginRight: 8 },
+  searchIcon: { 
+    marginLeft: 16, 
+    marginRight: 12,
+  },
   searchInput: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingVertical: 16,
     fontSize: 16,
     color: "#111827",
   },
   searchButton: {
     width: '100%',
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: "#2563eb",
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#007AFF",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    marginTop: 12,
+    gap: 8,
+    shadowColor: '#007AFF',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  searchButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  quickInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginTop: 16,
+  searchButtonText: { 
+    color: "#fff", 
+    fontWeight: "700", 
+    fontSize: 16,
   },
-  infoCard: {
-    alignItems: 'center',
-    width: '30%',
-  },
-  infoTitle: { fontWeight: "700", color: "#111827", marginTop: 8 },
-  infoText: { color: "#6b7280", marginTop: 4 },
-  
+
   quickActionsSection: {
     width: '100%',
-    marginTop: 20,
+    marginBottom: 32,
   },
   quickActionsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: 'center',
   },
   quickActionsGrid: {
@@ -489,122 +545,246 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
   },
-  
-  boatsList: { width: '100%', marginTop: 16 },
-  boatCard: {
-    backgroundColor: "#fff",
+
+  authSection: {
+    width: '100%',
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  authTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  authSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 20,
+  },
+  authButtons: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: 12,
+  },
+  authButton: {
+    flex: 1,
+    height: 50,
     borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 12,
+    backgroundColor: "#007AFF",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
-  boatName: { fontWeight: "700", color: "#111827", marginTop: 8 },
-  boatDetails: { color: "#6b7280", marginTop: 4 },
-  destinationsList: { width: '100%', marginTop: 16 },
-  destinationCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginBottom: 12,
+  registerButton: {
+    backgroundColor: "#10B981",
   },
-  destinationName: { fontWeight: "700", color: "#111827", marginTop: 8 },
-  destinationDetails: { color: "#6b7280", marginTop: 4 },
-  profileInfo: {
-    alignItems: 'center',
-    marginTop: 16,
+  authButtonText: { 
+    color: "#fff", 
+    fontWeight: "700", 
+    fontSize: 16,
   },
-  userName: { fontSize: 18, fontWeight: "700", color: "#111827", marginTop: 8 },
-  userPhone: { fontSize: 14, color: "#6b7280", marginTop: 4 },
 
   authOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
     marginTop: 16,
+    gap: 12,
   },
-  authButton: {
-    flex: 1,
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: "#2563eb",
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 5,
-  },
-  authButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   registerButtonStyle: {
     backgroundColor: "#10B981",
   },
+
+  profileInfo: {
+    alignItems: 'center',
+    marginBottom: 24,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 20,
+    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  userName: { 
+    fontSize: 20, 
+    fontWeight: "700", 
+    color: "#111827", 
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  userPhone: { 
+    fontSize: 14, 
+    color: "#6b7280", 
+    marginBottom: 4,
+  },
+  userRole: {
+    fontSize: 14,
+    color: "#007AFF",
+    fontWeight: '600',
+  },
+
   quickLinks: {
     width: '100%',
-    marginTop: 16,
     alignItems: 'center',
   },
   quickLinksTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   quickLinkButton: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-    marginBottom: 10,
-    paddingHorizontal: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   quickLinkText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#374151',
-    marginLeft: 10,
+    marginLeft: 12,
   },
-  logoutButton: {
-    width: '100%',
-    height: 46,
-    borderRadius: 8,
-    backgroundColor: '#ef4444',
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    marginTop: 12,
-  },
-  logoutButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+
   guestInfo: {
     width: '100%',
-    marginTop: 16,
-    paddingHorizontal: 10,
+    marginTop: 24,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   guestInfoTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   guestInfoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   guestInfoText: {
     fontSize: 14,
     color: '#6b7280',
-    marginLeft: 8,
+    marginLeft: 12,
+    flex: 1,
+  },
+
+  featuresSection: {
+    width: '100%',
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  featuresList: {
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  featureContent: {
+    marginLeft: 16,
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  featureText: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+
+  boatsList: { 
+    width: '100%', 
+    gap: 16,
+  },
+  boatCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  boatName: { 
+    fontWeight: "700", 
+    color: "#111827", 
+    marginTop: 12,
+    fontSize: 16,
+  },
+  boatDetails: { 
+    color: "#6b7280", 
+    marginTop: 4,
+    fontSize: 14,
+  },
+
+  destinationsList: { 
+    width: '100%', 
+    gap: 16,
+  },
+  destinationCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  destinationName: { 
+    fontWeight: "700", 
+    color: "#111827", 
+    marginTop: 12,
+    fontSize: 16,
+  },
+  destinationDetails: { 
+    color: "#6b7280", 
+    marginTop: 4,
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

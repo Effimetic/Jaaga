@@ -136,7 +136,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
     if (!user) return null;
     
     // Clean the role value and handle case variations
-    const userRole = user.role ? user.role.trim().toLowerCase() : '';
+    const userRole = user.role ? user.role.toString().trim().toLowerCase() : '';
     console.log('🔄 Dashboard: User role:', user.role, 'Type:', typeof user.role);
     console.log('🔄 Dashboard: Cleaned role:', userRole);
     
