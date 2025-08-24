@@ -1,7 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, flash
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db
-from models.owner_settings import OwnerSettings, PaymentTransaction, StaffUser
+from models import db, User, OwnerSettings, OwnerAgentConnection, CommissionLedger
+from utils import get_user_by_phone
+from models.owner_settings import PaymentTransaction, StaffUser
 from models.user import User
 from services.bml_gateway import BMLGatewayService, mvr_to_cents
 from models.owner_settings import OwnerAgentConnection
@@ -25,7 +26,7 @@ def get_settings():
     """Get owner settings"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can access settings.'}), 403
@@ -65,7 +66,7 @@ def update_settings():
     """Update owner settings"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can access settings.'}), 403
@@ -115,7 +116,7 @@ def get_agent_connections():
     """Get agent connections for owner"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can access agent connections.'}), 403

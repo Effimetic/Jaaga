@@ -38,8 +38,25 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
   useEffect(() => {
     console.log('🔄 DashboardScreen: useEffect triggered');
+    console.log('🔄 DashboardScreen: Current user state:', user);
+    debugAsyncStorage();
     loadDashboardData();
-  }, []);
+  }, [user]); // Add user as dependency to reload when user changes
+
+  const debugAsyncStorage = async () => {
+    try {
+      const userData = await userService.getCurrentUser();
+      const token = await userService.getAuthToken();
+      const userId = await userService.getCurrentUserId();
+      
+      console.log('🔄 DashboardScreen: AsyncStorage debug:');
+      console.log('🔄 DashboardScreen: - userData:', userData);
+      console.log('🔄 DashboardScreen: - token:', token);
+      console.log('🔄 DashboardScreen: - userId:', userId);
+    } catch (error) {
+      console.error('🔄 DashboardScreen: Error debugging AsyncStorage:', error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -115,6 +132,361 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
     );
   };
 
+  const renderDashboardContent = () => {
+    if (!user) return null;
+    
+    // Clean the role value and handle case variations
+    const userRole = user.role ? user.role.trim().toLowerCase() : '';
+    console.log('🔄 Dashboard: User role:', user.role, 'Type:', typeof user.role);
+    console.log('🔄 Dashboard: Cleaned role:', userRole);
+    
+    // If role is empty or undefined, show loading or error
+    if (!userRole) {
+      console.log('🔄 Dashboard: No role found, showing loading state');
+      return (
+        <View style={styles.loadingContainer}>
+          <FontAwesome5 name="spinner" size={24} color="#007AFF" />
+          <Text style={styles.loadingText}>Loading user information...</Text>
+        </View>
+      );
+    }
+    
+    switch (userRole) {
+      case 'owner':
+        console.log('🔄 Rendering owner dashboard');
+        return (
+          <>
+            {/* Owner Stats */}
+            <View style={styles.ownerStats}>
+              <Text style={styles.sectionTitle}>Today's Overview</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="ship" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>{stats.boats || stats.boat_count || 0}</Text>
+                    <Text style={styles.statLabel}>Total Boats</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="calendar-day" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>{stats.today_trips || 0}</Text>
+                    <Text style={styles.statLabel}>Today's Trips</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="users" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>{stats.today_travellers || 0}</Text>
+                    <Text style={styles.statLabel}>Total Travellers Today</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Owner Quick Actions */}
+            <View style={styles.appOptions}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              
+              <View style={styles.optionGrid}>
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('MyBoats')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="ship" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>My Boats</Text>
+                    <Text style={styles.optionSubtitle}>Manage your boat fleet</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('Schedules')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="calendar-alt" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Manage Schedules</Text>
+                    <Text style={styles.optionSubtitle}>Create and edit trip schedules</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('Settings')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="cog" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Owner Settings</Text>
+                    <Text style={styles.optionSubtitle}>Configure payment methods, company info</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('AgentConnections')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="handshake" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Connected Agents</Text>
+                    <Text style={styles.optionSubtitle}>Manage agent relationships</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Recent Activity */}
+            <View style={styles.recentActivity}>
+              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              <View style={styles.activityCard}>
+                <Text style={styles.activityText}>No recent activity</Text>
+              </View>
+            </View>
+          </>
+        );
+
+      case 'public':
+        console.log('🔄 Rendering public user dashboard');
+        return (
+          <>
+            {/* Public User Stats */}
+            <View style={styles.publicStats}>
+              <Text style={styles.sectionTitle}>Your Travel Summary</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="ticket-alt" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>Total Bookings</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="check-circle" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>Confirmed</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="clock" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>Pending</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Public User Quick Actions */}
+            <View style={styles.appOptions}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              
+              <View style={styles.optionGrid}>
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('MyBookings')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="list-alt" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>My Bookings</Text>
+                    <Text style={styles.optionSubtitle}>View your booking history</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('Settings')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="cog" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Settings</Text>
+                    <Text style={styles.optionSubtitle}>Manage your account settings</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Welcome Message */}
+            <View style={styles.welcomeCard}>
+              <FontAwesome5 name="ship" size={40} color="#007AFF" />
+              <Text style={styles.welcomeTitle}>Welcome to Nashath Booking!</Text>
+              <Text style={styles.welcomeText}>
+                Start exploring the beautiful islands of Maldives. Book your speed boat tickets and create unforgettable memories.
+              </Text>
+              <TouchableOpacity
+                style={styles.welcomeButton}
+                onPress={() => navigation.navigate('Home')}
+              >
+                <FontAwesome5 name="search" size={16} color="white" />
+                <Text style={styles.welcomeButtonText}>Search for Trips</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        );
+
+      case 'agent':
+        console.log('🔄 Rendering agent dashboard');
+        return (
+          <>
+            {/* Agent Stats */}
+            <View style={styles.agentStats}>
+              <Text style={styles.sectionTitle}>Agent Overview</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="handshake" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>Connected Owners</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="ticket-alt" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>0</Text>
+                    <Text style={styles.statLabel}>Total Bookings</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.statCard}>
+                  <View style={styles.statIcon}>
+                    <FontAwesome5 name="credit-card" size={20} color="#FFF" />
+                  </View>
+                  <View style={styles.statContent}>
+                    <Text style={styles.statValue}>MVR 0</Text>
+                    <Text style={styles.statLabel}>Available Credit</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Agent Quick Actions */}
+            <View style={styles.appOptions}>
+              <Text style={styles.sectionTitle}>Quick Actions</Text>
+              
+              <View style={styles.optionGrid}>
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('AgentOwners')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="handshake" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Connected Owners</Text>
+                    <Text style={styles.optionSubtitle}>View boat owners you can book from</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('Schedules')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="calendar-alt" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Available Schedules</Text>
+                    <Text style={styles.optionSubtitle}>Browse schedules from connected boats</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('Settings')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="cog" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Settings</Text>
+                    <Text style={styles.optionSubtitle}>Manage account and send connection requests</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Connection Request Info */}
+            <View style={styles.infoCard}>
+              <FontAwesome5 name="info-circle" size={24} color="#007AFF" />
+              <Text style={styles.infoTitle}>Need to Connect with Boat Owners?</Text>
+              <Text style={styles.infoText}>
+                Go to Settings to send connection requests to boat owners. Once approved, you'll be able to book tickets on their behalf.
+              </Text>
+            </View>
+          </>
+        );
+
+      default:
+        console.log('🔄 Dashboard: Unknown role:', user.role);
+        return (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Unknown user role: {user.role}</Text>
+            <Text style={styles.errorText}>Please contact support</Text>
+          </View>
+        );
+    }
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -143,6 +515,12 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+          >
+            <FontAwesome5 name="arrow-left" size={20} color="#007AFF" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Dashboard</Text>
           <TouchableOpacity
             style={[styles.logoutButton, { 
@@ -164,24 +542,6 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           </TouchableOpacity>
         </View>
 
-        {/* Test Logout Button */}
-        <Pressable
-          style={{
-            backgroundColor: '#10B981',
-            padding: 12,
-            borderRadius: 8,
-            marginBottom: 16,
-            alignItems: 'center'
-          }}
-          onPress={() => {
-            console.log('🔄 Test logout button pressed!');
-            Alert.alert('Test Logout', 'Testing logout function directly...');
-            logout();
-          }}
-        >
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>TEST LOGOUT</Text>
-        </Pressable>
-
         {/* User Profile Header */}
         <View style={styles.userProfileHeader}>
           <View style={styles.profileAvatar}>
@@ -197,189 +557,10 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
           </View>
         </View>
 
-        {/* Owner Stats - Only show for boat owners */}
-        {user.role === 'owner' && (
-          <View style={styles.ownerStats}>
-            <Text style={styles.sectionTitle}>Today's Overview</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <View style={styles.statIcon}>
-                  <FontAwesome5 name="ship" size={20} color="#FFF" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.boats || stats.boat_count || 0}</Text>
-                  <Text style={styles.statLabel}>Total Boats</Text>
-                </View>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={styles.statIcon}>
-                  <FontAwesome5 name="calendar-day" size={20} color="#FFF" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.today_trips || 0}</Text>
-                  <Text style={styles.statLabel}>Today's Trips</Text>
-                </View>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={styles.statIcon}>
-                  <FontAwesome5 name="users" size={20} color="#FFF" />
-                </View>
-                <View style={styles.statContent}>
-                  <Text style={styles.statValue}>{stats.today_travellers || 0}</Text>
-                  <Text style={styles.statLabel}>Total Travellers Today</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* Quick Actions */}
-        <View style={styles.appOptions}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          
-          <View style={styles.optionGrid}>
-            {/* My Boats - Only for owners */}
-            {user.role === 'owner' && (
-              <TouchableOpacity
-                style={styles.appOption}
-                onPress={() => navigation.navigate('MyBoats')}
-              >
-                <View style={styles.optionIcon}>
-                  <FontAwesome5 name="ship" size={20} color="#007AFF" />
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>My Boats</Text>
-                  <Text style={styles.optionSubtitle}>Manage your boat fleet</Text>
-                </View>
-                <View style={styles.optionArrow}>
-                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Manage Schedules - Only for owners */}
-            {user.role === 'owner' && (
-              <TouchableOpacity
-                style={styles.appOption}
-                onPress={() => navigation.navigate('Schedules')}
-              >
-                <View style={styles.optionIcon}>
-                  <FontAwesome5 name="calendar-alt" size={20} color="#007AFF" />
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Manage Schedules</Text>
-                  <Text style={styles.optionSubtitle}>Create and edit trip schedules</Text>
-                </View>
-                <View style={styles.optionArrow}>
-                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Agent Owners - Only for agents */}
-            {user.role === 'agent' && (
-              <TouchableOpacity
-                style={styles.appOption}
-                onPress={() => navigation.navigate('AgentOwners')}
-              >
-                <View style={styles.optionIcon}>
-                  <FontAwesome5 name="handshake" size={20} color="#007AFF" />
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Connected Owners</Text>
-                  <Text style={styles.optionSubtitle}>View boat owners you can book from</Text>
-                </View>
-                <View style={styles.optionArrow}>
-                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Agent Connections - Only for owners */}
-            {user.role === 'owner' && (
-              <TouchableOpacity
-                style={styles.appOption}
-                onPress={() => navigation.navigate('AgentConnections')}
-              >
-                <View style={styles.optionIcon}>
-                  <FontAwesome5 name="user-tie" size={20} color="#007AFF" />
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Agent Connections</Text>
-                  <Text style={styles.optionSubtitle}>Manage agent credit relationships</Text>
-                </View>
-                <View style={styles.optionArrow}>
-                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Settings - For all users */}
-            <TouchableOpacity
-              style={styles.appOption}
-              onPress={() => navigation.navigate('Settings')}
-            >
-              <View style={styles.optionIcon}>
-                <FontAwesome5 name="cog" size={20} color="#007AFF" />
-              </View>
-              <View style={styles.optionContent}>
-                <Text style={styles.optionTitle}>Settings</Text>
-                <Text style={styles.optionSubtitle}>Manage your account settings</Text>
-              </View>
-              <View style={styles.optionArrow}>
-                <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Book Tickets - For public users and agents */}
-            {(user.role === 'public' || user.role === 'agent') && (
-              <TouchableOpacity
-                style={styles.appOption}
-                onPress={() => navigation.navigate('BookTickets')}
-              >
-                <View style={styles.optionIcon}>
-                  <FontAwesome5 name="ticket-alt" size={20} color="#007AFF" />
-                </View>
-                <View style={styles.optionContent}>
-                  <Text style={styles.optionTitle}>Book Tickets</Text>
-                  <Text style={styles.optionSubtitle}>Search and book speed boat tickets</Text>
-                </View>
-                <View style={styles.optionArrow}>
-                  <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* My Bookings - For all users */}
-            <TouchableOpacity
-              style={styles.appOption}
-              onPress={() => navigation.navigate('MyBookings')}
-            >
-              <View style={styles.optionIcon}>
-                <FontAwesome5 name="list-alt" size={20} color="#007AFF" />
-              </View>
-              <View style={styles.optionContent}>
-                <Text style={styles.optionTitle}>My Bookings</Text>
-                <Text style={styles.optionSubtitle}>View your booking history</Text>
-              </View>
-              <View style={styles.optionArrow}>
-                <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Recent Activity - Only for owners */}
-        {user.role === 'owner' && (
-          <View style={styles.recentActivity}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
-            <View style={styles.activityCard}>
-              <Text style={styles.activityText}>No recent activity</Text>
-            </View>
-          </View>
-        )}
+        {/* Tab Content */}
+        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+          {user ? renderDashboardContent() : null}
+        </ScrollView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -401,6 +582,13 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   logoutButton: {
+    padding: 8,
+    minWidth: 40,
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButton: {
     padding: 8,
     minWidth: 40,
     minHeight: 40,
@@ -481,6 +669,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
+  },
+  statContent: {
+    alignItems: 'center',
   },
   statValue: {
     fontSize: 24,
@@ -576,5 +767,81 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: '#EF4444',
+  },
+
+  publicStats: {
+    marginBottom: 24,
+  },
+  welcomeCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    marginBottom: 24,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  welcomeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  welcomeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  welcomeButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  agentStats: {
+    marginBottom: 24,
+  },
+  infoCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginLeft: 12,
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginLeft: 12,
+  },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 20, // Add some padding at the bottom for the last section
   },
 });

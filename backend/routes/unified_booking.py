@@ -1,9 +1,9 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models.unified_booking import Booking, TicketType, TaxProfile, ScheduleTicketType
-from models.scheduling import Schedule
-from models import db, User
+from models import db, User, Schedule, ScheduleTicketType, ScheduleDestination, ScheduleSeat
+from models.unified_booking import Booking, TicketType, TaxProfile
+from utils import get_user_by_phone
 from services.unified_booking import UnifiedBookingService
 from services.sms_service import sms_service
 from datetime import date
@@ -16,7 +16,7 @@ def get_user_bookings():
     """Get bookings for current user"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user:
             return jsonify({'error': 'User not found'}), 404
@@ -56,31 +56,83 @@ def get_user_bookings():
     except Exception as e:
         return jsonify({'error': f'Failed to get bookings: {str(e)}'}), 500
 
-@unified_booking_bp.route('/schedules/<int:schedule_id>/bookings', methods=['GET'])
+@unified_booking_bp.route('/schedules', methods=['GET'])
 @jwt_required()
-def get_schedule_bookings(schedule_id):
-    """Get all bookings for a schedule"""
-    phone = get_jwt_identity()
-    user = User.query.filter_by(phone=phone).first()
-    
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-    
-    schedule = Schedule.query.get_or_404(schedule_id)
-    
-    if schedule.owner_id != user.id and user.role != 'admin':
-        return jsonify({'error': 'Access denied'}), 403
-    
-    service = UnifiedBookingService(schedule.owner_id, schedule_id)
-    bookings = service.get_bookings_for_schedule()
-    
-    booking_list = []
-    for booking in bookings:
-        booking_data = service.get_booking_summary(booking.id)
-        if booking_data:
-            booking_list.append(booking_data)
-    
-    return jsonify({'bookings': booking_list})
+def get_schedules():
+    """Get schedules for the current user"""
+    try:
+        phone = get_jwt_identity()
+        user = get_user_by_phone(phone)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Get schedules based on user role
+        if user.role == 'owner':
+            schedules = Schedule.query.filter_by(owner_id=user.id).all()
+        elif user.role == 'agent':
+            # Get schedules from connected owners
+            from models.owner_settings import OwnerAgentConnection
+            schedules = Schedule.query.join(OwnerAgentConnection).filter(
+                OwnerAgentConnection.agent_id == user.id,
+                OwnerAgentConnection.status == 'approved'
+            ).all()
+        else:
+            # Public users can see all published schedules
+            schedules = Schedule.query.filter_by(status='PUBLISHED').all()
+        
+        schedules_data = []
+        for schedule in schedules:
+            schedules_data.append({
+                'id': schedule.id,
+                'name': schedule.name,
+                'schedule_date': schedule.schedule_date.isoformat() if schedule.schedule_date else None,
+                'status': schedule.status,
+                'boat_name': schedule.boat.name if schedule.boat else None,
+                'owner_name': schedule.owner.name if schedule.owner else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': schedules_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get schedules: {str(e)}'}), 500
+
+@unified_booking_bp.route('/schedules/<int:schedule_id>', methods=['GET'])
+@jwt_required()
+def get_schedule(schedule_id):
+    """Get a specific schedule by ID"""
+    try:
+        phone = get_jwt_identity()
+        user = get_user_by_phone(phone)
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        schedule = Schedule.query.get_or_404(schedule_id)
+        
+        # Check access based on user role
+        if user.role == 'owner' and schedule.owner_id != user.id:
+            return jsonify({'error': 'Access denied'}), 403
+        
+        schedule_data = {
+            'id': schedule.id,
+            'name': schedule.name,
+            'schedule_date': schedule.schedule_date.isoformat() if schedule.schedule_date else None,
+            'status': schedule.status,
+            'boat_name': schedule.boat.name if schedule.boat else None,
+            'owner_name': schedule.owner.name if schedule.owner else None
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': schedule_data
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to get schedule: {str(e)}'}), 500
 
 @unified_booking_bp.route('/schedules/<int:schedule_id>/bookings', methods=['POST'])
 @jwt_required()
@@ -302,7 +354,7 @@ def get_agent_owners():
     """Get owners connected to current agent"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'agent':
             return jsonify({'error': 'Access denied. Only agents can access this endpoint.'}), 403
@@ -338,7 +390,7 @@ def get_agent_schedules():
     """Get schedules from owners connected to current agent"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'agent':
             return jsonify({'error': 'Access denied. Only agents can access this endpoint.'}), 403

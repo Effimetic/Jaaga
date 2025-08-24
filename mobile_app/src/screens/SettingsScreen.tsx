@@ -110,6 +110,26 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
     );
   }
 
+  // Add agent-specific settings
+  if (user?.role === 'agent') {
+    settingsOptions.unshift(
+      {
+        id: 'connections',
+        title: 'Connection Requests',
+        subtitle: 'Send requests to boat owners',
+        icon: 'handshake',
+        onPress: () => Alert.alert('Coming Soon', 'Connection request system will be available soon'),
+      },
+      {
+        id: 'credit',
+        title: 'Credit Management',
+        subtitle: 'View your credit limits and balances',
+        icon: 'credit-card',
+        onPress: () => Alert.alert('Coming Soon', 'Credit management will be available soon'),
+      }
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>

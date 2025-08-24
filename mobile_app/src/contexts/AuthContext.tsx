@@ -51,15 +51,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuthStatus = async () => {
     try {
       const isAuth = await userService.isAuthenticated();
+      console.log('🔄 checkAuthStatus: isAuth:', isAuth);
+      
       if (isAuth) {
         const userData = await userService.getCurrentUser();
         const token = await userService.getAuthToken();
+        
+        console.log('🔄 checkAuthStatus: userData from AsyncStorage:', userData);
+        console.log('🔄 checkAuthStatus: token:', token);
         
         if (userData && token) {
           try {
             // Verify token with backend
             const profile = await apiService.getProfile();
-            setUser({ ...userData, authenticated: true });
+            console.log('🔄 checkAuthStatus: profile from API:', profile);
+            
+            if (profile.success && profile.user) {
+              const updatedUserData = { 
+                ...userData, 
+                ...profile.user,  // Override with fresh data from API
+                authenticated: true 
+              };
+              console.log('🔄 checkAuthStatus: setting user to:', updatedUserData);
+              setUser(updatedUserData);
+            } else {
+              console.log('🔄 checkAuthStatus: profile not successful, using stored user data');
+              const updatedUserData = { ...userData, authenticated: true };
+              setUser(updatedUserData);
+            }
           } catch (error) {
             console.error('Error verifying token:', error);
             await userService.clearCurrentUserSession();
@@ -95,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await apiService.verifyToken(phone, token);
       
       if (result.success) {
-        // Store token for API requests
+        // Store token for API requests FIRST
         await userService.setCurrentUserSession({
           id: 0, // Temporary ID, will be updated from profile
           phone: result.phone,
@@ -104,17 +123,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authenticated: true
         }, result.access_token);
         
+        console.log('🔄 verifySMS: Token stored, waiting for AsyncStorage to update...');
+        // Wait a bit for AsyncStorage to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Get updated profile data using the token
         try {
+          console.log('🔄 verifySMS: About to fetch profile with token:', result.access_token);
           const profile = await apiService.getProfile();
-          if (profile.success) {
+          console.log('🔄 verifySMS: profile response:', profile);
+          
+          if (profile.success && profile.user) {
             const userData = {
-              id: profile.profile.id,
-              phone: profile.profile.phone,
-              name: profile.profile.name,
-              role: profile.profile.role,
+              id: profile.user.id,
+              phone: profile.user.phone,
+              name: profile.user.name,
+              role: profile.user.role,
               authenticated: true
             };
+            console.log('🔄 verifySMS: setting user data from profile:', userData);
             await userService.setCurrentUserSession(userData, result.access_token);
             setUser(userData);
             
@@ -125,10 +152,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               user: userData
             };
           } else {
-            throw new Error('Failed to get profile data');
+            console.error('🔄 verifySMS: Profile response not successful:', profile);
+            throw new Error(`Profile fetch failed: ${profile.error || 'Unknown error'}`);
           }
-        } catch (profileError) {
-          console.error('Error getting profile:', profileError);
+        } catch (profileError: any) {
+          console.error('🔄 verifySMS: Error getting profile:', profileError);
+          console.error('🔄 verifySMS: Profile error details:', {
+            message: profileError.message,
+            stack: profileError.stack
+          });
+          
           // If profile fails, still allow login with basic user data
           const basicUserData = {
             id: 0,
@@ -137,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'public',
             authenticated: true
           };
+          console.log('🔄 verifySMS: Falling back to basic user data:', basicUserData);
           setUser(basicUserData);
           
           return {

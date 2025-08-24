@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
 # Import all models to ensure they are registered with SQLAlchemy
-from .user import User
+from .user import User, LoginToken
 from .boat_management import Boat
 from .scheduling import Schedule, ScheduleDestination, ScheduleSeat, Island, Destination, OwnerBooking, OwnerBookingSeat
 from .owner_settings import OwnerSettings, StaffUser, PaymentTransaction, AppOwnerSettings, CommissionLedger, OwnerAgentConnection
@@ -16,7 +16,7 @@ from .unified_booking import (
 
 __all__ = [
     'db',
-    'User', 'Boat', 'Schedule', 'ScheduleDestination', 'ScheduleSeat', 
+    'User', 'LoginToken', 'Boat', 'Schedule', 'ScheduleDestination', 'ScheduleSeat', 
     'Island', 'Destination', 'OwnerBooking', 'OwnerBookingSeat', 
     'OwnerAgentConnection', 'OwnerSettings', 'StaffUser', 'PaymentTransaction', 
     'AppOwnerSettings', 'CommissionLedger', 'TicketType', 'TaxProfile', 

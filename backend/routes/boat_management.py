@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from models.boat_management import Boat, Seat
-from models import db, User
+from models import db, User, Boat
+from utils import get_user_by_phone
 import json
 
 boat_bp = Blueprint('boat_management', __name__)
@@ -13,7 +13,7 @@ def boats():
     """Get boats for the current user"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can manage boats.'}), 403
@@ -46,7 +46,7 @@ def get_boat(boat_id):
     """Get a specific boat by ID"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can access boats.'}), 403
@@ -80,7 +80,7 @@ def add_boat():
     """Add a new boat"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can add boats.'}), 403
@@ -166,7 +166,7 @@ def edit_boat(boat_id):
     """Edit an existing boat"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can edit boats.'}), 403
@@ -213,7 +213,7 @@ def delete_boat(boat_id):
     """Delete a boat"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can delete boats.'}), 403
@@ -241,7 +241,7 @@ def toggle_boat_status(boat_id):
     """Toggle boat active status"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        user = get_user_by_phone(phone)
         
         if not user or user.role != 'owner':
             return jsonify({'error': 'Access denied. Only boat owners can manage boats.'}), 403

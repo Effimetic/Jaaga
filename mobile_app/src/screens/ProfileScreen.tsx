@@ -117,6 +117,12 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation?.goBack()}
+          >
+            <FontAwesome5 name="arrow-left" size={20} color="#007AFF" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Profile</Text>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
@@ -242,6 +248,9 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   logoutButton: {
+    padding: 8,
+  },
+  backButton: {
     padding: 8,
   },
 

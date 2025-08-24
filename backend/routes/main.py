@@ -1,11 +1,8 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from datetime import datetime, timedelta, date
-from models.user import User, LoginToken
-from models.boat_management import Boat
-from models.scheduling import Schedule
-from flask_jwt_extended import create_access_token
-from models import db
+from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token
+from models import db, User, LoginToken, Boat, Schedule
+from datetime import datetime, date, timedelta
+from utils import get_user_by_phone, clean_phone_number
 import secrets
 import string
 
@@ -63,12 +60,18 @@ def verify_token():
     phone = data.get('phone')
     token = data.get('token')
     
+    print(f"🔍 verify_token: Received phone: '{phone}', token: '{token}'")
+    
     if not phone or not token:
         return jsonify({'error': 'Phone and token are required'}), 400
     
+    # Clean phone number (remove spaces and ensure consistent format)
+    clean_phone = clean_phone_number(phone)
+    print(f"🔍 verify_token: Cleaned phone: '{clean_phone}'")
+    
     # Find valid token
     login_token = LoginToken.query.filter_by(
-        phone=phone, 
+        phone=clean_phone, 
         token=token, 
         is_used=False
     ).filter(LoginToken.expires_at > datetime.utcnow()).first()
@@ -80,30 +83,39 @@ def verify_token():
     elif len(token) != 6 or not token.isdigit():
         return jsonify({'error': 'Invalid token format'}), 400
     
-    # Find or create user
-    user = User.query.filter_by(phone=phone).first()
+    # Find user by phone using helper function
+    user = get_user_by_phone(clean_phone)
+    print(f"🔍 verify_token: User query result: {user}")
+    
     if not user:
+        print(f"🔍 verify_token: No user found, creating new user with phone: '{clean_phone}'")
         # Create new user
-        user = User(phone=phone, name=f"User_{phone[-4:]}", role='public')
+        user = User(phone=clean_phone, name=f"User_{clean_phone[-4:]}", role='public')
         db.session.add(user)
         db.session.commit()
+        print(f"🔍 verify_token: New user created with ID: {user.id}")
+    else:
+        print(f"🔍 verify_token: Existing user found: ID={user.id}, name='{user.name}', role='{user.role}'")
     
     # Update last login
     user.last_login = datetime.utcnow()
     db.session.commit()
     
-    return jsonify({
+    response_data = {
         'success': True,
         'message': 'Login successful',
-        'access_token': create_access_token(identity=phone),
-        'phone': phone,
+        'access_token': create_access_token(identity=clean_phone),
+        'phone': clean_phone,
         'user': {
             'id': user.id,
             'phone': user.phone,
             'name': user.name,
             'role': user.role
         }
-    })
+    }
+    
+    print(f"🔍 verify_token: Sending response: {response_data}")
+    return jsonify(response_data)
 
 @main_bp.route('/dashboard', methods=['GET'])
 @jwt_required()
@@ -111,7 +123,11 @@ def dashboard():
     """API endpoint for dashboard data"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        print(f"🔍 dashboard: JWT identity (phone): '{phone}'")
+        
+        # Get user using helper function
+        user = get_user_by_phone(phone)
+        print(f"🔍 dashboard: User found: {user}")
         
         if not user:
             return jsonify({'error': 'User not found'}), 404
@@ -173,12 +189,16 @@ def get_user_profile():
     """Get user profile"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        print(f"🔍 get_user_profile: JWT identity (phone): '{phone}'")
+        
+        # Get user using helper function
+        user = get_user_by_phone(phone)
+        print(f"🔍 get_user_profile: User found: {user}")
         
         if not user:
             return jsonify({'error': 'User not found'}), 404
         
-        return jsonify({
+        response_data = {
             'success': True,
             'user': {
                 'id': user.id,
@@ -188,9 +208,13 @@ def get_user_profile():
                 'created_at': user.created_at.isoformat() if user.created_at else None,
                 'last_login': user.last_login.isoformat() if user.last_login else None
             }
-        })
+        }
+        
+        print(f"🔍 get_user_profile: Sending response: {response_data}")
+        return jsonify(response_data)
         
     except Exception as e:
+        print(f"🔍 get_user_profile: Error: {str(e)}")
         return jsonify({'error': f'Failed to get profile: {str(e)}'}), 500
 
 @main_bp.route('/user/profile', methods=['PUT'])
@@ -199,7 +223,11 @@ def update_user_profile():
     """Update user profile"""
     try:
         phone = get_jwt_identity()
-        user = User.query.filter_by(phone=phone).first()
+        print(f"🔍 update_user_profile: JWT identity (phone): '{phone}'")
+        
+        # Get user using helper function
+        user = get_user_by_phone(phone)
+        print(f"🔍 update_user_profile: User found: {user}")
         
         if not user:
             return jsonify({'error': 'User not found'}), 404

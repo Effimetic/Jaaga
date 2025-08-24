@@ -19,8 +19,12 @@ class ApiService {
     this.api.interceptors.request.use(
       async (config) => {
         const token = await userService.getAuthToken();
+        console.log('🔄 API Request Interceptor: Token found:', !!token, 'URL:', config.url);
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('🔄 API Request Interceptor: Authorization header set');
+        } else {
+          console.log('🔄 API Request Interceptor: No token found');
         }
         return config;
       },
@@ -64,7 +68,7 @@ class ApiService {
 
   async getProfile(): Promise<any> {
     try {
-      const response = await this.api.get('/auth/profile');
+      const response = await this.api.get('/user/profile');
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get profile');
