@@ -195,12 +195,6 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
         </View>
-
-        {/* App Info */}
-        <View style={styles.appInfo}>
-          <Text style={styles.appInfoText}>Nashath Booking v1.0.0</Text>
-          <Text style={styles.appInfoText}>Speed Boat Ticketing System</Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
