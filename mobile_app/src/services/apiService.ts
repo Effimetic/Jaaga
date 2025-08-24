@@ -419,6 +419,200 @@ class ApiService {
     }
   }
 
+  // Agent connection endpoints
+  async getAgentConnections(): Promise<any> {
+    try {
+      const response = await this.api.get('/agent/connections');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent connections');
+    }
+  }
+
+  async requestAgentConnection(requestData: any): Promise<any> {
+    try {
+      const response = await this.api.post('/agent/request-connection', requestData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to request connection');
+    }
+  }
+
+  async searchOwnerByPhone(phone: string): Promise<any> {
+    try {
+      const response = await this.api.get(`/agent/search-owner?phone=${phone}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to search owner');
+    }
+  }
+
+  async getAgentBookings(params?: any): Promise<any> {
+    try {
+      const response = await this.api.get('/agent/bookings', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent bookings');
+    }
+  }
+
+  async getAgentAccountBook(): Promise<any> {
+    try {
+      const response = await this.api.get('/agent/account-book');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent account book');
+    }
+  }
+
+  async exportAgentAccountBook(ownerId: number, format: 'CSV' | 'PDF'): Promise<any> {
+    try {
+      const response = await this.api.get(`/agent/account-book/${ownerId}/export?format=${format}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to export account book');
+    }
+  }
+
+  // Owner agent management endpoints
+  async getOwnerAgentConnections(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner/agent-connections');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agent connections');
+    }
+  }
+
+  async getPendingAgentRequests(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner/agent-requests/pending');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get pending requests');
+    }
+  }
+
+  async respondToAgentRequest(requestId: number, action: 'APPROVE' | 'REJECT'): Promise<any> {
+    try {
+      const response = await this.api.post(`/owner/agent-requests/${requestId}/${action.toLowerCase()}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || `Failed to ${action.toLowerCase()} request`);
+    }
+  }
+
+  async updateAgentConnection(connectionId: number, updateData: any): Promise<any> {
+    try {
+      const response = await this.api.put(`/owner/agent-connections/${connectionId}`, updateData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update connection');
+    }
+  }
+
+  async blockAgentConnection(connectionId: number): Promise<any> {
+    try {
+      const response = await this.api.post(`/owner/agent-connections/${connectionId}/block`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to block connection');
+    }
+  }
+
+  // Owner account book endpoints
+  async getOwnerAccountSummary(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner/account-book/summary');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get account summary');
+    }
+  }
+
+  async getOwnerAccountEntries(params?: any): Promise<any> {
+    try {
+      const response = await this.api.get('/owner/account-book/entries', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get account entries');
+    }
+  }
+
+  async exportOwnerAccountBook(format: 'CSV' | 'PDF', filters?: any): Promise<any> {
+    try {
+      const response = await this.api.get(`/owner/account-book/export?format=${format}`, { params: filters });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to export account book');
+    }
+  }
+
+  async initiateAppFeeSettlement(): Promise<any> {
+    try {
+      const response = await this.api.post('/owner/app-fee-settlement');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to initiate settlement');
+    }
+  }
+
+  // Ticket management endpoints
+  async getMyTickets(params?: any): Promise<any> {
+    try {
+      const response = await this.api.get('/tickets/my-tickets', { params });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get tickets');
+    }
+  }
+
+  async resendTicket(ticketId: number): Promise<any> {
+    try {
+      const response = await this.api.post(`/tickets/${ticketId}/resend`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to resend ticket');
+    }
+  }
+
+  async cancelTicket(ticketId: number, reason?: string): Promise<any> {
+    try {
+      const response = await this.api.post(`/tickets/${ticketId}/cancel`, { reason });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to cancel ticket');
+    }
+  }
+
+  // Seat map endpoints
+  async getScheduleSeatMap(scheduleId: number): Promise<any> {
+    try {
+      const response = await this.api.get(`/schedules/${scheduleId}/seat-map`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get seat map');
+    }
+  }
+
+  async reserveSeats(scheduleId: number, seatIds: number[]): Promise<any> {
+    try {
+      const response = await this.api.post(`/schedules/${scheduleId}/reserve-seats`, { seat_ids: seatIds });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to reserve seats');
+    }
+  }
+
+  async releaseSeats(scheduleId: number, seatIds: number[]): Promise<any> {
+    try {
+      const response = await this.api.post(`/schedules/${scheduleId}/release-seats`, { seat_ids: seatIds });
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to release seats');
+    }
+  }
+
   // Dashboard stats endpoint
   async getDashboardStats(): Promise<any> {
     try {

@@ -6,7 +6,8 @@ interface User {
   id: number;
   phone: string;
   name: string;
-  role: string;
+  role: 'PUBLIC' | 'AGENT' | 'OWNER' | 'APP_OWNER';
+  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   authenticated: boolean;
 }
 
@@ -19,6 +20,8 @@ interface AuthContextType {
   login: (phone: string, token: string) => Promise<void>;
   logout: () => Promise<void>;
   getCurrentUserId: () => Promise<number | null>;
+  hasPermission: (permission: string) => boolean;
+  canAccessFeature: (feature: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -242,7 +245,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return await userService.getCurrentUserId();
   };
 
-  const value = { user, isLoading, setUser, sendSMS, verifySMS, login, logout, getCurrentUserId };
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    
+    const rolePermissions = {
+      PUBLIC: ['search_trips', 'view_schedules', 'create_booking', 'view_own_bookings', 'view_own_tickets'],
+      AGENT: ['search_trips', 'view_schedules', 'create_booking', 'view_own_bookings', 'view_own_tickets', 'request_connections', 'make_credit_bookings', 'issue_tickets', 'view_account_book', 'upload_payment_slips', 'manage_agent_profile'],
+      OWNER: ['manage_boats', 'manage_schedules', 'manage_bookings', 'issue_tickets', 'manage_agents', 'view_account_book', 'configure_settings', 'view_analytics', 'manage_payments'],
+      APP_OWNER: ['manage_owners', 'view_platform_analytics', 'configure_platform', 'manage_fees', 'view_all_data']
+    };
+    
+    return rolePermissions[user.role]?.includes(permission) || false;
+  };
+
+  const canAccessFeature = (feature: string): boolean => {
+    if (!user) return false;
+    
+    const featureAccess = {
+      boat_management: user.role === 'OWNER',
+      schedule_management: user.role === 'OWNER',
+      agent_management: user.role === 'OWNER',
+      owner_settings: user.role === 'OWNER',
+      agent_connections: user.role === 'AGENT' || user.role === 'OWNER',
+      credit_bookings: user.role === 'AGENT',
+      platform_management: user.role === 'APP_OWNER',
+      public_booking: true, // All roles can make bookings
+      view_tickets: true, // All roles can view their tickets
+    };
+    
+    return featureAccess[feature] || false;
+  };
+
+  const value = { 
+    user, 
+    isLoading, 
+    setUser, 
+    sendSMS, 
+    verifySMS, 
+    login, 
+    logout, 
+    getCurrentUserId, 
+    hasPermission, 
+    canAccessFeature 
+  };
 
   return (
     <AuthContext.Provider value={value}>

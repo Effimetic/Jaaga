@@ -20,41 +20,58 @@ import MyBookingsScreen from '../screens/MyBookingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import AgentOwnersScreen from '../screens/AgentOwnersScreen';
 import AgentConnectionsScreen from '../screens/AgentConnectionsScreen';
-import ScheduleManagementScreen from '../screens/ScheduleManagementScreen';
-import ViewScheduleScreen from '../screens/ViewScheduleScreen';
-import CreateBookingScreen from '../screens/CreateBookingScreen';
-import OwnerSettingsScreen from '../screens/OwnerSettingsScreen';
-import ScheduleBookingsScreen from '../screens/ScheduleBookingsScreen';
-import IssueTicketScreen from '../screens/IssueTicketScreen';
+import SearchScreen from '../screens/SearchScreen';
+import BookingFlowScreen from '../screens/BookingFlowScreen';
+import AgentDashboardScreen from '../screens/AgentDashboardScreen';
+import MyTicketsScreen from '../screens/MyTicketsScreen';
+import AgentAccountBookScreen from '../screens/AgentAccountBookScreen';
+import RequestConnectionScreen from '../screens/RequestConnectionScreen';
+import OwnerAccountBookScreen from '../screens/OwnerAccountBookScreen';
+import AgentManagementScreen from '../screens/AgentManagementScreen';
 
 export type RootStackParamList = {
+  // Public Screens
   Home: undefined;
   Login: undefined;
   Register: undefined;
+  Search: undefined;
+  BookingFlow: { scheduleId: number; segmentId?: number };
+  
+  // Authenticated Screens
   MainTabs: undefined;
   Dashboard: undefined;
+  MyTickets: undefined;
+  MyBookings: undefined;
+  Profile: undefined;
+  
+  // Agent Screens
+  AgentDashboard: undefined;
+  AgentConnections: undefined;
+  AgentAccountBook: undefined;
+  RequestConnection: undefined;
+  
+  // Owner Screens
+  OwnerDashboard: undefined;
   MyBoats: undefined;
   BookTickets: { scheduleId: number };
   AddBoat: undefined;
   EditBoat: { boatId: number };
   ViewBoat: { boatId: number };
   Settings: undefined;
-  MyBookings: undefined;
-  AgentOwners: undefined;
-  AgentConnections: undefined;
   ScheduleManagement: undefined;
   ViewSchedule: { scheduleId: number };
   CreateBooking: { scheduleId: number };
   OwnerSettings: undefined;
   ScheduleBookings: { scheduleId: number };
   IssueTicket: { bookingId: number };
-  EditSchedule: { scheduleId: number };
-  ViewBooking: { bookingId: number };
+  AgentManagement: undefined;
+  OwnerAccountBook: undefined;
 };
 
 export type MainTabParamList = {
   Home: undefined;
-  Schedules: undefined;
+  Search: undefined;
+  Bookings: undefined;
   Profile: undefined;
 };
 
@@ -62,6 +79,8 @@ const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabNavigator: React.FC = () => {
+  const { user } = useAuth();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -70,8 +89,10 @@ const MainTabNavigator: React.FC = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Schedules') {
-            iconName = focused ? 'calendar' : 'calendar-outline';
+          } else if (route.name === 'Search') {
+            iconName = focused ? 'search' : 'search-outline';
+          } else if (route.name === 'Bookings') {
+            iconName = focused ? 'ticket' : 'ticket-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
@@ -86,7 +107,11 @@ const MainTabNavigator: React.FC = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Schedules" component={SchedulesScreen} />
+      <Tab.Screen name="Search" component={SearchScreen} />
+      <Tab.Screen 
+        name="Bookings" 
+        component={user?.role === 'AGENT' ? AgentDashboardScreen : MyTicketsScreen} 
+      />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -123,21 +148,64 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="BookingFlow" component={BookingFlowScreen} />
         
         {/* Protected screens - only shown when user is logged in */}
         {user ? (
           <>
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
+            
+            {/* Common authenticated screens */}
+            <Stack.Screen 
+              name="Dashboard" 
+              component={user.role === 'AGENT' ? AgentDashboardScreen : DashboardScreen} 
+            />
+            <Stack.Screen name="MyTickets" component={MyTicketsScreen} />
+            <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            
+            {/* Agent-specific screens */}
+            {user.role === 'AGENT' && (
+              <>
+                <Stack.Screen name="AgentDashboard" component={AgentDashboardScreen} />
+                <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
+                <Stack.Screen name="AgentAccountBook" component={AgentAccountBookScreen} />
+                <Stack.Screen name="RequestConnection" component={RequestConnectionScreen} />
+              </>
+            )}
+            
+            {/* Owner-specific screens */}
+            {user.role === 'OWNER' && (
+              <>
+                <Stack.Screen name="OwnerDashboard" component={DashboardScreen} />
+                <Stack.Screen name="AgentManagement" component={AgentManagementScreen} />
+                <Stack.Screen name="OwnerAccountBook" component={OwnerAccountBookScreen} />
+              </>
+            )}
+            
+            {/* Boat management screens (Owner only) */}
+            {user.role === 'OWNER' && (
+              <>
+                <Stack.Screen name="MyBoats" component={MyBoatsScreen} />
+                <Stack.Screen name="AddBoat" component={AddBoatScreen} />
+                <Stack.Screen name="EditBoat" component={EditBoatScreen} />
+                <Stack.Screen name="ViewBoat" component={ViewBoatScreen} />
+                <Stack.Screen name="ScheduleManagement" component={ScheduleManagementScreen} />
+                <Stack.Screen name="ViewSchedule" component={ViewScheduleScreen} />
+                <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />
+                <Stack.Screen name="OwnerSettings" component={OwnerSettingsScreen} />
+                <Stack.Screen name="ScheduleBookings" component={ScheduleBookingsScreen} />
+                <Stack.Screen name="IssueTicket" component={IssueTicketScreen} />
+              </>
+            )}
+            
+            {/* Legacy screens - keeping for backward compatibility */}
             <Stack.Screen name="MyBoats" component={MyBoatsScreen} />
             <Stack.Screen name="BookTickets" component={BookTicketsScreen} />
             <Stack.Screen name="AddBoat" component={AddBoatScreen} />
             <Stack.Screen name="EditBoat" component={EditBoatScreen} />
             <Stack.Screen name="ViewBoat" component={ViewBoatScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
-            <Stack.Screen name="AgentOwners" component={AgentOwnersScreen} />
-            <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
             <Stack.Screen name="ScheduleManagement" component={ScheduleManagementScreen} />
             <Stack.Screen name="ViewSchedule" component={ViewScheduleScreen} />
             <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />

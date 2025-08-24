@@ -13,7 +13,7 @@ import { FontAwesome5, FontAwesome } from "@expo/vector-icons";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function HomeScreen({ navigation }: { navigation?: any }) {
-  const { user } = useAuth();
+  const { user, canAccessFeature } = useAuth();
   const [destination, setDestination] = useState("");
   const [activeTab, setActiveTab] = useState("Home");
 
@@ -23,8 +23,8 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
       return;
     }
     
-    Alert.alert("Search", `Searching for trips to ${destination}`);
-    // TODO: Implement search functionality
+    // Navigate to search screen with destination pre-filled
+    navigation?.navigate("Search", { destination: destination.trim() });
   };
 
   const handleTabPress = (tabName: string) => {
@@ -73,6 +73,50 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                 <Text style={styles.searchButtonText}>Search Trips</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Quick Actions for Authenticated Users */}
+            {user && (
+              <View style={styles.quickActionsSection}>
+                <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+                <View style={styles.quickActionsGrid}>
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={() => navigation?.navigate("MyTickets")}
+                  >
+                    <FontAwesome5 name="ticket-alt" size={20} color="#007AFF" />
+                    <Text style={styles.quickActionText}>My Tickets</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.quickActionCard}
+                    onPress={() => navigation?.navigate("MyBookings")}
+                  >
+                    <FontAwesome5 name="list-alt" size={20} color="#10B981" />
+                    <Text style={styles.quickActionText}>My Bookings</Text>
+                  </TouchableOpacity>
+                  
+                  {canAccessFeature('boat_management') && (
+                    <TouchableOpacity
+                      style={styles.quickActionCard}
+                      onPress={() => navigation?.navigate("MyBoats")}
+                    >
+                      <FontAwesome5 name="ship" size={20} color="#8B5CF6" />
+                      <Text style={styles.quickActionText}>My Boats</Text>
+                    </TouchableOpacity>
+                  )}
+                  
+                  {canAccessFeature('schedule_management') && (
+                    <TouchableOpacity
+                      style={styles.quickActionCard}
+                      onPress={() => navigation?.navigate("ScheduleManagement")}
+                    >
+                      <FontAwesome5 name="calendar-alt" size={20} color="#F59E0B" />
+                      <Text style={styles.quickActionText}>Schedules</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            )}
 
             {/* Quick Info */}
             <View style={styles.quickInfo}>
@@ -162,27 +206,39 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
-                    onPress={() => navigation?.navigate("Dashboard")}
+                    onPress={() => navigation?.navigate(user.role === 'AGENT' ? "AgentDashboard" : "Dashboard")}
                   >
                     <FontAwesome5 name="tachometer-alt" size={20} color="#007AFF" />
                     <Text style={styles.quickLinkText}>Dashboard</Text>
                   </TouchableOpacity>
                   
-                  <TouchableOpacity 
-                    style={styles.quickLinkButton}
-                    onPress={() => navigation?.navigate("MyBoats")}
-                  >
-                    <FontAwesome5 name="ship" size={20} color="#10B981" />
-                    <Text style={styles.quickLinkText}>My Boats</Text>
-                  </TouchableOpacity>
+                  {canAccessFeature('boat_management') && (
+                    <TouchableOpacity 
+                      style={styles.quickLinkButton}
+                      onPress={() => navigation?.navigate("MyBoats")}
+                    >
+                      <FontAwesome5 name="ship" size={20} color="#10B981" />
+                      <Text style={styles.quickLinkText}>My Boats</Text>
+                    </TouchableOpacity>
+                  )}
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
-                    onPress={() => navigation?.navigate("Schedules")}
+                    onPress={() => navigation?.navigate("MyTickets")}
                   >
-                    <FontAwesome5 name="calendar-alt" size={20} color="#F59E0B" />
-                    <Text style={styles.quickLinkText}>Schedules</Text>
+                    <FontAwesome5 name="ticket-alt" size={20} color="#F59E0B" />
+                    <Text style={styles.quickLinkText}>My Tickets</Text>
                   </TouchableOpacity>
+                  
+                  {user.role === 'AGENT' && (
+                    <TouchableOpacity 
+                      style={styles.quickLinkButton}
+                      onPress={() => navigation?.navigate("AgentConnections")}
+                    >
+                      <FontAwesome5 name="handshake" size={20} color="#8B5CF6" />
+                      <Text style={styles.quickLinkText}>Connections</Text>
+                    </TouchableOpacity>
+                  )}
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
@@ -406,6 +462,44 @@ const styles = StyleSheet.create({
   },
   infoTitle: { fontWeight: "700", color: "#111827", marginTop: 8 },
   infoText: { color: "#6b7280", marginTop: 4 },
+  
+  quickActionsSection: {
+    width: '100%',
+    marginTop: 20,
+  },
+  quickActionsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  quickActionCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    width: '48%',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  
   boatsList: { width: '100%', marginTop: 16 },
   boatCard: {
     backgroundColor: "#fff",

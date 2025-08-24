@@ -247,14 +247,30 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
                 <TouchableOpacity
                   style={styles.appOption}
-                  onPress={() => navigation.navigate('AgentConnections')}
+                  onPress={() => navigation.navigate('AgentManagement')}
                 >
                   <View style={styles.optionIcon}>
-                    <FontAwesome5 name="handshake" size={20} color="#007AFF" />
+                    <FontAwesome5 name="user-tie" size={20} color="#007AFF" />
                   </View>
                   <View style={styles.optionContent}>
-                    <Text style={styles.optionTitle}>Connected Agents</Text>
-                    <Text style={styles.optionSubtitle}>Manage agent relationships</Text>
+                    <Text style={styles.optionTitle}>Agent Management</Text>
+                    <Text style={styles.optionSubtitle}>Manage agent connections and requests</Text>
+                  </View>
+                  <View style={styles.optionArrow}>
+                    <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.appOption}
+                  onPress={() => navigation.navigate('OwnerAccountBook')}
+                >
+                  <View style={styles.optionIcon}>
+                    <FontAwesome5 name="book" size={20} color="#007AFF" />
+                  </View>
+                  <View style={styles.optionContent}>
+                    <Text style={styles.optionTitle}>Account Book</Text>
+                    <Text style={styles.optionSubtitle}>View financial transactions and reports</Text>
                   </View>
                   <View style={styles.optionArrow}>
                     <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
@@ -320,14 +336,14 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
               <View style={styles.optionGrid}>
                 <TouchableOpacity
                   style={styles.appOption}
-                  onPress={() => navigation.navigate('MyBookings')}
+                  onPress={() => navigation.navigate('MyTickets')}
                 >
                   <View style={styles.optionIcon}>
-                    <FontAwesome5 name="list-alt" size={20} color="#007AFF" />
+                    <FontAwesome5 name="ticket-alt" size={20} color="#007AFF" />
                   </View>
                   <View style={styles.optionContent}>
-                    <Text style={styles.optionTitle}>My Bookings</Text>
-                    <Text style={styles.optionSubtitle}>View your booking history</Text>
+                    <Text style={styles.optionTitle}>My Tickets</Text>
+                    <Text style={styles.optionSubtitle}>View and manage your tickets</Text>
                   </View>
                   <View style={styles.optionArrow}>
                     <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
@@ -436,11 +452,11 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
                   onPress={() => navigation.navigate('Schedules')}
                 >
                   <View style={styles.optionIcon}>
-                    <FontAwesome5 name="calendar-alt" size={20} color="#007AFF" />
+                    <FontAwesome5 name="ticket-alt" size={20} color="#007AFF" />
                   </View>
                   <View style={styles.optionContent}>
-                    <Text style={styles.optionTitle}>Available Schedules</Text>
-                    <Text style={styles.optionSubtitle}>Browse schedules from connected boats</Text>
+                    <Text style={styles.optionTitle}>My Tickets</Text>
+                    <Text style={styles.optionSubtitle}>View and manage your tickets</Text>
                   </View>
                   <View style={styles.optionArrow}>
                     <FontAwesome5 name="chevron-right" size={16} color="#9CA3AF" />
@@ -474,7 +490,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
           </>
-        );
+                onPress={() => navigation.navigate('Search')}
 
       default:
         console.log('🔄 Dashboard: Unknown role:', user.role);
