@@ -490,8 +490,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
           </>
-                onPress={() => navigation.navigate('Search')}
-        )
+        );
 
       default:
         console.log('🔄 Dashboard: Unknown role:', user.role);
