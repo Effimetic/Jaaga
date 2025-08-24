@@ -244,14 +244,14 @@ export default function AddBoatScreen({ navigation }: { navigation: any }) {
 
   const renderGridBox = (box: SeatGridBox, row: number, col: number) => {
     if (box.isWalkway) {
-      // Render walkway as empty space
+      // Render walkway as empty space with subtle dot
       return (
         <TouchableOpacity
           key={`${row}-${col}`}
-          style={styles.walkwaySpace}
+          style={styles.gridBox}
           onPress={() => toggleBox(row, col)}
         >
-          <Text style={styles.walkwayDot}>·</Text>
+          <Text style={styles.walkwayText}>·</Text>
         </TouchableOpacity>
       );
     }
@@ -502,7 +502,7 @@ export default function AddBoatScreen({ navigation }: { navigation: any }) {
                 <View style={styles.gridInfo}>
                   <FontAwesome5 name="lightbulb" size={16} color="#007AFF" style={styles.gridInfoIcon} />
                   <Text style={styles.gridInfoText}>
-                    Click boxes to toggle between seats and walkways. Green = Seat, Empty = Walkway.
+                    Click boxes to toggle between seats and walkways. Green boxes are seats, empty spaces are walkways.
                   </Text>
                 </View>
 
@@ -877,17 +877,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderColor: '#059669',
   },
-  walkwaySpace: {
-    width: 35,
-    height: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
-  walkwayDot: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    fontWeight: '300',
+  walkwayText: {
+    fontSize: 20,
+    color: '#D1D5DB',
+    fontWeight: '100',
   },
   damagedBox: {
     backgroundColor: '#EF4444',

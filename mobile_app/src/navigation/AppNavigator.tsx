@@ -20,6 +20,12 @@ import MyBookingsScreen from '../screens/MyBookingsScreen';
 import { Ionicons } from '@expo/vector-icons';
 import AgentOwnersScreen from '../screens/AgentOwnersScreen';
 import AgentConnectionsScreen from '../screens/AgentConnectionsScreen';
+import ScheduleManagementScreen from '../screens/ScheduleManagementScreen';
+import ViewScheduleScreen from '../screens/ViewScheduleScreen';
+import CreateBookingScreen from '../screens/CreateBookingScreen';
+import OwnerSettingsScreen from '../screens/OwnerSettingsScreen';
+import ScheduleBookingsScreen from '../screens/ScheduleBookingsScreen';
+import IssueTicketScreen from '../screens/IssueTicketScreen';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -36,6 +42,14 @@ export type RootStackParamList = {
   MyBookings: undefined;
   AgentOwners: undefined;
   AgentConnections: undefined;
+  ScheduleManagement: undefined;
+  ViewSchedule: { scheduleId: number };
+  CreateBooking: { scheduleId: number };
+  OwnerSettings: undefined;
+  ScheduleBookings: { scheduleId: number };
+  IssueTicket: { bookingId: number };
+  EditSchedule: { scheduleId: number };
+  ViewBooking: { bookingId: number };
 };
 
 export type MainTabParamList = {
@@ -124,6 +138,12 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
             <Stack.Screen name="AgentOwners" component={AgentOwnersScreen} />
             <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
+            <Stack.Screen name="ScheduleManagement" component={ScheduleManagementScreen} />
+            <Stack.Screen name="ViewSchedule" component={ViewScheduleScreen} />
+            <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />
+            <Stack.Screen name="OwnerSettings" component={OwnerSettingsScreen} />
+            <Stack.Screen name="ScheduleBookings" component={ScheduleBookingsScreen} />
+            <Stack.Screen name="IssueTicket" component={IssueTicketScreen} />
           </>
         ) : null}
       </Stack.Navigator>

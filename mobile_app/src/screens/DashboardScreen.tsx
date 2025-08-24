@@ -215,7 +215,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
                 <TouchableOpacity
                   style={styles.appOption}
-                  onPress={() => navigation.navigate('Schedules')}
+                  onPress={() => navigation.navigate('ScheduleManagement')}
                 >
                   <View style={styles.optionIcon}>
                     <FontAwesome5 name="calendar-alt" size={20} color="#007AFF" />
@@ -231,7 +231,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
 
                 <TouchableOpacity
                   style={styles.appOption}
-                  onPress={() => navigation.navigate('Settings')}
+                  onPress={() => navigation.navigate('OwnerSettings')}
                 >
                   <View style={styles.optionIcon}>
                     <FontAwesome5 name="cog" size={20} color="#007AFF" />

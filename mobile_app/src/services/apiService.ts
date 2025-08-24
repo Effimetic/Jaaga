@@ -187,6 +187,42 @@ class ApiService {
     }
   }
 
+  async getScheduleBookings(scheduleId: number): Promise<any> {
+    try {
+      const response = await this.api.get(`/schedules/schedules/${scheduleId}/bookings`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get schedule bookings');
+    }
+  }
+
+  async createSchedule(scheduleData: any): Promise<any> {
+    try {
+      const response = await this.api.post('/schedules/schedules/create', scheduleData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to create schedule');
+    }
+  }
+
+  async updateSchedule(scheduleId: number, scheduleData: any): Promise<any> {
+    try {
+      const response = await this.api.put(`/schedules/schedules/${scheduleId}`, scheduleData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update schedule');
+    }
+  }
+
+  async deleteSchedule(scheduleId: number): Promise<any> {
+    try {
+      const response = await this.api.delete(`/schedules/schedules/${scheduleId}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to delete schedule');
+    }
+  }
+
   async updateBoat(boatId: number, boatData: any): Promise<any> {
     try {
       const response = await this.api.put(`/boats/boats/${boatId}/edit`, boatData);
@@ -239,6 +275,61 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get booking');
+    }
+  }
+
+  // Owner settings endpoints
+  async getOwnerSettings(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/settings');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get owner settings');
+    }
+  }
+
+  async updateOwnerSettings(settingsData: any): Promise<any> {
+    try {
+      const response = await this.api.put('/owner-settings/settings', settingsData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update owner settings');
+    }
+  }
+
+  async getPaymentMethods(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/settings/payment-methods');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get payment methods');
+    }
+  }
+
+  async updatePaymentMethods(paymentData: any): Promise<any> {
+    try {
+      const response = await this.api.post('/owner-settings/settings/payment-methods', paymentData);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to update payment methods');
+    }
+  }
+
+  async getTaxConfigurations(): Promise<any> {
+    try {
+      const response = await this.api.get('/owner-settings/settings/tax-configurations');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get tax configurations');
+    }
+  }
+
+  async getAgents(): Promise<any> {
+    try {
+      const response = await this.api.get('/bookings/owner-agents');
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to get agents');
     }
   }
 
