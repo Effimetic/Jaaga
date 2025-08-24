@@ -193,6 +193,27 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* App Info */}
+        <View style={styles.appInfo}>
+          <Text style={styles.appInfoText}>Nashath Booking v1.0.0</Text>
+          <Text style={styles.appInfoText}>Speed Boat Ticketing System</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  container: {
+    padding: 16,
+  },
 
   header: {
     flexDirection: 'row',
