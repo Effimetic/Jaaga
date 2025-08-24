@@ -18,24 +18,12 @@ import ViewBoatScreen from '../screens/ViewBoatScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import MyBookingsScreen from '../screens/MyBookingsScreen';
 import { Ionicons } from '@expo/vector-icons';
-import AgentOwnersScreen from '../screens/AgentOwnersScreen';
-import AgentConnectionsScreen from '../screens/AgentConnectionsScreen';
-import SearchScreen from '../screens/SearchScreen';
-import BookingFlowScreen from '../screens/BookingFlowScreen';
-import AgentDashboardScreen from '../screens/AgentDashboardScreen';
-import MyTicketsScreen from '../screens/MyTicketsScreen';
-import AgentAccountBookScreen from '../screens/AgentAccountBookScreen';
-import RequestConnectionScreen from '../screens/RequestConnectionScreen';
-import OwnerAccountBookScreen from '../screens/OwnerAccountBookScreen';
-import AgentManagementScreen from '../screens/AgentManagementScreen';
 
 export type RootStackParamList = {
   // Public Screens
   Home: undefined;
   Login: undefined;
   Register: undefined;
-  Search: undefined;
-  BookingFlow: { scheduleId: number; segmentId?: number };
   
   // Authenticated Screens
   MainTabs: undefined;
@@ -44,28 +32,14 @@ export type RootStackParamList = {
   MyBookings: undefined;
   Profile: undefined;
   
-  // Agent Screens
-  AgentDashboard: undefined;
-  AgentConnections: undefined;
-  AgentAccountBook: undefined;
-  RequestConnection: undefined;
-  
   // Owner Screens
-  OwnerDashboard: undefined;
   MyBoats: undefined;
   BookTickets: { scheduleId: number };
   AddBoat: undefined;
   EditBoat: { boatId: number };
   ViewBoat: { boatId: number };
   Settings: undefined;
-  ScheduleManagement: undefined;
-  ViewSchedule: { scheduleId: number };
-  CreateBooking: { scheduleId: number };
-  OwnerSettings: undefined;
-  ScheduleBookings: { scheduleId: number };
-  IssueTicket: { bookingId: number };
-  AgentManagement: undefined;
-  OwnerAccountBook: undefined;
+  Schedules: undefined;
 };
 
 export type MainTabParamList = {
@@ -107,11 +81,8 @@ const MainTabNavigator: React.FC = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen 
-        name="Bookings" 
-        component={user?.role === 'AGENT' ? AgentDashboardScreen : MyTicketsScreen} 
-      />
+      <Tab.Screen name="Search" component={HomeScreen} />
+      <Tab.Screen name="Bookings" component={MyBookingsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -121,9 +92,6 @@ const AppNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
 
   console.log('🔄 AppNavigator re-render - user:', user, 'isLoading:', isLoading);
-  console.log('🔄 AppNavigator - user type:', typeof user, 'user value:', JSON.stringify(user));
-  console.log('🔄 AppNavigator - user === null:', user === null);
-  console.log('🔄 AppNavigator - user === undefined:', user === undefined);
 
   if (isLoading) {
     console.log('⏳ AppNavigator - showing LoadingScreen');
@@ -132,15 +100,7 @@ const AppNavigator: React.FC = () => {
 
   console.log('🎯 AppNavigator - rendering main navigation');
   console.log('🎯 AppNavigator - user exists:', !!user);
-  console.log('🎯 AppNavigator - showing protected routes:', !!user);
   
-  // If no user, we should be showing public routes
-  if (!user) {
-    console.log('🌐 AppNavigator - showing public routes (no user)');
-  } else {
-    console.log('🔒 AppNavigator - showing protected routes (user logged in)');
-  }
-
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -148,8 +108,6 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Search" component={SearchScreen} />
-        <Stack.Screen name="BookingFlow" component={BookingFlowScreen} />
         
         {/* Protected screens - only shown when user is logged in */}
         {user ? (
@@ -157,67 +115,26 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="MainTabs" component={MainTabNavigator} />
             
             {/* Common authenticated screens */}
-            <Stack.Screen 
-              name="Dashboard" 
-              component={user.role === 'AGENT' ? AgentDashboardScreen : DashboardScreen} 
-            />
-            <Stack.Screen name="MyTickets" component={MyTicketsScreen} />
+            <Stack.Screen name="Dashboard" component={DashboardScreen} />
             <Stack.Screen name="MyBookings" component={MyBookingsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
-            
-            {/* Agent-specific screens */}
-            {user.role === 'AGENT' && (
-              <>
-                <Stack.Screen name="AgentDashboard" component={AgentDashboardScreen} />
-                <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
-                <Stack.Screen name="AgentAccountBook" component={AgentAccountBookScreen} />
-                <Stack.Screen name="RequestConnection" component={RequestConnectionScreen} />
-              </>
-            )}
+            <Stack.Screen name="Schedules" component={SchedulesScreen} />
             
             {/* Owner-specific screens */}
-            {user.role === 'OWNER' && (
-              <>
-                <Stack.Screen name="OwnerDashboard" component={DashboardScreen} />
-                <Stack.Screen name="AgentManagement" component={AgentManagementScreen} />
-                <Stack.Screen name="OwnerAccountBook" component={OwnerAccountBookScreen} />
-              </>
-            )}
-            
-            {/* Boat management screens (Owner only) */}
-            {user.role === 'OWNER' && (
+            {user.role === 'owner' && (
               <>
                 <Stack.Screen name="MyBoats" component={MyBoatsScreen} />
                 <Stack.Screen name="AddBoat" component={AddBoatScreen} />
                 <Stack.Screen name="EditBoat" component={EditBoatScreen} />
                 <Stack.Screen name="ViewBoat" component={ViewBoatScreen} />
-                <Stack.Screen name="ScheduleManagement" component={ScheduleManagementScreen} />
-                <Stack.Screen name="ViewSchedule" component={ViewScheduleScreen} />
-                <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />
-                <Stack.Screen name="OwnerSettings" component={OwnerSettingsScreen} />
-                <Stack.Screen name="ScheduleBookings" component={ScheduleBookingsScreen} />
-                <Stack.Screen name="IssueTicket" component={IssueTicketScreen} />
+                <Stack.Screen name="BookTickets" component={BookTicketsScreen} />
               </>
             )}
-            
-            {/* Legacy screens - keeping for backward compatibility */}
-            <Stack.Screen name="MyBoats" component={MyBoatsScreen} />
-            <Stack.Screen name="BookTickets" component={BookTicketsScreen} />
-            <Stack.Screen name="AddBoat" component={AddBoatScreen} />
-            <Stack.Screen name="EditBoat" component={EditBoatScreen} />
-            <Stack.Screen name="ViewBoat" component={ViewBoatScreen} />
-            <Stack.Screen name="ScheduleManagement" component={ScheduleManagementScreen} />
-            <Stack.Screen name="ViewSchedule" component={ViewScheduleScreen} />
-            <Stack.Screen name="CreateBooking" component={CreateBookingScreen} />
-            <Stack.Screen name="OwnerSettings" component={OwnerSettingsScreen} />
-            <Stack.Screen name="ScheduleBookings" component={ScheduleBookingsScreen} />
-            <Stack.Screen name="IssueTicket" component={IssueTicketScreen} />
           </>
         ) : null}
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
-
 
 export default AppNavigator;

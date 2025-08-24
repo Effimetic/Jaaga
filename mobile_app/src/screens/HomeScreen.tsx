@@ -23,8 +23,8 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
       return;
     }
     
-    // Navigate to search screen with destination pre-filled
-    navigation?.navigate("Search", { destination: destination.trim() });
+    // For now, show alert since search functionality will be implemented later
+    Alert.alert("Search", `Searching for trips to ${destination.trim()}`);
   };
 
   const handleTabPress = (tabName: string) => {
@@ -81,18 +81,18 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                 <View style={styles.quickActionsGrid}>
                   <TouchableOpacity
                     style={styles.quickActionCard}
-                    onPress={() => navigation?.navigate("MyTickets")}
+                    onPress={() => navigation?.navigate("MyBookings")}
                   >
-                    <FontAwesome5 name="ticket-alt" size={20} color="#007AFF" />
-                    <Text style={styles.quickActionText}>My Tickets</Text>
+                    <FontAwesome5 name="list-alt" size={20} color="#007AFF" />
+                    <Text style={styles.quickActionText}>My Bookings</Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
                     style={styles.quickActionCard}
-                    onPress={() => navigation?.navigate("MyBookings")}
+                    onPress={() => navigation?.navigate("Dashboard")}
                   >
-                    <FontAwesome5 name="list-alt" size={20} color="#10B981" />
-                    <Text style={styles.quickActionText}>My Bookings</Text>
+                    <FontAwesome5 name="tachometer-alt" size={20} color="#10B981" />
+                    <Text style={styles.quickActionText}>Dashboard</Text>
                   </TouchableOpacity>
                   
                   {canAccessFeature('boat_management') && (
@@ -105,10 +105,10 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                     </TouchableOpacity>
                   )}
                   
-                  {canAccessFeature('schedule_management') && (
+                  {user.role === 'owner' && (
                     <TouchableOpacity
                       style={styles.quickActionCard}
-                      onPress={() => navigation?.navigate("ScheduleManagement")}
+                      onPress={() => navigation?.navigate("Schedules")}
                     >
                       <FontAwesome5 name="calendar-alt" size={20} color="#F59E0B" />
                       <Text style={styles.quickActionText}>Schedules</Text>
@@ -206,13 +206,13 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
-                    onPress={() => navigation?.navigate(user.role === 'AGENT' ? "AgentDashboard" : "Dashboard")}
+                    onPress={() => navigation?.navigate("Dashboard")}
                   >
                     <FontAwesome5 name="tachometer-alt" size={20} color="#007AFF" />
                     <Text style={styles.quickLinkText}>Dashboard</Text>
                   </TouchableOpacity>
                   
-                  {canAccessFeature('boat_management') && (
+                  {user.role === 'owner' && (
                     <TouchableOpacity 
                       style={styles.quickLinkButton}
                       onPress={() => navigation?.navigate("MyBoats")}
@@ -224,21 +224,11 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
-                    onPress={() => navigation?.navigate("MyTickets")}
+                    onPress={() => navigation?.navigate("MyBookings")}
                   >
-                    <FontAwesome5 name="ticket-alt" size={20} color="#F59E0B" />
-                    <Text style={styles.quickLinkText}>My Tickets</Text>
+                    <FontAwesome5 name="list-alt" size={20} color="#F59E0B" />
+                    <Text style={styles.quickLinkText}>My Bookings</Text>
                   </TouchableOpacity>
-                  
-                  {user.role === 'AGENT' && (
-                    <TouchableOpacity 
-                      style={styles.quickLinkButton}
-                      onPress={() => navigation?.navigate("AgentConnections")}
-                    >
-                      <FontAwesome5 name="handshake" size={20} color="#8B5CF6" />
-                      <Text style={styles.quickLinkText}>Connections</Text>
-                    </TouchableOpacity>
-                  )}
                   
                   <TouchableOpacity 
                     style={styles.quickLinkButton}
