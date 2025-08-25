@@ -53,12 +53,6 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
   const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadDashboardData();
-    }, [loadDashboardData])
-  );
-
   const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
 
@@ -76,10 +70,10 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       }
 
       // Calculate credit summary
-      const activeConnections = connectionsResult.data?.filter(c => c.status === 'ACTIVE') || [];
+      const activeConnections = connectionsResult.data?.filter(c => c.status === 'APPROVED') || [];
       const totalLimit = activeConnections.reduce((sum, c) => sum + (c.credit_limit || 0), 0);
-      const availableCredit = activeConnections.reduce((sum, c) => sum + (c.current_balance || 0), 0);
-      const usedCredit = totalLimit - availableCredit;
+      const usedCredit = activeConnections.reduce((sum, c) => sum + (c.outstanding_amount || 0), 0);
+      const availableCredit = totalLimit - usedCredit;
       const utilizationRate = totalLimit > 0 ? (usedCredit / totalLimit) * 100 : 0;
 
       setCreditSummary({
@@ -95,6 +89,12 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       setLoading(false);
     }
   }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -312,12 +312,20 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
         >
           Connections
         </Button>
+        <Button
+          mode="outlined"
+          onPress={() => navigation.navigate('AgentCommissions')}
+          style={styles.quickActionButton}
+          icon="percent"
+        >
+          My Commissions
+        </Button>
       </View>
     </Surface>
   );
 
   const renderActiveConnections = () => {
-    const activeConnections = connections.filter(c => c.status === 'ACTIVE').slice(0, 3);
+    const activeConnections = connections.filter(c => c.status === 'APPROVED').slice(0, 3);
 
     if (activeConnections.length === 0) {
       return (
@@ -367,15 +375,15 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
               <Card.Content style={styles.connectionContent}>
                 <View style={styles.connectionHeader}>
                   <View style={styles.connectionInfo}>
-                    <Text variant="titleSmall" style={styles.connectionName}>
-                      {connection.owner.brand_name || connection.owner.business_name}
-                    </Text>
+                                      <Text variant="titleSmall" style={styles.connectionName}>
+                    {connection.owner.brand_name || 'Unnamed Owner'}
+                  </Text>
                     <View style={styles.connectionStats}>
                       <Text variant="bodySmall" style={styles.connectionStat}>
                         {connection.booking_count} bookings
                       </Text>
                       <Text variant="bodySmall" style={styles.connectionStat}>
-                        Credit: {formatCurrency(connection.current_balance || 0)}
+                        Outstanding: {formatCurrency(connection.outstanding_amount || 0)}
                       </Text>
                     </View>
                   </View>

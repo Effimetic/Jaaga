@@ -9,13 +9,18 @@ import { colors, theme } from '../theme/theme';
 import { BookingFlowScreen } from '../screens/BookingFlowScreen';
 // import { HomeScreen } from '../screens/HomeScreen';
 import { AddBoatScreen } from '../screens/AddBoatScreen';
+import { AgentCommissionsScreen } from '../screens/AgentCommissionsScreen';
+import { AgentConnectionsScreen } from '../screens/AgentConnectionsScreen';
+import { AgentDashboardScreen } from '../screens/AgentDashboardScreen';
+import { CreditHistoryScreen } from '../screens/CreditHistoryScreen';
+import { FindOwnersScreen } from '../screens/FindOwnersScreen';
 import { MyBoatsScreen } from '../screens/MyBoatsScreen';
 import { MyTicketsScreen } from '../screens/MyTicketsScreen';
 import { OwnerDashboardScreen } from '../screens/OwnerDashboardScreen';
+import { OwnerFinancialsScreen } from '../screens/OwnerFinancialsScreen';
 import {
-  AgentDashboardScreen,
-  MyBookingsScreen,
-  ProfileScreen
+    MyBookingsScreen,
+    ProfileScreen
 } from '../screens/PlaceholderScreens';
 import { SearchScreen } from '../screens/SearchScreen';
 
@@ -108,10 +113,47 @@ function AgentStack() {
         name="AgentDashboardMain" 
         component={AgentDashboardScreen}
         options={{ 
-          title: 'Agent Portal',
+          title: '🎯 Agent Portal',
           headerStyle: { backgroundColor: colors.agent },
           headerTintColor: '#ffffff',
+          headerTitleStyle: { fontWeight: 'bold' }
         }}
+      />
+      <Stack.Screen 
+        name="FindOwners" 
+        component={FindOwnersScreen} 
+        options={{ 
+          title: 'Find Boat Owners',
+          headerStyle: { backgroundColor: colors.agent },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="AgentConnections" 
+        component={AgentConnectionsScreen} 
+        options={{ 
+          title: 'My Connections',
+          headerStyle: { backgroundColor: colors.agent },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="CreditHistory" 
+        component={CreditHistoryScreen} 
+        options={{ 
+          title: 'Credit History',
+          headerStyle: { backgroundColor: colors.agent },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="AgentCommissions" 
+        component={AgentCommissionsScreen} 
+        options={{ 
+          title: 'My Commissions',
+          headerStyle: { backgroundColor: colors.agent },
+          headerTintColor: '#ffffff',
+        }} 
       />
     </Stack.Navigator>
   );
@@ -154,6 +196,15 @@ function OwnerStack() {
         component={AddBoatScreen} 
         options={{ 
           title: 'Edit Boat',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="OwnerFinancials" 
+        component={OwnerFinancialsScreen} 
+        options={{ 
+          title: 'Financial Reports',
           headerStyle: { backgroundColor: colors.owner },
           headerTintColor: '#ffffff',
         }} 

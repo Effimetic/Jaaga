@@ -1,16 +1,19 @@
 import { supabase } from '../config/supabase';
 import {
-  AgentOwnerLink,
-  ApiResponse,
-  Boat,
-  Booking,
-  BookingRequest,
-  PricingBreakdown,
-  Schedule,
-  SearchFilters,
-  SearchResult,
-  Ticket
+    AgentBookingRequest,
+    AgentOwnerLink,
+    ApiResponse,
+    Boat,
+    Booking,
+    BookingRequest,
+    PricingBreakdown,
+    Schedule,
+    SearchFilters,
+    SearchResult,
+    Ticket
 } from '../types';
+import { accountingService } from './accountingService';
+import { agentManagementService } from './agentManagementService';
 import { qrCodeService } from './qrCodeService';
 
 export class ApiService {
@@ -257,6 +260,124 @@ export class ApiService {
   }
 
   /**
+   * Create an agent booking with credit deduction
+   */
+  async createAgentBooking(request: AgentBookingRequest): Promise<ApiResponse<Booking>> {
+    try {
+      // Calculate pricing
+      const pricing = await this.calculatePricing(
+        request.scheduleId, 
+        request.passengers.length
+      );
+
+      // Check credit availability if using credit
+      if (request.useCredit) {
+        const creditCheck = await agentManagementService.checkAvailableCredit(
+          request.agentId,
+          request.ownerId,
+          pricing.total
+        );
+
+        if (!creditCheck.canAfford) {
+          return {
+            success: false,
+            error: `Insufficient credit. Available: MVR ${creditCheck.availableCredit.toFixed(2)}, Required: MVR ${pricing.total.toFixed(2)}`,
+            data: null,
+          };
+        }
+      }
+
+      // Get schedule details
+      const { data: schedule } = await supabase
+        .from('schedules')
+        .select('owner_id')
+        .eq('id', request.scheduleId)
+        .single();
+
+      if (!schedule) {
+        throw new Error('Schedule not found');
+      }
+
+      // Create booking with agent information
+      const bookingData = {
+        created_by_role: 'AGENT' as const,
+        creator_id: request.agentId,
+        agent_id: request.agentId,
+        owner_id: schedule.owner_id,
+        schedule_id: request.scheduleId,
+        segment_key: request.segmentKey,
+        seat_mode: request.seats ? 'SEATMAP' as const : 'CAPACITY' as const,
+        seats: request.seats || [],
+        seat_count: request.seatCount || request.passengers.length,
+        subtotal: pricing.subtotal,
+        tax: pricing.tax,
+        total: pricing.total,
+        currency: pricing.currency,
+        channel: 'AGENT' as const,
+        status: request.useCredit ? 'CONFIRMED' as const : 'PENDING' as const,
+        payment_status: request.useCredit ? 'PAID' as const : 'UNPAID' as const,
+        pay_method: request.useCredit ? 'CREDIT' as const : request.paymentMethod,
+        hold_expires_at: request.useCredit ? null : new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      };
+
+      const { data: booking, error } = await supabase
+        .from('bookings')
+        .insert([bookingData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Deduct credit if using credit payment
+      if (request.useCredit) {
+        const creditResult = await agentManagementService.deductCredit(
+          request.agentId,
+          request.ownerId,
+          pricing.total,
+          booking.id,
+          `Booking for ${request.passengers.length} passenger(s) - ${request.segmentKey}`
+        );
+
+        if (!creditResult.success) {
+          // Rollback booking if credit deduction fails
+          await supabase
+            .from('bookings')
+            .delete()
+            .eq('id', booking.id);
+
+          return {
+            success: false,
+            error: creditResult.error || 'Failed to deduct credit',
+            data: null,
+          };
+        }
+
+        // Process revenue for confirmed credit bookings
+        if (request.useCredit) {
+          try {
+            await accountingService.processBookingRevenue(booking);
+          } catch (accountingError) {
+            console.error('Failed to process agent booking revenue:', accountingError);
+            // Don't fail the booking for accounting errors
+          }
+        }
+      }
+
+      return {
+        success: true,
+        data: booking,
+      };
+    } catch (error: any) {
+      console.error('Error creating agent booking:', error);
+      return {
+        success: false,
+        error: error.message,
+        data: null,
+      };
+    }
+  }
+
+  /**
    * Get booking by ID
    */
   async getBooking(bookingId: string): Promise<ApiResponse<Booking>> {
@@ -368,6 +489,15 @@ export class ApiService {
         if (updateError) throw updateError;
         
         tickets.push(updatedTicket);
+      }
+
+      // Process revenue and create accounting entries
+      try {
+        await accountingService.processBookingRevenue(booking);
+      } catch (accountingError) {
+        console.error('Failed to process booking revenue:', accountingError);
+        // Don't fail the booking confirmation for accounting errors
+        // This can be retried later
       }
 
       return {

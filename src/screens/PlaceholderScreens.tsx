@@ -72,14 +72,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   />
 );
 
-export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => (
-  <PlaceholderScreen
-    title="Agent Portal"
-    description="Access your agent dashboard, manage connections with boat owners, view credit status, and book tickets for customers."
-    icon="account-tie"
-    navigation={navigation}
-  />
-);
+
 
 
 

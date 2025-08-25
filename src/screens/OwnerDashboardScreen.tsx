@@ -58,12 +58,6 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
   const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadDashboardData();
-    }, [loadDashboardData])
-  );
-
   const loadDashboardData = useCallback(async () => {
     if (!user?.id) return;
 
@@ -102,6 +96,12 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
     }
   }, [user?.id]);
 
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [loadDashboardData])
+  );
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadDashboardData();
@@ -122,10 +122,10 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       onPress: () => navigation.navigate('AddBoat'),
     },
     {
-      title: 'View Bookings',
-      icon: 'ticket',
+      title: 'Financial Reports',
+      icon: 'chart-line',
       color: colors.info,
-      onPress: () => navigation.navigate('Bookings'),
+      onPress: () => navigation.navigate('OwnerFinancials'),
     },
     {
       title: 'Settings',
