@@ -21,7 +21,7 @@ if ! command -v supabase &> /dev/null; then
 fi
 
 # Check if you're logged in to Supabase
-if ! supabase status &> /dev/null; then
+if ! supabase projects list &> /dev/null; then
     echo -e "${RED}❌ Not logged in to Supabase!${NC}"
     echo "Please run: supabase login"
     exit 1
@@ -31,7 +31,7 @@ echo -e "${GREEN}✅ Supabase CLI ready${NC}"
 
 # Check project status
 echo -e "${BLUE}📋 Project Status:${NC}"
-supabase status
+supabase projects list
 
 echo ""
 echo -e "${BLUE}📁 Edge Functions Status:${NC}"

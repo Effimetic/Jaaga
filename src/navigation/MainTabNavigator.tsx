@@ -27,17 +27,57 @@ import { SearchScreen } from '../screens/SearchScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Home Stack Navigator
+// Home Stack Navigator - Shows appropriate dashboard based on user role
 function HomeStack() {
+  const { user } = useAuth();
+  
+  // Determine which dashboard to show based on user role
+  const getDashboardComponent = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return AgentDashboardScreen;
+      case 'OWNER':
+        return OwnerDashboardScreen;
+      case 'PUBLIC':
+      default:
+        // For PUBLIC users, show a general home screen or search
+        return SearchScreen;
+    }
+  };
+  
+  const getDashboardTitle = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return '🎯 Agent Dashboard';
+      case 'OWNER':
+        return '⚓ Owner Dashboard';
+      case 'PUBLIC':
+      default:
+        return '🚢 Boat Ticketing';
+    }
+  };
+  
+  const getHeaderStyle = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return { backgroundColor: colors.agent };
+      case 'OWNER':
+        return { backgroundColor: colors.owner };
+      case 'PUBLIC':
+      default:
+        return { backgroundColor: theme.colors.primary };
+    }
+  };
+  
   return (
     <Stack.Navigator>
       <Stack.Screen 
         name="HomeMain" 
-        component={AgentDashboardScreen}
+        component={getDashboardComponent()}
         options={{ 
-          title: '🚢 Boat Ticketing',
-          headerStyle: { backgroundColor: theme.colors.primary },
-          headerTintColor: theme.colors.onPrimary,
+          title: getDashboardTitle(),
+          headerStyle: getHeaderStyle(),
+          headerTintColor: '#ffffff',
           headerTitleStyle: { fontWeight: 'bold' }
         }}
       />
@@ -46,8 +86,8 @@ function HomeStack() {
         component={BookingFlowScreen}
         options={{ 
           title: 'Book Tickets',
-          headerStyle: { backgroundColor: theme.colors.primary },
-          headerTintColor: theme.colors.onPrimary,
+          headerStyle: getHeaderStyle(),
+          headerTintColor: '#ffffff',
         }}
       />
     </Stack.Navigator>

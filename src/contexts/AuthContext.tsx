@@ -2,13 +2,14 @@ import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase';
 import { userService } from '../services/userService';
-import { AuthState, SMSAuthRequest, SMSAuthVerification } from '../types';
+import { AuthState, SMSAuthRequest, SMSAuthResponse, SMSAuthVerification } from '../types';
 
 interface AuthContextType extends AuthState {
   signInWithSMS: (request: SMSAuthRequest) => Promise<{ success: boolean; error?: string }>;
-  verifySmSToken: (verification: SMSAuthVerification) => Promise<{ success: boolean; error?: string }>;
+  verifySmSToken: (verification: SMSAuthVerification) => Promise<SMSAuthResponse>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  setAuthState: (state: AuthState) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -170,7 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const verifySmSToken = async (verification: SMSAuthVerification): Promise<{ success: boolean; error?: string }> => {
+  const verifySmSToken = async (verification: SMSAuthVerification): Promise<SMSAuthResponse> => {
     try {
       // Format phone number
       let formattedPhone = verification.phone.replace(/\s+/g, '').replace(/^\+/, '');
@@ -188,10 +189,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (verification.token.length === 6 && /^\d{6}$/.test(verification.token)) {
         console.log('✅ [TESTING] SMS verification successful for:', formattedPhone);
-        console.log('✅ [TESTING] User authenticated successfully');
-        console.log('💡 [DEV] This is simulated verification - implement proper verification later');
         
-        return { success: true };
+        // Check if user exists
+        try {
+          // Clean phone number for database search (remove all non-digits except +)
+          const cleanPhoneForSearch = formattedPhone.replace(/[^\d+]/g, '');
+          console.log('🔐 [TESTING] Checking if user exists for phone:', formattedPhone);
+          console.log('🔐 [TESTING] Clean phone for search:', cleanPhoneForSearch);
+          
+          let existingUser;
+          try {
+            existingUser = await userService.getUserByPhone(cleanPhoneForSearch);
+            console.log('🔐 [TESTING] getUserByPhone result:', existingUser);
+          } catch (searchError) {
+            console.error('❌ [TESTING] Error searching for user:', searchError);
+            existingUser = null;
+          }
+          
+          // If not found, try with different phone format
+          if (!existingUser) {
+            console.log('🔐 [TESTING] User not found, trying alternative phone format...');
+            const alternativePhone = cleanPhoneForSearch.replace('+960', '960');
+            try {
+              existingUser = await userService.getUserByPhone(alternativePhone);
+              console.log('🔐 [TESTING] Alternative search result:', existingUser);
+            } catch (searchError) {
+              console.error('❌ [TESTING] Error in alternative search:', searchError);
+            }
+          }
+          
+          // If still not found, try without country code
+          if (!existingUser) {
+            console.log('🔐 [TESTING] User not found, trying without country code...');
+            const localPhone = cleanPhoneForSearch.replace('+960', '').replace('960', '');
+            try {
+              existingUser = await userService.getUserByPhone(localPhone);
+              console.log('🔐 [TESTING] Local phone search result:', existingUser);
+            } catch (searchError) {
+              console.error('❌ [TESTING] Error in local phone search:', searchError);
+            }
+          }
+          
+          if (existingUser) {
+            console.log('✅ [TESTING] User exists, logging in:', existingUser);
+            
+            // Store user session in AsyncStorage
+            try {
+              await userService.setCurrentUserSession(existingUser, 'temp-token-' + Date.now());
+              console.log('✅ [TESTING] User session stored successfully');
+            } catch (sessionError) {
+              console.error('❌ [TESTING] Failed to store user session:', sessionError);
+              // Continue anyway, don't fail the login
+            }
+            
+            // User exists, set authentication state
+            setAuthState({
+              user: existingUser,
+              session: { user: { phone: formattedPhone } } as any,
+              isLoading: false,
+              isAuthenticated: true,
+            });
+            
+            console.log('✅ [TESTING] Authentication state set successfully');
+            return { success: true, userExists: true };
+          } else {
+            console.log('✅ [TESTING] User does not exist, needs account creation');
+            // User doesn't exist, needs to create account
+            return { success: true, userExists: false };
+          }
+        } catch (userError) {
+          console.log('✅ [TESTING] User check failed, assuming new user');
+          return { success: true, userExists: false };
+        }
       } else {
         console.log('❌ [TESTING] Invalid token format');
         return { success: false, error: 'Invalid verification code format' };
@@ -235,6 +304,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verifySmSToken,
     signOut,
     refreshSession,
+    setAuthState,
   };
 
   return (
