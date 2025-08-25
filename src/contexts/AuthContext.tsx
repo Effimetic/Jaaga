@@ -141,21 +141,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('📱 [TESTING] Sending SMS verification to:', formattedPhone);
       console.log('📱 [TESTING] Phone number format:', request.phone, '→', formattedPhone);
 
-      const { error } = await supabase.auth.signInWithOtp({
-        phone: formattedPhone,
-        options: {
-          channel: 'sms',
-        },
+      // Call our custom SMS service via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('send-sms-otp', {
+        body: {
+          phone: formattedPhone,
+          purpose: 'login'
+        }
       });
 
       if (error) {
-        console.error('❌ SMS sign in error:', error);
+        console.error('❌ Custom SMS service error:', error);
         return { success: false, error: error.message };
       }
 
-      console.log('✅ [TESTING] SMS verification sent successfully to:', formattedPhone);
-      console.log('💡 [TESTING] Check your phone for the 6-digit verification code');
-      console.log('💡 [TESTING] For development, you can use any 6-digit code to test');
+      if (!data.success) {
+        console.error('❌ Custom SMS service failed:', data.error);
+        return { success: false, error: data.error || 'Failed to send SMS' };
+      }
+
+      console.log('✅ [TESTING] Custom SMS verification sent successfully to:', formattedPhone);
+      console.log('💡 [TESTING] Verification code:', data.code);
+      console.log('💡 [TESTING] Message:', data.message);
 
       return { success: true };
     } catch (error: any) {
@@ -177,21 +183,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔐 [TESTING] Token entered:', verification.token);
       console.log('🔐 [TESTING] Token length:', verification.token.length);
 
-      const { error } = await supabase.auth.verifyOtp({
-        phone: formattedPhone,
-        token: verification.token,
-        type: 'sms',
-      });
-
-      if (error) {
-        console.error('❌ SMS verification error:', error);
-        return { success: false, error: error.message };
+      // For now, we'll simulate verification since we're returning the code
+      // Later, you can implement proper verification against stored codes
+      
+      if (verification.token.length === 6 && /^\d{6}$/.test(verification.token)) {
+        console.log('✅ [TESTING] SMS verification successful for:', formattedPhone);
+        console.log('✅ [TESTING] User authenticated successfully');
+        console.log('💡 [DEV] This is simulated verification - implement proper verification later');
+        
+        return { success: true };
+      } else {
+        console.log('❌ [TESTING] Invalid token format');
+        return { success: false, error: 'Invalid verification code format' };
       }
 
-      console.log('✅ [TESTING] SMS verification successful for:', formattedPhone);
-      console.log('✅ [TESTING] User authenticated successfully');
-
-      return { success: true };
+      // TODO: Later implement proper verification:
+      // 1. Store verification codes in database with expiration
+      // 2. Verify against stored codes
+      // 3. Check expiration time
+      // 4. Mark codes as used
+      
     } catch (error: any) {
       console.error('❌ SMS verification error:', error);
       return { success: false, error: error.message || 'Failed to verify token' };
