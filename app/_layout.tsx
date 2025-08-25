@@ -1,4 +1,3 @@
-import { NavigationContainer } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
@@ -23,10 +22,8 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <PaperProvider theme={theme}>
         <AuthProvider>
-          <NavigationContainer independent={true}>
-            <RootNavigator />
-            <StatusBar style="auto" />
-          </NavigationContainer>
+          <RootNavigator />
+          <StatusBar style="auto" />
         </AuthProvider>
       </PaperProvider>
     </SafeAreaProvider>
