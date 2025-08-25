@@ -84,6 +84,17 @@ export interface BookingRequest {
   seats?: string[];
   seatCount?: number;
   paymentMethod: PaymentMethod;
+  // Enhancements for owner-on-behalf, discounts, complimentary, settlements, and recipient delivery
+  complimentary?: boolean;
+  discountType?: 'PERCENT' | 'FIXED';
+  discountValue?: number; // percent for PERCENT, absolute for FIXED
+  settlementCurrency?: string;
+  settlementTotal?: number;
+  recipientName?: string;
+  recipientPhone?: string;
+  // Optional overrides (normally derived from current user context)
+  createdByRole?: UserRole;
+  channel?: Channel;
 }
 
 export interface PassengerInfo {

@@ -9,9 +9,13 @@ import {
   Schedule,
   SearchFilters,
   SearchResult,
-  Ticket
+  Ticket,
+  PassengerInfo,
+  UserRole,
+  Channel
 } from '../types';
 import { qrCodeService } from './qrCodeService';
+import { userService } from './userService';
 
 export class ApiService {
   private static instance: ApiService;
@@ -203,6 +207,29 @@ export class ApiService {
         request.passengers.length
       );
 
+      // Apply complimentary/discount adjustments (temporary client-side until pricingService lands)
+      let adjustedSubtotal = pricing.subtotal;
+      let adjustedTax = pricing.tax;
+      let adjustedTotal = pricing.total;
+
+      if (request.complimentary) {
+        adjustedSubtotal = 0;
+        adjustedTax = 0;
+        adjustedTotal = 0;
+      } else if (request.discountType && typeof request.discountValue === 'number' && request.discountValue > 0) {
+        if (request.discountType === 'PERCENT') {
+          const discountAmount = Math.max(0, Math.min(100, request.discountValue)) / 100 * pricing.subtotal;
+          adjustedSubtotal = Math.max(0, pricing.subtotal - discountAmount);
+        } else {
+          // FIXED discount in booking currency
+          adjustedSubtotal = Math.max(0, pricing.subtotal - request.discountValue);
+        }
+        // Simple 10% tax recompute to match current calculatePricing behavior
+        const taxRate = pricing.subtotal > 0 ? pricing.tax / pricing.subtotal : 0.10;
+        adjustedTax = adjustedSubtotal * taxRate;
+        adjustedTotal = adjustedSubtotal + adjustedTax;
+      }
+
       // Get schedule details
       const { data: schedule } = await supabase
         .from('schedules')
@@ -214,21 +241,29 @@ export class ApiService {
         throw new Error('Schedule not found');
       }
 
+      // Resolve creator context
+      const creatorId = await userService.getCurrentUserId();
+      if (!creatorId) {
+        throw new Error('Not authenticated');
+      }
+      const createdByRole: UserRole = request.createdByRole || 'PUBLIC';
+      const channel: Channel = request.channel || (createdByRole === 'OWNER' ? 'OWNER_PORTAL' : createdByRole === 'AGENT' ? 'AGENT_PORTAL' : 'WEB');
+
       // Create booking
       const bookingData = {
-        created_by_role: 'PUBLIC' as const,
-        creator_id: '', // Will be set by the auth context
+        created_by_role: createdByRole,
+        creator_id: creatorId,
         owner_id: schedule.owner_id,
         schedule_id: request.scheduleId,
         segment_key: request.segmentKey,
         seat_mode: request.seats ? 'SEATMAP' as const : 'CAPACITY' as const,
         seats: request.seats || [],
         seat_count: request.seatCount || request.passengers.length,
-        subtotal: pricing.subtotal,
-        tax: pricing.tax,
-        total: pricing.total,
+        subtotal: adjustedSubtotal,
+        tax: adjustedTax,
+        total: adjustedTotal,
         currency: pricing.currency,
-        channel: 'WEB' as const,
+        channel,
         status: 'PENDING' as const,
         payment_status: 'UNPAID' as const,
         pay_method: request.paymentMethod,
@@ -293,7 +328,7 @@ export class ApiService {
   /**
    * Confirm booking and issue tickets
    */
-  async confirmBooking(bookingId: string): Promise<ApiResponse<Ticket[]>> {
+  async confirmBooking(bookingId: string, passengers?: PassengerInfo[]): Promise<ApiResponse<Ticket[]>> {
     try {
       // Update booking status
       const { error: bookingError } = await supabase
@@ -332,7 +367,8 @@ export class ApiService {
         // First create the ticket without QR code to get the ID
         const ticketData = {
           booking_id: bookingId,
-          passenger_name: `Passenger ${i + 1}`, // This should come from passenger info
+          passenger_name: passengers?.[i]?.name || `Passenger ${i + 1}`,
+          passenger_phone: passengers?.[i]?.phone || null,
           ticket_type_id: ticketType.ticket_type.id,
           seat_id: booking.seats[i] || null,
           qr_code: 'temp', // Temporary placeholder
@@ -355,6 +391,7 @@ export class ApiService {
           schedule_id: booking.schedule_id,
           segment_key: booking.segment_key,
           seat_id: booking.seats[i] || undefined,
+          timestamp: Date.now(),
         });
 
         // Update the ticket with the real QR code
