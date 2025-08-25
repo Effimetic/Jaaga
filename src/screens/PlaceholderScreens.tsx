@@ -1,7 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Surface, Text } from 'react-native-paper';
+import UIButton from '../components/ui/Button';
+import UICard from '../components/ui/Card';
+import UISurface from '../components/ui/Surface';
+import UIText from '../components/ui/Text';
 import { spacing, theme } from '../theme/theme';
 
 interface PlaceholderScreenProps {
@@ -19,34 +22,28 @@ const PlaceholderScreen: React.FC<PlaceholderScreenProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Surface style={styles.surface} elevation={1}>
-        <Card.Content style={styles.content}>
+      <UISurface>
+        <UICard className="items-center p-8">
           <MaterialCommunityIcons
             name={icon as any}
             size={64}
             color={theme.colors.primary}
             style={styles.icon}
           />
-          <Text variant="headlineMedium" style={styles.title}>
+          <UIText variant="title" className="text-center mb-4">
             {title}
-          </Text>
-          <Text variant="bodyLarge" style={styles.description}>
+          </UIText>
+          <UIText variant="body" className="text-center opacity-80 mb-6 leading-6">
             {description}
-          </Text>
-          <Text variant="bodyMedium" style={styles.comingSoon}>
+          </UIText>
+          <UIText variant="caption" className="text-center italic opacity-60 mb-6">
             Coming soon...
-          </Text>
+          </UIText>
           {navigation && (
-            <Button
-              mode="outlined"
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
-              Go Back
-            </Button>
+            <UIButton title="Go Back" variant="ghost" onPress={() => navigation.goBack()} />
           )}
-        </Card.Content>
-      </Surface>
+        </UICard>
+      </UISurface>
     </View>
   );
 };

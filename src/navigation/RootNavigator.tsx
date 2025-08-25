@@ -1,7 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import UIText from '../components/ui/Text';
 import { useAuth } from '../contexts/AuthContext';
 import { LoginScreen } from '../screens/LoginScreen';
 import { theme } from '../theme/theme';
@@ -16,7 +16,7 @@ export default function RootNavigator() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <UIText className="mt-4 text-base" style={styles.loadingText}>Loading...</UIText>
       </View>
     );
   }

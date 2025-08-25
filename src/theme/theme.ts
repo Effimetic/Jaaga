@@ -1,9 +1,7 @@
-import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
+// Theme definitions decoupled from react-native-paper to work with NativeWind
 
 export const lightTheme = {
-  ...MD3LightTheme,
   colors: {
-    ...MD3LightTheme.colors,
     primary: '#1976d2',
     primaryContainer: '#e3f2fd',
     secondary: '#03dac6',
@@ -27,12 +25,10 @@ export const lightTheme = {
     onError: '#ffffff',
     onErrorContainer: '#790e0e',
   },
-};
+} as const;
 
 export const darkTheme = {
-  ...MD3DarkTheme,
   colors: {
-    ...MD3DarkTheme.colors,
     primary: '#90caf9',
     primaryContainer: '#1565c0',
     secondary: '#80cbc4',
@@ -56,7 +52,7 @@ export const darkTheme = {
     onError: '#000000',
     onErrorContainer: '#ffebee',
   },
-};
+} as const;
 
 export const theme = lightTheme;
 
