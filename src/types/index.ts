@@ -208,7 +208,7 @@ export interface CreditBalance {
 }
 
 // Accounting and Financial Types
-export interface LedgerEntry {
+export interface CustomLedgerEntry {
   id: string;
   transaction_id: string;
   account_type: 'REVENUE' | 'COMMISSION' | 'TAX' | 'CREDIT' | 'PAYABLE' | 'RECEIVABLE';
@@ -234,7 +234,7 @@ export interface FinancialTransaction {
   reference_id: string;
   processed_at?: string;
   created_at: string;
-  ledger_entries?: LedgerEntry[];
+  ledger_entries?: CustomLedgerEntry[];
 }
 
 export interface CommissionStructure {

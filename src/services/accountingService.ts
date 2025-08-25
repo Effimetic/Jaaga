@@ -1,96 +1,14 @@
 import { supabase } from '../config/supabase';
 import {
-    ApiResponse,
-    Booking
+  AgentCommissions,
+  ApiResponse,
+  Booking,
+  CommissionStructure,
+  FinancialSummary,
+  FinancialTransaction,
+  OwnerEarnings,
+  RevenueBreakdown
 } from '../types';
-
-export interface LedgerEntry {
-  id: string;
-  transaction_id: string;
-  account_type: 'REVENUE' | 'COMMISSION' | 'TAX' | 'CREDIT' | 'PAYABLE' | 'RECEIVABLE';
-  account_name: string;
-  debit_amount?: number;
-  credit_amount?: number;
-  description: string;
-  reference_type: 'BOOKING' | 'PAYMENT' | 'COMMISSION' | 'TAX' | 'CREDIT_ADJUSTMENT';
-  reference_id: string;
-  entity_id: string; // owner_id, agent_id, or platform
-  entity_type: 'OWNER' | 'AGENT' | 'PLATFORM';
-  created_at: string;
-}
-
-export interface FinancialTransaction {
-  id: string;
-  type: 'BOOKING_REVENUE' | 'COMMISSION_PAYOUT' | 'TAX_PAYMENT' | 'CREDIT_ALLOCATION' | 'REFUND';
-  amount: number;
-  currency: string;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-  description: string;
-  reference_type: string;
-  reference_id: string;
-  processed_at?: string;
-  created_at: string;
-  ledger_entries?: LedgerEntry[];
-}
-
-export interface CommissionStructure {
-  id: string;
-  entity_type: 'AGENT' | 'PLATFORM';
-  entity_id?: string; // null for platform default
-  booking_channel: 'WEB' | 'AGENT' | 'MOBILE';
-  commission_type: 'PERCENTAGE' | 'FIXED';
-  commission_rate: number; // percentage (0-100) or fixed amount
-  minimum_amount?: number;
-  maximum_amount?: number;
-  effective_from: string;
-  effective_until?: string;
-  is_active: boolean;
-}
-
-export interface RevenueBreakdown {
-  gross_revenue: number;
-  platform_commission: number;
-  agent_commission: number;
-  owner_net_revenue: number;
-  tax_amount: number;
-  processing_fees: number;
-}
-
-export interface FinancialSummary {
-  period: string;
-  total_bookings: number;
-  gross_revenue: number;
-  net_revenue: number;
-  platform_commission: number;
-  agent_commission: number;
-  tax_collected: number;
-  outstanding_receivables: number;
-  outstanding_payables: number;
-}
-
-export interface OwnerEarnings {
-  owner_id: string;
-  period: string;
-  total_bookings: number;
-  gross_revenue: number;
-  platform_commission: number;
-  agent_commission: number;
-  net_earnings: number;
-  tax_amount: number;
-  outstanding_amount: number;
-  last_payout_date?: string;
-}
-
-export interface AgentCommissions {
-  agent_id: string;
-  period: string;
-  total_bookings: number;
-  gross_commission: number;
-  platform_fee: number;
-  net_commission: number;
-  outstanding_amount: number;
-  last_payout_date?: string;
-}
 
 export class AccountingService {
   private static instance: AccountingService;
@@ -129,7 +47,7 @@ export class AccountingService {
       if (transactionError) throw transactionError;
 
       // Create ledger entries
-      const ledgerEntries: Omit<LedgerEntry, 'id' | 'created_at'>[] = [
+              const ledgerEntries: Omit<CustomLedgerEntry, 'id' | 'created_at'>[] = [
         // Revenue recognition
         {
           transaction_id: transaction.id,
@@ -394,7 +312,7 @@ export class AccountingService {
           summary.total_bookings += 1;
           summary.gross_revenue += transaction.amount;
           
-          transaction.ledger_entries?.forEach((entry: LedgerEntry) => {
+          transaction.ledger_entries?.forEach((entry: CustomLedgerEntry) => {
             switch (entry.account_type) {
               case 'COMMISSION':
                 if (entry.entity_type === 'PLATFORM') {
@@ -605,7 +523,7 @@ export class AccountingService {
     startDate?: string,
     endDate?: string,
     limit = 50
-  ): Promise<ApiResponse<LedgerEntry[]>> {
+  ): Promise<ApiResponse<CustomLedgerEntry[]>> {
     try {
       let query = supabase
         .from('ledger_entries')

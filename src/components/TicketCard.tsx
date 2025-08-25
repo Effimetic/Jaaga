@@ -146,7 +146,7 @@ Present this ticket for boarding.`;
               <Text variant="titleMedium" style={styles.passengerName}>
                 {ticket.passenger_name}
               </Text>
-              <Text variant="bodyMedium" style={styles.routeInfo}>
+              <Text variant="bodyMedium" style={styles.qrRouteInfo}>
                 {boat.name} • {owner.brand_name}
               </Text>
               <Text variant="bodyMedium" style={styles.dateTimeInfo}>
@@ -166,9 +166,6 @@ Present this ticket for boarding.`;
                   size={200}
                   backgroundColor="white"
                   color="black"
-                  logo={require('../../assets/icon.png')}
-                  logoSize={30}
-                  logoBackgroundColor="white"
                   onError={() => setQrError(true)}
                 />
               ) : (
@@ -455,7 +452,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  routeInfo: {
+  qrRouteInfo: {
     opacity: 0.8,
     textAlign: 'center',
   },
@@ -473,7 +470,11 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: 'white',
     borderRadius: 12,
-    ...theme.shadows?.medium,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   qrError: {
     alignItems: 'center',
