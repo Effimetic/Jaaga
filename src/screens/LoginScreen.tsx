@@ -49,6 +49,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       if (result.success) {
         setStep('otp');
         Alert.alert('Success', 'OTP sent to your phone number');
+        console.log('💡 [TESTING] Check the console for SMS verification details');
+        console.log('💡 [TESTING] For development testing, you can use any 6-digit code');
       } else {
         Alert.alert('Error', result.error || 'Failed to send OTP');
       }
@@ -70,17 +72,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
       return;
     }
 
+    console.log('🔐 [TESTING] Attempting to verify OTP:', otp);
+    console.log('🔐 [TESTING] Phone number:', phone);
+
     setLoading(true);
     try {
       const result = await verifySmSToken({ phone, token: otp });
       
       if (result.success) {
+        console.log('✅ [TESTING] OTP verification successful!');
         Alert.alert('Success', 'Login successful!');
         onLoginSuccess?.();
       } else {
+        console.log('❌ [TESTING] OTP verification failed:', result.error);
         Alert.alert('Error', result.error || 'Invalid OTP');
       }
     } catch (error: any) {
+      console.log('❌ [TESTING] OTP verification error:', error.message);
       Alert.alert('Error', error.message || 'Invalid OTP');
     } finally {
       setLoading(false);
@@ -150,7 +158,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     Enter your phone number
                   </Text>
                   <Text variant="bodyMedium" style={styles.stepDescription}>
-                    We'll send you an OTP to verify your number
+                    We&apos;ll send you an OTP to verify your number
                   </Text>
 
                   <TextInput
@@ -184,6 +192,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   <Text variant="bodyMedium" style={styles.stepDescription}>
                     Enter the 6-digit code sent to {phone}
                   </Text>
+
+                  {/* Development Testing Note */}
+                  <View style={styles.devNote}>
+                    <Text variant="bodySmall" style={styles.devNoteText}>
+                      💡 <Text style={{fontWeight: 'bold'}}>Development Testing:</Text>
+                    </Text>
+                    <Text variant="bodySmall" style={styles.devNoteText}>
+                      Check console for SMS details. Use any 6-digit code to test.
+                    </Text>
+                  </View>
 
                   <TextInput
                     label="OTP Code"
@@ -302,6 +320,19 @@ const styles = StyleSheet.create({
   },
   resendButton: {
     flex: 1,
+  },
+  devNote: {
+    backgroundColor: theme.colors.primaryContainer,
+    padding: spacing.sm,
+    borderRadius: 8,
+    marginBottom: spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.primary,
+  },
+  devNoteText: {
+    color: theme.colors.onPrimaryContainer,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   footerContainer: {
     alignItems: 'center',

@@ -1,10 +1,8 @@
+import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../config/supabase';
-import { User, AuthState, SMSAuthRequest, SMSAuthVerification } from '../types';
-import { smsService } from '../services/smsService';
 import { userService } from '../services/userService';
+import { AuthState, SMSAuthRequest, SMSAuthVerification } from '../types';
 
 interface AuthContextType extends AuthState {
   signInWithSMS: (request: SMSAuthRequest) => Promise<{ success: boolean; error?: string }>;
@@ -140,6 +138,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       formattedPhone = '+' + formattedPhone;
 
+      console.log('📱 [TESTING] Sending SMS verification to:', formattedPhone);
+      console.log('📱 [TESTING] Phone number format:', request.phone, '→', formattedPhone);
+
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
         options: {
@@ -148,13 +149,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        console.error('SMS sign in error:', error);
+        console.error('❌ SMS sign in error:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('✅ [TESTING] SMS verification sent successfully to:', formattedPhone);
+      console.log('💡 [TESTING] Check your phone for the 6-digit verification code');
+      console.log('💡 [TESTING] For development, you can use any 6-digit code to test');
+
       return { success: true };
     } catch (error: any) {
-      console.error('SMS sign in error:', error);
+      console.error('❌ SMS sign in error:', error);
       return { success: false, error: error.message || 'Failed to send SMS' };
     }
   };
@@ -168,6 +173,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       formattedPhone = '+' + formattedPhone;
 
+      console.log('🔐 [TESTING] Verifying SMS token for:', formattedPhone);
+      console.log('🔐 [TESTING] Token entered:', verification.token);
+      console.log('🔐 [TESTING] Token length:', verification.token.length);
+
       const { error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: verification.token,
@@ -175,13 +184,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (error) {
-        console.error('SMS verification error:', error);
+        console.error('❌ SMS verification error:', error);
         return { success: false, error: error.message };
       }
 
+      console.log('✅ [TESTING] SMS verification successful for:', formattedPhone);
+      console.log('✅ [TESTING] User authenticated successfully');
+
       return { success: true };
     } catch (error: any) {
-      console.error('SMS verification error:', error);
+      console.error('❌ SMS verification error:', error);
       return { success: false, error: error.message || 'Failed to verify token' };
     }
   };
