@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 import {
-    Button,
-    Card,
-    Surface,
-    Text,
-    TextInput
+  Button,
+  Card,
+  Surface,
+  Text,
+  TextInput
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { spacing, theme } from '../theme/theme';
@@ -30,33 +30,52 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
   const { signInWithSMS, verifySmSToken } = useAuth();
 
   const handleSendOTP = async () => {
+    console.log('🔍 [DEBUG] handleSendOTP called with phone:', phone);
+    
     if (!phone.trim()) {
+      console.log('❌ [DEBUG] Phone is empty');
       Alert.alert('Error', 'Please enter your phone number');
       return;
     }
 
-    // Validate phone number format
-    const phoneRegex = /^(\+960|960|0)?[79]\d{6}$/;
-    if (!phoneRegex.test(phone.replace(/\s+/g, ''))) {
-      Alert.alert('Error', 'Please enter a valid Maldives phone number');
+    // Clean phone number for validation (remove all non-digits)
+    const cleanPhone = phone.replace(/\D/g, '');
+    console.log('🔍 [DEBUG] Clean phone number:', cleanPhone);
+    
+    // Validate phone number format (should be 7 digits starting with 7 or 9)
+    const phoneRegex = /^[79]\d{6}$/;
+    const isValidPhone = phoneRegex.test(cleanPhone);
+    console.log('🔍 [DEBUG] Phone validation result:', isValidPhone);
+    
+    if (!isValidPhone) {
+      console.log('❌ [DEBUG] Invalid phone format. Expected 7 digits starting with 7 or 9');
+      Alert.alert('Error', 'Please enter a valid Maldives phone number (7 digits starting with 7 or 9)');
       return;
     }
 
+    console.log('🔍 [DEBUG] About to call signInWithSMS');
     setLoading(true);
+    
     try {
+      console.log('🔍 [DEBUG] Calling signInWithSMS...');
       const result = await signInWithSMS({ phone });
+      console.log('🔍 [DEBUG] signInWithSMS result:', result);
       
       if (result.success) {
+        console.log('✅ [DEBUG] SMS sent successfully');
         setStep('otp');
         Alert.alert('Success', 'OTP sent to your phone number');
         console.log('💡 [TESTING] Check the console for SMS verification details');
         console.log('💡 [TESTING] For development testing, you can use any 6-digit code');
       } else {
+        console.log('❌ [DEBUG] SMS failed:', result.error);
         Alert.alert('Error', result.error || 'Failed to send OTP');
       }
     } catch (error: any) {
+      console.log('❌ [DEBUG] Exception in handleSendOTP:', error);
       Alert.alert('Error', error.message || 'Failed to send OTP');
     } finally {
+      console.log('🔍 [DEBUG] Setting loading to false');
       setLoading(false);
     }
   };
@@ -116,18 +135,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
     // Remove all non-digit characters
     const digits = text.replace(/\D/g, '');
     
-    // Format as XXX-XXXX or +960 XXX-XXXX
-    if (digits.startsWith('960')) {
-      const number = digits.slice(3);
-      if (number.length <= 3) {
-        return `+960 ${number}`;
-      } else {
-        return `+960 ${number.slice(0, 3)}-${number.slice(3, 7)}`;
-      }
-    } else if (digits.length <= 3) {
-      return digits;
+    // Limit to 7 digits (Maldives local format)
+    const limitedDigits = digits.slice(0, 7);
+    
+    // Format as XXX-XXXX
+    if (limitedDigits.length <= 3) {
+      return limitedDigits;
     } else {
-      return `${digits.slice(0, 3)}-${digits.slice(3, 7)}`;
+      return `${limitedDigits.slice(0, 3)}-${limitedDigits.slice(3, 7)}`;
     }
   };
 
@@ -160,6 +175,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                   <Text variant="bodyMedium" style={styles.stepDescription}>
                     We&apos;ll send you an OTP to verify your number
                   </Text>
+                  <Text variant="bodySmall" style={styles.formatNote}>
+                    Format: 7XX-XXXX or 9XX-XXXX (7 digits)
+                  </Text>
 
                   <TextInput
                     label="Phone Number"
@@ -167,7 +185,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
                     onChangeText={(text) => setPhone(formatPhoneNumber(text))}
                     mode="outlined"
                     keyboardType="phone-pad"
-                    placeholder="+960 XXX-XXXX"
+                    placeholder="777-9186"
                     style={styles.input}
                     disabled={loading}
                     left={<TextInput.Icon icon="phone" />}
@@ -175,7 +193,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
                   <Button
                     mode="contained"
-                    onPress={handleSendOTP}
+                    onPress={() => {
+                      console.log('🔍 [DEBUG] Send OTP button clicked!');
+                      handleSendOTP();
+                    }}
                     loading={loading}
                     disabled={loading}
                     style={styles.button}
@@ -333,6 +354,12 @@ const styles = StyleSheet.create({
     color: theme.colors.onPrimaryContainer,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  formatNote: {
+    textAlign: 'center',
+    opacity: 0.7,
+    marginBottom: spacing.md,
+    fontStyle: 'italic',
   },
   footerContainer: {
     alignItems: 'center',
