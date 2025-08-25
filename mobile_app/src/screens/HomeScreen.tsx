@@ -30,11 +30,6 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
   const handleTabPress = (tabName: string) => {
     console.log('🔄 Tab pressed:', tabName);
     setActiveTab(tabName);
-    
-    // Handle navigation for specific tabs
-    if (tabName === "Profile" && user) {
-      navigation?.navigate("Profile");
-    }
   };
 
   const renderTabContent = () => {
@@ -220,7 +215,7 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
           </View>
         );
       
-      case "Profile":
+
         return (
           <View style={styles.tabContent}>
             {user ? (
@@ -342,19 +337,11 @@ export default function HomeScreen({ navigation }: { navigation?: any }) {
           <FontAwesome name="ship" size={24} color="#007AFF" />
           <Text style={styles.headerTitle}>Nashath Booking</Text>
         </View>
-        {user && (
-          <TouchableOpacity 
-            style={styles.userButton} 
-            onPress={() => navigation?.navigate("Dashboard")}
-          >
-            <FontAwesome name="user-circle" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        )}
       </View>
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        {["Home", "Boats", "Destinations", "Profile"].map((tab) => (
+        {["Home", "Boats", "Destinations"].map((tab) => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
@@ -398,9 +385,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginLeft: 8,
   },
-  userButton: {
-    padding: 8,
-  },
+
 
   tabContainer: {
     flexDirection: 'row',
@@ -429,7 +414,10 @@ const styles = StyleSheet.create({
   },
 
   content: { flex: 1 },
-  contentContainer: { padding: 16 },
+  contentContainer: { 
+    padding: 16,
+    paddingBottom: 100, // Add extra bottom padding for bottom navigation
+  },
   
   tabContent: { 
     alignItems: "center", 

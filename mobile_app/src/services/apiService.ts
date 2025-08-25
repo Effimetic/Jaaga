@@ -68,9 +68,13 @@ class ApiService {
 
   async getProfile(): Promise<any> {
     try {
+      console.log('🔍 ApiService: Calling getProfile endpoint...');
       const response = await this.api.get('/user/profile');
+      console.log('🔍 ApiService: Profile response received:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('🔍 ApiService: Profile API error:', error);
+      console.error('🔍 ApiService: Error response:', error.response?.data);
       throw new Error(error.response?.data?.error || 'Failed to get profile');
     }
   }
@@ -204,33 +208,6 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.error || 'Failed to get schedule bookings');
-    }
-  }
-
-  async createSchedule(scheduleData: any): Promise<any> {
-    try {
-      const response = await this.api.post('/schedules/schedules/create', scheduleData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to create schedule');
-    }
-  }
-
-  async updateSchedule(scheduleId: number, scheduleData: any): Promise<any> {
-    try {
-      const response = await this.api.put(`/schedules/schedules/${scheduleId}`, scheduleData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to update schedule');
-    }
-  }
-
-  async deleteSchedule(scheduleId: number): Promise<any> {
-    try {
-      const response = await this.api.delete(`/schedules/schedules/${scheduleId}`);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to delete schedule');
     }
   }
 
@@ -634,61 +611,7 @@ class ApiService {
     }
   }
 
-  // Owner settings endpoints
-  async getOwnerSettings(): Promise<any> {
-    try {
-      const response = await this.api.get('/owner-settings/settings');
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to get owner settings');
-    }
-  }
 
-  async updateOwnerSettings(settingsData: any): Promise<any> {
-    try {
-      const response = await this.api.put('/owner-settings/settings', settingsData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to update owner settings');
-    }
-  }
-
-  async getStaffUsers(): Promise<any> {
-    try {
-      const response = await this.api.get('/owner-settings/staff');
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to get staff users');
-    }
-  }
-
-  async createStaffUser(staffData: any): Promise<any> {
-    try {
-      const response = await this.api.post('/owner-settings/staff', staffData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to create staff user');
-    }
-  }
-
-  // Agent connection endpoints
-  async getAgentConnections(): Promise<any> {
-    try {
-      const response = await this.api.get('/owner-settings/agent-connections');
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to get agent connections');
-    }
-  }
-
-  async createAgentConnection(connectionData: any): Promise<any> {
-    try {
-      const response = await this.api.post('/owner-settings/agent-connections', connectionData);
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to create agent connection');
-    }
-  }
 }
 
 export const apiService = new ApiService();

@@ -1,134 +1,90 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function SettingsScreen({ navigation }: { navigation: any }) {
-  const { user, logout } = useAuth();
+interface User {
+  id: number;
+  name: string;
+  role: string;
+  phone: string;
+}
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('🔄 SettingsScreen: Starting logout process...');
-              await logout();
-              console.log('🔄 SettingsScreen: Logout completed, navigating to Home...');
-              
-              // Explicitly navigate to Home screen after logout
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              });
-              
-            } catch (error) {
-              console.error('❌ SettingsScreen: Logout error:', error);
-              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
+export default function SettingsScreen({ navigation }: { navigation: any }) {
+  const { user, normalizeRole, logout } = useAuth();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  console.log('🔍 SettingsScreen: AuthContext user:', user);
+  console.log('🔍 SettingsScreen: Current user state:', currentUser);
+
+  useEffect(() => {
+    if (user) {
+      console.log('🔍 SettingsScreen: Setting current user from auth context:', user);
+      setCurrentUser(user);
+    }
+  }, [user]);
 
   const settingsOptions = [
     {
-      id: 'profile',
-      title: 'Edit Profile',
-      subtitle: 'Update your personal information',
-      icon: 'user-edit',
-      onPress: () => Alert.alert('Coming Soon', 'Profile editing will be available soon'),
+      title: 'Account Settings',
+      subtitle: 'Manage your account information',
+      icon: 'user-cog',
+      color: '#007AFF',
+      onPress: () => navigation.navigate('Profile'),
     },
     {
-      id: 'notifications',
       title: 'Notifications',
-      subtitle: 'Manage notification preferences',
+      subtitle: 'Configure notification preferences',
       icon: 'bell',
-      onPress: () => Alert.alert('Coming Soon', 'Notification settings will be available soon'),
+      color: '#10B981',
+      onPress: () => {
+        // TODO: Implement notifications settings
+        console.log('Notifications settings');
+      },
     },
     {
-      id: 'privacy',
       title: 'Privacy & Security',
-      subtitle: 'Manage your privacy settings',
+      subtitle: 'Manage privacy and security settings',
       icon: 'shield-alt',
-      onPress: () => Alert.alert('Coming Soon', 'Privacy settings will be available soon'),
+      color: '#F59E0B',
+      onPress: () => {
+        // TODO: Implement privacy settings
+        console.log('Privacy settings');
+      },
     },
     {
-      id: 'help',
       title: 'Help & Support',
       subtitle: 'Get help and contact support',
       icon: 'question-circle',
-      onPress: () => Alert.alert('Help & Support', 'For support, please contact the boat operator directly'),
-    },
-    {
-      id: 'about',
-      title: 'About',
-      subtitle: 'App version and information',
-      icon: 'info-circle',
-      onPress: () => Alert.alert('About', 'Nashath Booking v1.0.0\nSpeed Boat Ticketing System'),
+      color: '#8B5CF6',
+      onPress: () => {
+        // TODO: Implement help and support
+        console.log('Help and support');
+      },
     },
   ];
 
-  // Add owner-specific settings
-  if (user?.role === 'owner') {
-    settingsOptions.unshift(
-      {
-        id: 'company',
-        title: 'Company Settings',
-        subtitle: 'Manage your business information',
-        icon: 'building',
-        onPress: () => Alert.alert('Coming Soon', 'Company settings will be available soon'),
-      },
-      {
-        id: 'payment',
-        title: 'Payment Methods',
-        subtitle: 'Configure payment options',
-        icon: 'credit-card',
-        onPress: () => Alert.alert('Coming Soon', 'Payment method configuration will be available soon'),
-      },
-      {
-        id: 'staff',
-        title: 'Staff Management',
-        subtitle: 'Manage your staff users',
-        icon: 'users',
-        onPress: () => Alert.alert('Coming Soon', 'Staff management will be available soon'),
-      }
+  if (!currentUser) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.loadingContainer}>
+          <FontAwesome5 name="spinner" size={24} color="#007AFF" />
+          <Text style={styles.loadingText}>Loading settings...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  // Add agent-specific settings
-  if (user?.role === 'agent') {
-    settingsOptions.unshift(
-      {
-        id: 'connections',
-        title: 'Connection Requests',
-        subtitle: 'Send requests to boat owners',
-        icon: 'handshake',
-        onPress: () => Alert.alert('Coming Soon', 'Connection request system will be available soon'),
-      },
-      {
-        id: 'credit',
-        title: 'Credit Management',
-        subtitle: 'View your credit limits and balances',
-        icon: 'credit-card',
-        onPress: () => Alert.alert('Coming Soon', 'Credit management will be available soon'),
-      }
-    );
-  }
+  const normalizedRole = normalizeRole(currentUser.role);
+  const roleDisplay = getRoleDisplay(normalizedRole);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -137,7 +93,7 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => navigation.goBack()}
+            onPress={() => navigation?.goBack()}
           >
             <FontAwesome5 name="arrow-left" size={20} color="#007AFF" />
           </TouchableOpacity>
@@ -151,30 +107,29 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
             <FontAwesome5 name="user-circle" size={50} color="#007AFF" />
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name}</Text>
-            <Text style={styles.userRole}>
-              {user?.role === 'public' && 'Public User'}
-              {user?.role === 'agent' && 'Agent User'}
-              {user?.role === 'owner' && 'Boat Owner'}
-              {user?.role === 'admin' && 'Administrator'}
-            </Text>
-            <Text style={styles.userPhone}>{user?.phone}</Text>
+            <Text style={styles.userName}>{currentUser.name}</Text>
+            <View style={styles.roleContainer}>
+              <FontAwesome5 name={roleDisplay.icon} size={14} color={roleDisplay.color} />
+              <Text style={[styles.userRole, { color: roleDisplay.color }]}>
+                {roleDisplay.label}
+              </Text>
+            </View>
+            <Text style={styles.userPhone}>{currentUser.phone}</Text>
           </View>
         </View>
 
         {/* Settings Options */}
         <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          
           <View style={styles.optionsList}>
-            {settingsOptions.map((option) => (
+            {settingsOptions.map((option, index) => (
               <TouchableOpacity
-                key={option.id}
+                key={index}
                 style={styles.optionCard}
                 onPress={option.onPress}
               >
                 <View style={styles.optionIcon}>
-                  <FontAwesome5 name={option.icon} size={20} color="#007AFF" />
+                  <FontAwesome5 name={option.icon} size={20} color={option.color} />
                 </View>
                 <View style={styles.optionContent}>
                   <Text style={styles.optionTitle}>{option.title}</Text>
@@ -190,7 +145,17 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
 
         {/* Logout Section */}
         <View style={styles.logoutSection}>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={async () => {
+              try {
+                await logout();
+              } catch (error) {
+                console.error('Logout error:', error);
+                Alert.alert('Logout Error', 'Failed to logout. Please try again.');
+              }
+            }}
+          >
             <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
@@ -199,6 +164,21 @@ export default function SettingsScreen({ navigation }: { navigation: any }) {
     </SafeAreaView>
   );
 }
+
+const getRoleDisplay = (role: string) => {
+  switch (role) {
+    case 'PUBLIC':
+      return { icon: 'user', label: 'Public User', color: '#10B981' };
+    case 'AGENT':
+      return { icon: 'building', label: 'Agent User', color: '#3B82F6' };
+    case 'OWNER':
+      return { icon: 'ship', label: 'Boat Owner', color: '#8B5CF6' };
+    case 'APP_OWNER':
+      return { icon: 'crown', label: 'Administrator', color: '#F59E0B' };
+    default:
+      return { icon: 'user', label: 'User', color: '#6B7280' };
+  }
+};
 
 const styles = StyleSheet.create({
   safe: {
@@ -250,11 +230,15 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  roleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
   userRole: {
     fontSize: 14,
-    color: '#007AFF',
     fontWeight: '600',
-    marginBottom: 2,
   },
   userPhone: {
     fontSize: 14,
@@ -304,45 +288,42 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   optionSubtitle: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6B7280',
   },
   optionArrow: {
-    marginLeft: 8,
+    marginLeft: 16,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
   },
 
   logoutSection: {
-    marginBottom: 24,
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
   },
   logoutButton: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
     gap: 12,
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#EF4444',
-  },
-
-  appInfo: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  appInfoText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    marginBottom: 2,
   },
 });

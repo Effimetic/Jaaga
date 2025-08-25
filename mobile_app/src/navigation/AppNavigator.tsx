@@ -3,7 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../contexts/AuthContext';
+
 
 // Import all screens
 import LoginScreen from '../screens/LoginScreen';
@@ -88,7 +90,8 @@ const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const MainTabNavigator: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
   
   return (
     <Tab.Navigator
@@ -117,9 +120,18 @@ const MainTabNavigator: React.FC = () => {
           backgroundColor: '#FFF',
           borderTopWidth: 1,
           borderTopColor: '#E5E7EB',
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 60,
+          height: 80 + Math.max(insets.bottom, 8),
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -155,6 +167,8 @@ const AppNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
 
   console.log('🔄 AppNavigator re-render - user:', user, 'isLoading:', isLoading);
+  console.log('🔄 AppNavigator - user role:', user?.role);
+  console.log('🔄 AppNavigator - user authenticated:', user?.authenticated);
 
   if (isLoading) {
     console.log('⏳ AppNavigator - showing LoadingScreen');
@@ -163,6 +177,7 @@ const AppNavigator: React.FC = () => {
 
   console.log('🎯 AppNavigator - rendering main navigation');
   console.log('🎯 AppNavigator - user exists:', !!user);
+  console.log('🎯 AppNavigator - initial route:', user ? "MainTabs" : "Home");
   
   return (
     <NavigationContainer>
@@ -207,7 +222,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="Schedules" component={SchedulesScreen} />
             
             {/* Agent-specific screens */}
-            {(user.role === 'agent' || user.role === 'AGENT') && (
+            {(user.role === 'AGENT') && (
               <>
                 <Stack.Screen name="AgentDashboard" component={AgentDashboardScreen} />
                 <Stack.Screen name="AgentConnections" component={AgentConnectionsScreen} />
@@ -218,7 +233,7 @@ const AppNavigator: React.FC = () => {
             )}
             
             {/* Owner-specific screens */}
-            {(user.role === 'owner' || user.role === 'OWNER') && (
+            {(user.role === 'OWNER') && (
               <>
                 <Stack.Screen name="MyBoats" component={MyBoatsScreen} />
                 <Stack.Screen name="AddBoat" component={AddBoatScreen} />
@@ -233,6 +248,13 @@ const AppNavigator: React.FC = () => {
                 <Stack.Screen name="IssueTicket" component={IssueTicketScreen} />
                 <Stack.Screen name="AgentManagement" component={AgentManagementScreen} />
                 <Stack.Screen name="OwnerAccountBook" component={OwnerAccountBookScreen} />
+              </>
+            )}
+            
+            {/* App Owner specific screens */}
+            {(user.role === 'APP_OWNER') && (
+              <>
+                {/* Add app owner specific screens here */}
               </>
             )}
           </>

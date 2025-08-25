@@ -30,9 +30,26 @@ export const userService = {
    */
   clearCurrentUserSession: async (): Promise<void> => {
     try {
+      console.log('🔄 userService: Starting to clear current user session...');
+      
+      // Check what's in storage before clearing
+      const token = await AsyncStorage.getItem('auth_token');
+      const userData = await AsyncStorage.getItem('user_data');
+      const userId = await AsyncStorage.getItem('CurrentUserID');
+      
+      console.log('🔄 userService: Before clearing - token exists:', !!token, 'userData exists:', !!userData, 'userId exists:', !!userId);
+      
       await AsyncStorage.multiRemove(['auth_token', 'user_data', 'CurrentUserID']);
+      
+      // Verify clearing worked
+      const tokenAfter = await AsyncStorage.getItem('auth_token');
+      const userDataAfter = await AsyncStorage.getItem('user_data');
+      const userIdAfter = await AsyncStorage.getItem('CurrentUserID');
+      
+      console.log('🔄 userService: After clearing - token exists:', !!tokenAfter, 'userData exists:', !!userDataAfter, 'userId exists:', !!userIdAfter);
+      console.log('🔄 userService: Current user session cleared successfully');
     } catch (error) {
-      console.error('Error clearing current user session:', error);
+      console.error('🔄 userService: Error clearing current user session:', error);
       throw error;
     }
   },

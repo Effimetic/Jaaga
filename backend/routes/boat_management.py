@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime
-from models import db, User, Boat
+from models import db, User, Boat, Seat
 from utils import get_user_by_phone
 import json
 

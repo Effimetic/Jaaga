@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Alert,
   Pressable,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
@@ -28,13 +27,12 @@ interface User {
 }
 
 export default function DashboardScreen({ navigation }: { navigation: any }) {
-  const { user, logout } = useAuth();
+  const { user, normalizeRole } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<any>({});
 
   console.log('🔄 DashboardScreen: Component rendered');
   console.log('🔄 DashboardScreen: user from useAuth:', user);
-  console.log('🔄 DashboardScreen: logout function:', typeof logout);
 
   useEffect(() => {
     console.log('🔄 DashboardScreen: useEffect triggered');
@@ -91,49 +89,19 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
   };
 
   const getRoleDisplay = (role: string) => {
-    switch (role) {
-      case 'public':
+    const normalizedRole = normalizeRole(role);
+    switch (normalizedRole) {
+      case 'PUBLIC':
         return { icon: 'user', label: 'Public User' };
-      case 'agent':
+      case 'AGENT':
         return { icon: 'building', label: 'Agent User' };
-      case 'owner':
+      case 'OWNER':
         return { icon: 'ship', label: 'Boat Owner' };
-      case 'admin':
+      case 'APP_OWNER':
         return { icon: 'crown', label: 'Administrator' };
       default:
         return { icon: 'user', label: 'User' };
     }
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('🔄 DashboardScreen: Starting logout process...');
-              await logout();
-              console.log('🔄 DashboardScreen: Logout completed, navigating to Home...');
-              
-              // Explicitly navigate to Home screen after logout
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              });
-              
-            } catch (error) {
-              console.error('❌ DashboardScreen: Logout error:', error);
-              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
   };
 
   const renderDashboardContent = () => {
@@ -494,8 +462,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
               </Text>
             </View>
           </>
-                onPress={() => navigation.navigate('Search')}
-        )
+        );
 
       default:
         console.log('🔄 Dashboard: Unknown role:', user.role);
@@ -537,9 +504,7 @@ export default function DashboardScreen({ navigation }: { navigation: any }) {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Dashboard</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* User Profile Header */}
@@ -582,8 +547,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
   },
-  logoutButton: {
-    padding: 8,
+  headerSpacer: {
+    width: 40, // Same width as logout button for centering
   },
 
   userProfileHeader: {

@@ -2,7 +2,7 @@
 
 export interface User {
   id: number;
-  role: 'PUBLIC' | 'AGENT' | 'OWNER' | 'APP_OWNER';
+  role: string; // Allow any string role, will be normalized in AuthContext
   name: string;
   email?: string;
   phone: string;

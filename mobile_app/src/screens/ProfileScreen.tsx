@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -23,7 +24,7 @@ interface User {
 export default function ProfileScreen({ navigation }: { navigation: any }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { logout } = useAuth();
+  const { logout, normalizeRole } = useAuth();
 
   useEffect(() => {
     loadUserProfile();
@@ -34,7 +35,12 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       setIsLoading(true);
       const currentUser = await userService.getCurrentUser();
       if (currentUser) {
-        setUser(currentUser);
+        // Normalize the role to ensure consistency
+        const normalizedUser = {
+          ...currentUser,
+          role: normalizeRole(currentUser.role)
+        };
+        setUser(normalizedUser);
       }
     } catch (error) {
       console.error('Failed to load user profile:', error);
@@ -43,47 +49,18 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('🔄 ProfileScreen: Starting logout process...');
-              await logout();
-              console.log('🔄 ProfileScreen: Logout completed, navigating to Home...');
-              
-              // Explicitly navigate to Home screen after logout
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              });
-              
-            } catch (error) {
-              console.error('❌ ProfileScreen: Logout error:', error);
-              Alert.alert('Logout Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
+
 
   const getRoleDisplay = (role: string) => {
-    const normalizedRole = role?.toLowerCase();
-    switch (role) {
-      case 'public':
+    const normalizedRole = normalizeRole(role);
+    switch (normalizedRole) {
+      case 'PUBLIC':
         return { icon: 'user', label: 'Public User', color: '#10B981' };
-      case 'agent':
+      case 'AGENT':
         return { icon: 'building', label: 'Agent User', color: '#3B82F6' };
-      case 'owner':
+      case 'OWNER':
         return { icon: 'ship', label: 'Boat Owner', color: '#8B5CF6' };
-      case 'admin':
+      case 'APP_OWNER':
         return { icon: 'crown', label: 'Administrator', color: '#F59E0B' };
       default:
         return { icon: 'user', label: 'User', color: '#6B7280' };
@@ -118,16 +95,9 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation?.goBack()}
-          >
-            <FontAwesome5 name="arrow-left" size={20} color="#007AFF" />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
           <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
-          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Profile Card */}
@@ -186,7 +156,7 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
               <Text style={styles.actionTitle}>Dashboard</Text>
             </TouchableOpacity>
 
-            {user.role === 'owner' && (
+            {user.role === 'OWNER' && (
               <TouchableOpacity
                 style={styles.actionCard}
                 onPress={() => navigation.navigate('MyBoats')}
@@ -228,6 +198,26 @@ export default function ProfileScreen({ navigation }: { navigation: any }) {
             <Text style={styles.appInfoText}>Speed Boat Ticketing System</Text>
           </View>
         </View>
+
+        {/* Logout Section */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={async () => {
+              console.log('🔄 ProfileScreen: Logout button pressed');
+              try {
+                await logout();
+                console.log('🔄 ProfileScreen: Logout completed');
+              } catch (error) {
+                console.error('🔄 ProfileScreen: Logout error:', error);
+                Alert.alert('Logout Error', 'Failed to logout. Please try again.');
+              }
+            }}
+          >
+            <FontAwesome5 name="sign-out-alt" size={20} color="#EF4444" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -247,12 +237,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#111827',
+    textAlign: 'center',
+    flex: 1,
   },
-  logoutButton: {
-    padding: 8,
-  },
-  backButton: {
-    padding: 8,
+  headerSpacer: {
+    width: 40, // Same width for centering
   },
 
   profileCard: {
@@ -398,6 +387,25 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
+    color: '#EF4444',
+  },
+
+  logoutSection: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#EF4444',
   },
 });

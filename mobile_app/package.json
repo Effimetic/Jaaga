@@ -18,6 +18,7 @@
     "@react-navigation/stack": "^7.4.7",
     "axios": "^1.11.0",
     "expo": "~53.0.20",
+    "expo-document-picker": "^13.1.6",
     "expo-status-bar": "~2.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

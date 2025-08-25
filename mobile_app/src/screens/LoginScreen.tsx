@@ -104,32 +104,45 @@ export default function LoginScreen({ navigation }: { navigation?: any }) {
           authenticated: true
         };
         
-        // Store the session
-        await userService.setCurrentUserSession(tempUser, response.access_token);
-        
-        // Try to get profile data
+        // Try to get profile data first
         try {
+          // Store the token first so the profile API call can authenticate
+          await userService.setCurrentUserSession(tempUser, response.access_token);
+          console.log('🔍 LoginScreen: Token stored, now calling profile API...');
+          
           const profile = await apiService.getProfile();
-          console.log('Profile API response:', profile);
+          console.log('🔍 LoginScreen: Profile API response:', profile);
+          console.log('🔍 LoginScreen: Profile response type:', typeof profile);
+          console.log('🔍 LoginScreen: Profile response keys:', Object.keys(profile));
+          
           if (profile.success) {
+            console.log('🔍 LoginScreen: Profile success, user data:', profile.user);
+            console.log('🔍 LoginScreen: User role from profile:', profile.user?.role);
+            
             const userData = {
-              id: profile.profile.id,
-              phone: profile.profile.phone,
-              name: profile.profile.name,
-              role: profile.profile.role,
+              id: profile.user.id,
+              phone: profile.user.phone,
+              name: profile.user.name,
+              role: profile.user.role,
               authenticated: true
             };
-            console.log('Setting user data from profile:', userData);
+            console.log('🔍 LoginScreen: Setting user data from profile:', userData);
+            // Update the stored user data with profile information
             await userService.setCurrentUserSession(userData, response.access_token);
-            // Update AuthContext user state
-            setUser(userData);
-            console.log('Profile loaded, user state updated:', userData);
+            // Use the login function from AuthContext for proper role normalization
+            await login(userData, response.access_token);
+            console.log('🔍 LoginScreen: Profile loaded, user state updated via login function:', userData);
+          } else {
+            console.log('🔍 LoginScreen: Profile not successful, using basic user data');
+            // Fallback to basic user data
+            await login(tempUser, response.access_token);
+            console.log('🔍 LoginScreen: Basic user state set via login function:', tempUser);
           }
         } catch (profileError) {
-          console.log('Profile load failed, using basic user data:', profileError);
-          // Set basic user data in AuthContext
-          setUser(tempUser);
-          console.log('Basic user state set:', tempUser);
+          console.log('🔍 LoginScreen: Profile load failed, using basic user data:', profileError);
+          // Use the login function from AuthContext for proper role normalization
+          await login(tempUser, response.access_token);
+          console.log('🔍 LoginScreen: Basic user state set via login function:', tempUser);
         }
         
         console.log('Login successful, waiting for state update...');

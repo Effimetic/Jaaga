@@ -5,7 +5,7 @@ db = SQLAlchemy()
 
 # Import all models to ensure they are registered with SQLAlchemy
 from .user import User, LoginToken
-from .boat_management import Boat
+from .boat_management import Boat, Seat
 from .scheduling import Schedule, ScheduleDestination, ScheduleSeat, Island, Destination, OwnerBooking, OwnerBookingSeat
 from .owner_settings import OwnerSettings, StaffUser, PaymentTransaction, AppOwnerSettings, CommissionLedger, OwnerAgentConnection
 from .unified_booking import (
@@ -18,6 +18,7 @@ __all__ = [
     'db',
     'User', 'LoginToken', 'Boat', 'Schedule', 'ScheduleDestination', 'ScheduleSeat', 
     'Island', 'Destination', 'OwnerBooking', 'OwnerBookingSeat', 
+    'Seat',
     'OwnerAgentConnection', 'OwnerSettings', 'StaffUser', 'PaymentTransaction', 
     'AppOwnerSettings', 'CommissionLedger', 'TicketType', 'TaxProfile', 
     'ScheduleTicketType', 'Booking', 'BookingTicket', 'SeatAssignment', 

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { userService } from '../services/userService';
+import { apiService } from '../services/apiService';
 
 interface User {
   id: number;
@@ -17,6 +18,7 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   hasPermission: (permission: string) => boolean;
   canAccessFeature: (feature: string) => boolean;
+  normalizeRole: (role: string) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +43,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  // Monitor user state changes for debugging
+  useEffect(() => {
+    console.log('🔄 AuthProvider: User state changed:', user);
+    console.log('🔄 AuthProvider: User role:', user?.role);
+    console.log('🔄 AuthProvider: User authenticated:', user?.authenticated);
+  }, [user]);
+
   const checkAuthStatus = async () => {
     try {
       console.log('🔄 AuthProvider: Checking auth status...');
@@ -53,8 +62,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log('🔄 AuthProvider: Token exists:', !!token);
       
       if (currentUser && token) {
-        console.log('🔄 AuthProvider: Setting user state:', currentUser);
-        setUser(currentUser);
+        // Normalize the role to ensure consistency
+        const normalizedUser = {
+          ...currentUser,
+          role: normalizeRole(currentUser.role)
+        };
+        console.log('🔄 AuthProvider: Setting normalized user state:', normalizedUser);
+        setUser(normalizedUser);
       } else {
         console.log('🔄 AuthProvider: No valid session found');
         setUser(null);
@@ -68,12 +82,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const normalizeRole = (role: string): string => {
+    console.log('🔄 AuthProvider: normalizeRole called with:', role);
+    if (!role) {
+      console.log('🔄 AuthProvider: No role provided, returning PUBLIC');
+      return 'PUBLIC';
+    }
+    
+    const normalized = role.toLowerCase().trim();
+    console.log('🔄 AuthProvider: Normalized role (lowercase):', normalized);
+    
+    let result: string;
+    switch (normalized) {
+      case 'owner':
+        result = 'OWNER';
+        break;
+      case 'agent':
+        result = 'AGENT';
+        break;
+      case 'admin':
+      case 'app_owner':
+        result = 'APP_OWNER';
+        break;
+      case 'public':
+      default:
+        result = 'PUBLIC';
+        break;
+    }
+    
+    console.log('🔄 AuthProvider: Role normalization result:', result);
+    return result;
+  };
+
   const login = async (userData: User, token: string) => {
     try {
-      console.log('🔄 AuthProvider: Login called with:', userData);
-      await userService.setCurrentUserSession(userData, token);
-      setUser(userData);
-      console.log('🔄 AuthProvider: User state updated after login');
+      console.log('🔄 AuthProvider: Login called with userData:', userData);
+      console.log('🔄 AuthProvider: UserData type:', typeof userData);
+      console.log('🔄 AuthProvider: UserData keys:', Object.keys(userData));
+      console.log('🔄 AuthProvider: UserData role:', userData.role);
+      console.log('🔄 AuthProvider: UserData role type:', typeof userData.role);
+      
+      // Normalize the role before storing
+      const normalizedUserData = {
+        ...userData,
+        role: normalizeRole(userData.role)
+      };
+      
+      console.log('🔄 AuthProvider: Normalized user data:', normalizedUserData);
+      
+      await userService.setCurrentUserSession(normalizedUserData, token);
+      setUser(normalizedUserData);
+      console.log('🔄 AuthProvider: Normalized user state updated after login:', normalizedUserData);
     } catch (error) {
       console.error('🔄 AuthProvider: Login error:', error);
       throw error;
@@ -83,18 +142,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async () => {
     try {
       console.log('🔄 AuthProvider: Logout called');
+      console.log('🔄 AuthProvider: Current user state before logout:', user);
+      
+      // Clear user state first
+      setUser(null);
+      console.log('🔄 AuthProvider: User state cleared');
+      
       // Call API logout endpoint if available
       try {
+        console.log('🔄 AuthProvider: Calling API logout endpoint...');
         await apiService.logout();
+        console.log('🔄 AuthProvider: API logout successful');
       } catch (apiError) {
-        console.log('🔄 AuthProvider: API logout failed, continuing with local logout');
+        console.log('🔄 AuthProvider: API logout failed, continuing with local logout:', apiError);
       }
       
+      // Clear local session
+      console.log('🔄 AuthProvider: Clearing local session...');
       await userService.clearCurrentUserSession();
-      setUser(null);
-      console.log('🔄 AuthProvider: User state cleared after logout');
+      console.log('🔄 AuthProvider: Local session cleared');
+      
+      console.log('🔄 AuthProvider: Logout completed successfully');
     } catch (error) {
       console.error('🔄 AuthProvider: Logout error:', error);
+      // Ensure user state is cleared even if there's an error
+      setUser(null);
       throw error;
     }
   };
@@ -102,7 +174,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const hasPermission = (permission: string): boolean => {
     if (!user) return false;
     
-    // Define role-based permissions
+    // Define role-based permissions using normalized roles
     const rolePermissions: { [key: string]: string[] } = {
       'PUBLIC': ['view_tickets', 'create_booking', 'view_schedules'],
       'AGENT': ['view_tickets', 'create_booking', 'view_schedules', 'manage_agent_bookings', 'view_agent_account'],
@@ -111,13 +183,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
     
     const userRole = user.role.toUpperCase();
+    console.log('🔄 AuthProvider: Checking permission', permission, 'for role', userRole);
     return rolePermissions[userRole]?.includes(permission) || false;
   };
 
   const canAccessFeature = (feature: string): boolean => {
     if (!user) return false;
     
-    // Define feature access by role
+    // Define feature access by role using normalized roles
     const featureAccess: { [key: string]: string[] } = {
       'boat_management': ['OWNER'],
       'schedule_management': ['OWNER'],
@@ -129,6 +202,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
     
     const userRole = user.role.toUpperCase();
+    console.log('🔄 AuthProvider: Checking feature access', feature, 'for role', userRole);
     return featureAccess[feature]?.includes(userRole) || false;
   };
 
@@ -140,6 +214,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser,
     hasPermission,
     canAccessFeature,
+    normalizeRole,
   };
 
   return (
