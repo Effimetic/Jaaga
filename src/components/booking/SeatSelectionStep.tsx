@@ -6,7 +6,7 @@ import {
     Chip,
     Surface,
     Text
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { useBookingStore } from '../../stores/bookingStore';
 import { colors, spacing, theme } from '../../theme/theme';
 import { Seat, SeatMap } from '../../types';

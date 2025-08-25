@@ -13,7 +13,7 @@ import {
     Chip,
     Surface,
     Text
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import {
     agentManagementService,

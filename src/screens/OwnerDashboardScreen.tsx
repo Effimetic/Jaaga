@@ -13,10 +13,9 @@ import {
     Button,
     Card,
     Chip,
-    FAB,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService } from '../services/boatManagementService';
 import { scheduleManagementService } from '../services/scheduleManagementService';
@@ -30,14 +29,14 @@ interface DashboardStats {
     with_schedules: number;
   };
   schedules: {
-    total: number;
-    active: number;
-    draft: number;
     upcoming: number;
+    today: number;
+    sold_out: number;
   };
-  revenue: {
-    this_month: number;
-    total_bookings: number;
+  sales: {
+    today_revenue: number;
+    month_revenue: number;
+    tickets_sold: number;
   };
 }
 
@@ -396,21 +395,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => {
-          Alert.alert(
-            'Quick Create',
-            'What would you like to create?',
-            [
-              { text: 'Add Boat', onPress: () => navigation.navigate('AddBoat') },
-              { text: 'Create Schedule', onPress: () => navigation.navigate('CreateSchedule') },
-              { text: 'Cancel', style: 'cancel' },
-            ]
-          );
-        }}
-      />
+      {/* Removed FAB */}
     </View>
   );
 };

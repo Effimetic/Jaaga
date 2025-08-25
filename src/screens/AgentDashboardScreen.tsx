@@ -13,11 +13,9 @@ import {
     Card,
     Chip,
     Divider,
-    FAB,
-    ProgressBar,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import {
     agentManagementService,
@@ -255,11 +253,7 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
               {creditSummary.utilizationRate.toFixed(1)}%
             </Text>
           </View>
-          <ProgressBar
-            progress={creditSummary.utilizationRate / 100}
-            color={getCreditHealthColor(creditSummary.utilizationRate)}
-            style={styles.progressBar}
-          />
+          {/* ProgressBar removed */}
         </View>
       </View>
 
@@ -448,21 +442,7 @@ export const AgentDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => {
-          Alert.alert(
-            'Quick Action',
-            'What would you like to do?',
-            [
-              { text: 'Search Boats', onPress: () => navigation.navigate('SearchBoats') },
-              { text: 'Find Owners', onPress: () => navigation.navigate('FindOwners') },
-              { text: 'Cancel', style: 'cancel' },
-            ]
-          );
-        }}
-      />
+      {/* FAB removed */}
     </View>
   );
 };

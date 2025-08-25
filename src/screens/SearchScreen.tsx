@@ -7,14 +7,13 @@ import {
     View,
 } from 'react-native';
 import {
-    ActivityIndicator,
     Button,
     Card,
     Chip,
     Surface,
     Text,
     TextInput,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { DatePickerInput } from 'react-native-paper-dates';
 import { apiService } from '../services/apiService';
 import { spacing, theme } from '../theme/theme';
@@ -144,11 +143,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       <Button
         mode="contained"
         onPress={handleSearch}
-        loading={loading}
         disabled={loading}
         style={styles.searchButton}
         contentStyle={styles.searchButtonContent}
-        icon="magnify"
       >
         Search Trips
       </Button>
@@ -162,8 +159,8 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation }) => {
       return (
         <Surface style={styles.resultsCard} elevation={1}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Searching trips...</Text>
+            {/* Simple loading replacement */}
+            <Text>Loading...</Text>
           </View>
         </Surface>
       );

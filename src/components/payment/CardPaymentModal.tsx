@@ -2,13 +2,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import {
-    ActivityIndicator,
     Button,
     Modal,
     Portal,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { paymentService } from '../../services/paymentService';
 import { colors, spacing, theme } from '../../theme/theme';
 import { Booking } from '../../types';
@@ -155,7 +154,6 @@ export const CardPaymentModal: React.FC<CardPaymentModalProps> = ({
           mode="contained"
           onPress={handlePayment}
           style={styles.button}
-          loading={processing}
           disabled={processing}
         >
           Pay Now
@@ -181,7 +179,7 @@ export const CardPaymentModal: React.FC<CardPaymentModalProps> = ({
         Please complete your payment in the opened browser window.
       </Text>
 
-      <ActivityIndicator size="large" style={styles.loader} />
+      <Text>Loading...</Text>
 
       <Button
         mode="text"
@@ -195,7 +193,7 @@ export const CardPaymentModal: React.FC<CardPaymentModalProps> = ({
 
   const renderProcessingStep = () => (
     <View style={styles.stepContainer}>
-      <ActivityIndicator size={64} color={theme.colors.primary} style={styles.stepIcon} />
+      <MaterialCommunityIcons name="loading" size={32} color={theme.colors.primary} style={styles.stepIcon} />
       
       <Text variant="headlineSmall" style={styles.stepTitle}>
         Processing Payment
@@ -302,10 +300,8 @@ export const CardPaymentModal: React.FC<CardPaymentModalProps> = ({
       <Modal
         visible={visible}
         onDismiss={step === 'PROCESSING' ? undefined : onDismiss}
-        contentContainerStyle={styles.modal}
-        dismissable={step !== 'PROCESSING'}
       >
-        <Surface style={styles.container} elevation={3}>
+        <Surface style={styles.container}>
           {renderCurrentStep()}
         </Surface>
       </Modal>
@@ -324,7 +320,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ label, completed, inPro
     {completed ? (
       <MaterialCommunityIcons name="check" size={16} color={colors.success} />
     ) : inProgress ? (
-      <ActivityIndicator size={16} color={theme.colors.primary} />
+      <MaterialCommunityIcons name="loading" size={16} color={theme.colors.primary} />
     ) : (
       <MaterialCommunityIcons name="circle-outline" size={16} color={theme.colors.onSurfaceVariant} />
     )}
@@ -335,12 +331,10 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ label, completed, inPro
 );
 
 const styles = StyleSheet.create({
-  modal: {
-    margin: spacing.lg,
-  },
   container: {
     borderRadius: 16,
     overflow: 'hidden',
+    margin: spacing.lg,
   },
   stepContainer: {
     padding: spacing.xl,
@@ -405,9 +399,6 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-  },
-  loader: {
-    marginVertical: spacing.lg,
   },
   reopenButton: {
     marginTop: spacing.md,

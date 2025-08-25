@@ -18,7 +18,7 @@ import {
     Surface,
     Text,
     TextInput,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import {
     agentManagementService,

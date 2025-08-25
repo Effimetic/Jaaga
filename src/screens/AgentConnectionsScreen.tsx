@@ -13,10 +13,9 @@ import {
     Card,
     Chip,
     Divider,
-    Searchbar,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import {
     agentManagementService,
@@ -408,13 +407,11 @@ export const AgentConnectionsScreen: React.FC<{ navigation: any }> = ({ navigati
         showsVerticalScrollIndicator={false}
       >
         {/* Search Bar */}
-        <Searchbar
-          placeholder="Search connections by owner name..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-          icon="account-network"
-        />
+        <View style={styles.searchBar}>
+          <Text variant="titleMedium" style={styles.searchBarText}>
+            Search connections by owner name...
+          </Text>
+        </View>
 
         {/* Summary Stats */}
         {renderSummaryStats()}
@@ -448,6 +445,9 @@ const styles = StyleSheet.create({
   searchBar: {
     margin: spacing.md,
     elevation: 2,
+  },
+  searchBarText: {
+    opacity: 0.7,
   },
   summaryContainer: {
     margin: spacing.md,

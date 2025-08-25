@@ -1,15 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 import {
     Button,
     Card,
     Divider,
-    RadioButton,
     Surface,
     Text,
     TextInput
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { paymentService } from '../../services/paymentService';
 import { useBookingStore } from '../../stores/bookingStore';
 import { colors, spacing, theme } from '../../theme/theme';
@@ -71,30 +70,6 @@ export const PaymentStep: React.FC = () => {
     }
   };
 
-  const handleCardPaymentSuccess = (transactionId: string) => {
-    setShowCardModal(false);
-    console.log('Card payment successful:', transactionId);
-    // Payment success is handled in the booking confirmation step
-  };
-
-  const handleCardPaymentError = (error: string) => {
-    setShowCardModal(false);
-    console.error('Card payment failed:', error);
-    // Could show an error message to the user
-  };
-
-  const handleBankTransferSuccess = (receiptId: string) => {
-    setShowBankTransferModal(false);
-    console.log('Bank transfer receipt uploaded:', receiptId);
-    // Receipt upload success is handled in the booking confirmation step
-  };
-
-  const handleBankTransferError = (error: string) => {
-    setShowBankTransferModal(false);
-    console.error('Bank transfer failed:', error);
-    // Could show an error message to the user
-  };
-
   const paymentMethods: {
     method: PaymentMethod;
     title: string;
@@ -126,8 +101,6 @@ export const PaymentStep: React.FC = () => {
       available: true,
     },
   ];
-
-  // Bank accounts are now loaded dynamically via the loadBankAccounts function
 
   const calculateTotal = (method: PaymentMethod) => {
     if (!pricing) return 0;
@@ -184,11 +157,13 @@ export const PaymentStep: React.FC = () => {
               <Text variant="titleMedium" style={styles.paymentTotal}>
                 {pricing?.currency} {total.toFixed(2)}
               </Text>
-              <RadioButton
-                value={paymentOption.method}
-                status={isSelected ? 'checked' : 'unchecked'}
-                onPress={() => handlePaymentMethodSelect(paymentOption.method)}
-              />
+              <Pressable onPress={() => handlePaymentMethodSelect(paymentOption.method)}>
+                <MaterialCommunityIcons
+                  name={isSelected ? 'radiobox-marked' : 'radiobox-blank'}
+                  size={20}
+                  color={isSelected ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                />
+              </Pressable>
             </View>
           </View>
           
@@ -201,7 +176,6 @@ export const PaymentStep: React.FC = () => {
                   mode="contained"
                   onPress={() => setShowCardModal(true)}
                   style={styles.actionButton}
-                  icon="credit-card"
                 >
                   Pay with Card
                 </Button>
@@ -211,8 +185,6 @@ export const PaymentStep: React.FC = () => {
                   mode="contained"
                   onPress={() => setShowBankTransferModal(true)}
                   style={styles.actionButton}
-                  icon="bank-transfer"
-                  loading={loading}
                   disabled={loading}
                 >
                   Upload Receipt
@@ -312,30 +284,26 @@ export const PaymentStep: React.FC = () => {
           Select Bank Account
         </Text>
         
-        <RadioButton.Group
-          onValueChange={(value) => setBankTransferDetails({
-            ...bankTransferDetails,
-            selectedAccount: value
-          })}
-          value={bankTransferDetails.selectedAccount}
-        >
-          {bankAccounts.map((account) => (
-            <View key={account.id} style={styles.bankAccountOption}>
-              <View style={styles.bankAccountInfo}>
-                <Text variant="bodyMedium" style={styles.bankName}>
-                  {account.bank_name}
-                </Text>
-                <Text variant="bodySmall" style={styles.accountDetails}>
-                  {account.account_name}
-                </Text>
-                <Text variant="bodySmall" style={styles.accountNumber}>
-                  Account: {account.account_no}
-                </Text>
-              </View>
-              <RadioButton value={account.id} />
+        {bankAccounts.map((account) => (
+          <Pressable key={account.id} style={styles.bankAccountOption} onPress={() => setBankTransferDetails({ ...bankTransferDetails, selectedAccount: account.id })}>
+            <View style={styles.bankAccountInfo}>
+              <Text variant="bodyMedium" style={styles.bankName}>
+                {account.bank_name}
+              </Text>
+              <Text variant="bodySmall" style={styles.accountDetails}>
+                {account.account_name}
+              </Text>
+              <Text variant="bodySmall" style={styles.accountNumber}>
+                Account: {account.account_no}
+              </Text>
             </View>
-          ))}
-        </RadioButton.Group>
+            <MaterialCommunityIcons
+              name={bankTransferDetails.selectedAccount === account.id ? 'radiobox-marked' : 'radiobox-blank'}
+              size={20}
+              color={bankTransferDetails.selectedAccount === account.id ? theme.colors.primary : theme.colors.onSurfaceVariant}
+            />
+          </Pressable>
+        ))}
         
         <TextInput
           label="Transfer Reference (Optional)"
@@ -450,8 +418,8 @@ export const PaymentStep: React.FC = () => {
               phone: passengers[0]?.phone || '',
             }}
             onDismiss={() => setShowCardModal(false)}
-            onSuccess={handleCardPaymentSuccess}
-            onError={handleCardPaymentError}
+            onSuccess={() => setShowCardModal(false)}
+            onError={() => setShowCardModal(false)}
           />
           
           <BankTransferModal
@@ -464,8 +432,8 @@ export const PaymentStep: React.FC = () => {
             } as any}
             bankAccounts={bankAccounts}
             onDismiss={() => setShowBankTransferModal(false)}
-            onSuccess={handleBankTransferSuccess}
-            onError={handleBankTransferError}
+            onSuccess={() => setShowBankTransferModal(false)}
+            onError={() => setShowBankTransferModal(false)}
           />
         </>
       )}

@@ -9,7 +9,7 @@ import {
     Switch,
     Text,
     TextInput,
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBookingStore } from '../../stores/bookingStore';
 import { spacing, theme } from '../../theme/theme';
@@ -38,7 +38,7 @@ export const PassengerInfoStep: React.FC = () => {
       }));
       setPassengers(newPassengers);
     }
-  }, [passengerCount, passengers.length, selectedSeats, setPassengers]);
+  }, [passengerCount, selectedSeats, setPassengers, passengers.length]);
 
   useEffect(() => {
     // Update seat assignments when seats change
@@ -212,7 +212,7 @@ export const PassengerInfoStep: React.FC = () => {
           • Phone numbers for other passengers are optional but recommended
         </Text>
         <Text variant="bodySmall" style={styles.contactInfoText}>
-          • Tickets will be sent via SMS to the main contact's phone number
+          • Tickets will be sent via SMS to the main contact&apos;s phone number
         </Text>
       </View>
     </Surface>

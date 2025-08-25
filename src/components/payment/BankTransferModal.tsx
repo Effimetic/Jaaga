@@ -3,7 +3,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import {
-    ActivityIndicator,
     Button,
     Card,
     Chip,
@@ -12,7 +11,7 @@ import {
     Surface,
     Text,
     TextInput,
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { paymentService } from '../../services/paymentService';
 import { colors, spacing, theme } from '../../theme/theme';
 import { Booking, OwnerBankAccount } from '../../types';
@@ -310,7 +309,6 @@ export const BankTransferModal: React.FC<BankTransferModalProps> = ({
           onPress={handleUpload}
           style={styles.actionButton}
           disabled={!selectedFile || processing}
-          loading={processing}
         >
           Upload Receipt
         </Button>
@@ -320,8 +318,6 @@ export const BankTransferModal: React.FC<BankTransferModalProps> = ({
 
   const renderProcessing = () => (
     <View style={styles.stepContainer}>
-      <ActivityIndicator size={64} color={theme.colors.primary} style={styles.stepIcon} />
-      
       <Text variant="headlineSmall" style={styles.stepTitle}>
         Processing Receipt
       </Text>
@@ -403,10 +399,8 @@ export const BankTransferModal: React.FC<BankTransferModalProps> = ({
       <Modal
         visible={visible}
         onDismiss={step === 'PROCESSING' ? undefined : onDismiss}
-        contentContainerStyle={styles.modal}
-        dismissable={step !== 'PROCESSING'}
       >
-        <Surface style={styles.container} elevation={3}>
+        <Surface style={styles.container}>
           {renderCurrentStep()}
         </Surface>
       </Modal>
@@ -425,7 +419,7 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ label, completed, inPro
     {completed ? (
       <MaterialCommunityIcons name="check" size={16} color={colors.success} />
     ) : inProgress ? (
-      <ActivityIndicator size={16} color={theme.colors.primary} />
+      <MaterialCommunityIcons name="loading" size={16} color={theme.colors.primary} />
     ) : (
       <MaterialCommunityIcons name="circle-outline" size={16} color={theme.colors.onSurfaceVariant} />
     )}
@@ -436,13 +430,11 @@ const ProcessingStep: React.FC<ProcessingStepProps> = ({ label, completed, inPro
 );
 
 const styles = StyleSheet.create({
-  modal: {
-    margin: spacing.md,
-  },
   container: {
     borderRadius: 16,
     overflow: 'hidden',
     maxHeight: '90%',
+    margin: spacing.md,
   },
   stepContainer: {
     padding: spacing.lg,

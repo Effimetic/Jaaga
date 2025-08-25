@@ -7,13 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import {
-  Button,
-  Card,
-  Surface,
-  Text,
-  TextInput
-} from 'react-native-paper';
+import { Button, Card, Surface, Text, TextInput } from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import { spacing, theme } from '../theme/theme';
 

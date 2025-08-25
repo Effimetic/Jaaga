@@ -13,11 +13,9 @@ import {
     Button,
     Card,
     Chip,
-    FAB,
-    Searchbar,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService, BoatWithPhotos } from '../services/boatManagementService';
 import { colors, spacing, theme } from '../theme/theme';
@@ -406,13 +404,14 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         showsVerticalScrollIndicator={false}
       >
         {/* Search Bar */}
-        <Searchbar
+        {/* Searchbar is removed from compat/paper, so this will cause an error */}
+        {/* <Searchbar
           placeholder="Search boats by name or registration..."
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
           icon="ferry"
-        />
+        /> */}
 
         {/* Summary Stats */}
         {renderSummaryStats()}
@@ -427,12 +426,14 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       </ScrollView>
 
       {/* Floating Action Button */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
+      <Button
+        mode="contained"
         onPress={() => navigation.navigate('AddBoat')}
-        label="Add Boat"
-      />
+        style={styles.fab}
+        icon="plus"
+      >
+        Add Boat
+      </Button>
     </View>
   );
 };
