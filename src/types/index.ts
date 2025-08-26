@@ -61,9 +61,10 @@ export interface Seat {
   id: string;
   row: number;
   column: number;
-  type: 'regular' | 'premium' | 'disabled';
+  type: 'seat' | 'walkway' | 'disabled';
   available: boolean;
   price_multiplier?: number;
+  label?: string; // Custom seat label
 }
 
 export interface RouteSegment {

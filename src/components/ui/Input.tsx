@@ -1,5 +1,5 @@
 import React from 'react';
-import { TextInput, TextInputProps, View } from 'react-native';
+import { TextInput, TextInputProps } from 'react-native';
 
 export interface InputProps extends TextInputProps {
   className?: string;

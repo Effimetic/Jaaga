@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, Text } from 'react-native';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';

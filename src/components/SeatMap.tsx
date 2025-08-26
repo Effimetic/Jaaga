@@ -45,7 +45,8 @@ export const SeatMapComponent: React.FC<SeatMapProps> = ({
   const getSeatIcon = (seat: Seat, status: string) => {
     if (status === 'occupied') return 'close';
     if (status === 'selected') return 'check';
-    if (seat.type === 'premium') return 'star';
+    if (seat.type === 'walkway') return 'minus';
+    if (seat.type === 'disabled') return 'close';
     return 'account';
   };
 
@@ -77,7 +78,7 @@ export const SeatMapComponent: React.FC<SeatMapProps> = ({
           styles.seat,
           { backgroundColor: color },
           disabled && styles.disabledSeat,
-          seat.type === 'premium' && styles.premiumSeat,
+          seat.type === 'walkway' && styles.walkwaySeat,
         ]}
         onPress={() => handleSeatPress(seat)}
         disabled={disabled}
@@ -258,9 +259,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     margin: 1,
     borderWidth: 1,
-    borderColor: theme.colors.outline,
+    borderColor: '#e0e0e0',
   },
-  premiumSeat: {
+  walkwaySeat: {
     borderWidth: 2,
     borderColor: '#FFD700',
   },

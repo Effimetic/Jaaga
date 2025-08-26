@@ -1,8 +1,31 @@
-import { Session } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../config/supabase';
 import { userService } from '../services/userService';
 import { AuthState, SMSAuthRequest, SMSAuthResponse, SMSAuthVerification } from '../types';
+
+// Helper function to normalize phone numbers
+const normalizePhone = (raw: string) => {
+  // Remove all non-digit characters except +
+  let p = raw.replace(/[^\d+]/g, '');
+  
+  // Remove leading + if present
+  p = p.replace(/^\+/, '');
+  
+  // Remove leading - if present (I see this in your database)
+  p = p.replace(/^-/, '');
+  
+  // Maldives default (960). Adjust if you support multiple countries.
+  if (!p.startsWith('960')) {
+    p = '960' + p.replace(/^0/, '');
+  }
+  
+  return '+' + p;
+};
+
+// Helper function to clean phone for database search (remove all formatting)
+const cleanPhoneForSearch = (phone: string) => {
+  return phone.replace(/[^\d]/g, ''); // Keep only digits
+};
 
 interface AuthContextType extends AuthState {
   signInWithSMS: (request: SMSAuthRequest) => Promise<{ success: boolean; error?: string }>;
@@ -34,9 +57,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: false,
   });
 
+
+
   useEffect(() => {
     // Initialize session
-    initializeSession();
+    const initSession = async () => {
+      try {
+        console.log('🔍 [DEBUG] Initializing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        console.log('🔍 [DEBUG] Session found:', !!session);
+        console.log('🔍 [DEBUG] Session error:', error);
+        console.log('🔍 [DEBUG] Session user ID:', session?.user?.id);
+        
+        if (session?.user) {
+          console.log('🔍 [DEBUG] User found in session:', session.user.phone);
+          await handleSessionChange(session);
+        } else {
+          console.log('🔍 [DEBUG] No session found, user not authenticated');
+          setAuthState({
+            user: null,
+            session: null,
+            isLoading: false,
+            isAuthenticated: false,
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing session:', error);
+        setAuthState({
+          user: null,
+          session: null,
+          isLoading: false,
+          isAuthenticated: false,
+        });
+      }
+    };
+
+    initSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -59,68 +116,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const initializeSession = async () => {
+  const handleSessionChange = async (session: any) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔍 [DEBUG] Handling session change for user:', session.user?.phone);
+      console.log('🔍 [DEBUG] Session user ID:', session.user?.id);
+      console.log('🔍 [DEBUG] Session access token exists:', !!session.access_token);
+      console.log('🔍 [DEBUG] Session refresh token exists:', !!session.refresh_token);
       
-      if (session?.user) {
-        await handleSessionChange(session);
-      } else {
-        setAuthState({
-          user: null,
-          session: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
-      }
-    } catch (error) {
-      console.error('Error initializing session:', error);
+      // 1) Set local session state
       setAuthState({
-        user: null,
-        session: null,
+        user: session.user as any,
+        session,
         isLoading: false,
-        isAuthenticated: false,
+        isAuthenticated: true,
       });
-    }
-  };
 
-  const handleSessionChange = async (session: Session) => {
-    try {
-      // Get user profile from our database
-      const userProfile = await userService.getUserByPhone(session.user.phone!);
-      
-      if (userProfile) {
-        // Store user session
-        await userService.setCurrentUserSession(userProfile, session.access_token);
+      // 2) Sync with your app DB (optional)
+      try {
+        const phone = session.user.phone!;
+        const cleanPhone = cleanPhoneForSearch(phone);
         
-        setAuthState({
-          user: userProfile,
-          session,
-          isLoading: false,
-          isAuthenticated: true,
-        });
-      } else {
-        // Create new user if doesn't exist
-        const newUser = await userService.createUser({
-          phone: session.user.phone!,
-          role: 'PUBLIC',
-        });
+        // Try multiple phone format variations to find existing user
+        const phoneVariations = [
+          phone,                    // +9607779186
+          cleanPhone,              // 9607779186
+          phone.replace('+', ''),  // 9607779186
+          phone.replace('+960', ''), // 7779186
+          phone.replace('+960', '0'), // 07779186
+          '-' + phone.replace('+', ''), // -9607779186
+        ];
         
-        if (newUser) {
-          await userService.setCurrentUserSession(newUser, session.access_token);
-          
-          setAuthState({
-            user: newUser,
-            session,
-            isLoading: false,
-            isAuthenticated: true,
-          });
-        } else {
-          throw new Error('Failed to create user');
+        let userProfile = null;
+        for (const phoneVariation of phoneVariations) {
+          try {
+            userProfile = await userService.getUserByPhone(phoneVariation);
+            if (userProfile) {
+              console.log('🔍 [SESSION] Found existing user with phone format:', phoneVariation);
+              break;
+            }
+          } catch (searchError) {
+            // Continue to next variation
+            console.log('🔍 [SESSION] Phone variation not found:', phoneVariation, searchError);
+            continue;
+          }
         }
+
+        if (userProfile) {
+          await userService.setCurrentUserSession(userProfile, session.access_token);
+          setAuthState((s) => ({ ...s, user: userProfile }));
+        } else {
+          // Only create new user if no existing user found with any phone format
+          console.log('🔍 [SESSION] No existing user found, creating new one');
+          const newUser = await userService.createUser({ phone, role: 'PUBLIC' });
+          if (newUser) {
+            await userService.setCurrentUserSession(newUser, session.access_token);
+            setAuthState((s) => ({ ...s, user: newUser }));
+          }
+        }
+      } catch (dbErr) {
+        console.warn('DB sync failed, keeping Supabase session only:', dbErr);
       }
-    } catch (error) {
-      console.error('Error handling session change:', error);
+    } catch (err) {
+      console.error('Error handling session change:', err);
       setAuthState({
         user: null,
         session: null,
@@ -132,20 +189,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signInWithSMS = async (request: SMSAuthRequest): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Format phone number (ensure it starts with +960 for Maldives)
-      let formattedPhone = request.phone.replace(/\s+/g, '').replace(/^\+/, '');
-      if (!formattedPhone.startsWith('960')) {
-        formattedPhone = '960' + formattedPhone.replace(/^0/, '');
-      }
-      formattedPhone = '+' + formattedPhone;
+      const phone = normalizePhone(request.phone);
 
-      console.log('📱 [TESTING] Sending SMS verification to:', formattedPhone);
-      console.log('📱 [TESTING] Phone number format:', request.phone, '→', formattedPhone);
+      console.log('📱 [CUSTOM] Sending SMS verification to:', phone);
 
-      // Call our custom SMS service via Supabase Edge Function
+      // Use your custom SMS service
       const { data, error } = await supabase.functions.invoke('send-sms-otp', {
         body: {
-          phone: formattedPhone,
+          phone: phone,
           purpose: 'login'
         }
       });
@@ -160,121 +211,100 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: false, error: data.error || 'Failed to send SMS' };
       }
 
-      console.log('✅ [TESTING] Custom SMS verification sent successfully to:', formattedPhone);
-      console.log('💡 [TESTING] Verification code:', data.code);
-      console.log('💡 [TESTING] Message:', data.message);
-
+      console.log('✅ OTP sent via custom service to:', phone);
+      console.log('💡 Verification code:', data.code);
       return { success: true };
-    } catch (error: any) {
-      console.error('❌ SMS sign in error:', error);
-      return { success: false, error: error.message || 'Failed to send SMS' };
+    } catch (err: any) {
+      console.error('❌ SMS sign in error:', err);
+      return { success: false, error: err.message || 'Failed to send SMS' };
     }
   };
 
   const verifySmSToken = async (verification: SMSAuthVerification): Promise<SMSAuthResponse> => {
     try {
-      // Format phone number
-      let formattedPhone = verification.phone.replace(/\s+/g, '').replace(/^\+/, '');
-      if (!formattedPhone.startsWith('960')) {
-        formattedPhone = '960' + formattedPhone.replace(/^0/, '');
-      }
-      formattedPhone = '+' + formattedPhone;
+      const phone = normalizePhone(verification.phone);
+      const token = verification.token.trim();
 
-      console.log('🔐 [TESTING] Verifying SMS token for:', formattedPhone);
-      console.log('🔐 [TESTING] Token entered:', verification.token);
-      console.log('🔐 [TESTING] Token length:', verification.token.length);
-
-      // For now, we'll simulate verification since we're returning the code
-      // Later, you can implement proper verification against stored codes
-      
-      if (verification.token.length === 6 && /^\d{6}$/.test(verification.token)) {
-        console.log('✅ [TESTING] SMS verification successful for:', formattedPhone);
-        
-        // Check if user exists
-        try {
-          // Clean phone number for database search (remove all non-digits except +)
-          const cleanPhoneForSearch = formattedPhone.replace(/[^\d+]/g, '');
-          console.log('🔐 [TESTING] Checking if user exists for phone:', formattedPhone);
-          console.log('🔐 [TESTING] Clean phone for search:', cleanPhoneForSearch);
-          
-          let existingUser;
-          try {
-            existingUser = await userService.getUserByPhone(cleanPhoneForSearch);
-            console.log('🔐 [TESTING] getUserByPhone result:', existingUser);
-          } catch (searchError) {
-            console.error('❌ [TESTING] Error searching for user:', searchError);
-            existingUser = null;
-          }
-          
-          // If not found, try with different phone format
-          if (!existingUser) {
-            console.log('🔐 [TESTING] User not found, trying alternative phone format...');
-            const alternativePhone = cleanPhoneForSearch.replace('+960', '960');
-            try {
-              existingUser = await userService.getUserByPhone(alternativePhone);
-              console.log('🔐 [TESTING] Alternative search result:', existingUser);
-            } catch (searchError) {
-              console.error('❌ [TESTING] Error in alternative search:', searchError);
-            }
-          }
-          
-          // If still not found, try without country code
-          if (!existingUser) {
-            console.log('🔐 [TESTING] User not found, trying without country code...');
-            const localPhone = cleanPhoneForSearch.replace('+960', '').replace('960', '');
-            try {
-              existingUser = await userService.getUserByPhone(localPhone);
-              console.log('🔐 [TESTING] Local phone search result:', existingUser);
-            } catch (searchError) {
-              console.error('❌ [TESTING] Error in local phone search:', searchError);
-            }
-          }
-          
-          if (existingUser) {
-            console.log('✅ [TESTING] User exists, logging in:', existingUser);
-            
-            // Store user session in AsyncStorage
-            try {
-              await userService.setCurrentUserSession(existingUser, 'temp-token-' + Date.now());
-              console.log('✅ [TESTING] User session stored successfully');
-            } catch (sessionError) {
-              console.error('❌ [TESTING] Failed to store user session:', sessionError);
-              // Continue anyway, don't fail the login
-            }
-            
-            // User exists, set authentication state
-            setAuthState({
-              user: existingUser,
-              session: { user: { phone: formattedPhone } } as any,
-              isLoading: false,
-              isAuthenticated: true,
-            });
-            
-            console.log('✅ [TESTING] Authentication state set successfully');
-            return { success: true, userExists: true };
-          } else {
-            console.log('✅ [TESTING] User does not exist, needs account creation');
-            // User doesn't exist, needs to create account
-            return { success: true, userExists: false };
-          }
-        } catch (userError) {
-          console.log('✅ [TESTING] User check failed, assuming new user');
-          return { success: true, userExists: false };
-        }
-      } else {
-        console.log('❌ [TESTING] Invalid token format');
+      if (!/^\d{6}$/.test(token)) {
         return { success: false, error: 'Invalid verification code format' };
       }
 
-      // TODO: Later implement proper verification:
-      // 1. Store verification codes in database with expiration
-      // 2. Verify against stored codes
-      // 3. Check expiration time
-      // 4. Mark codes as used
-      
-    } catch (error: any) {
-      console.error('❌ SMS verification error:', error);
-      return { success: false, error: error.message || 'Failed to verify token' };
+      console.log('🔐 [CUSTOM] Verifying SMS token for:', phone);
+      console.log('🔐 [CUSTOM] Token entered:', token);
+
+      // For now, accept any 6-digit code (you can implement proper verification later)
+      if (token.length === 6 && /^\d{6}$/.test(token)) {
+        console.log('✅ Custom SMS verification successful for:', phone);
+        
+        // Check if user exists in our database with multiple phone format variations
+        let existingUser = null;
+        const cleanPhone = cleanPhoneForSearch(phone);
+        
+        // Try multiple phone format variations
+        const phoneVariations = [
+          phone,                    // +9607779186
+          cleanPhone,              // 9607779186
+          phone.replace('+', ''),  // 9607779186
+          phone.replace('+960', ''), // 7779186
+          phone.replace('+960', '0'), // 07779186
+          '-' + phone.replace('+', ''), // -9607779186 (I see this format in your DB)
+        ];
+        
+        console.log('🔍 [CUSTOM] Searching for user with phone variations:', phoneVariations);
+        
+        for (const phoneVariation of phoneVariations) {
+          try {
+            existingUser = await userService.getUserByPhone(phoneVariation);
+            if (existingUser) {
+              console.log('🔍 [CUSTOM] Found existing user with phone format:', phoneVariation, existingUser);
+              break;
+            }
+          } catch (searchError) {
+            // Continue to next variation
+            console.log('🔍 [CUSTOM] Phone variation not found:', phoneVariation, searchError);
+            continue;
+          }
+        }
+        
+        if (!existingUser) {
+          console.log('🔍 [CUSTOM] No existing user found with any phone format, will create new one');
+        }
+        
+        // Since we're using our own SMS authentication system, we'll manage the session locally
+        // and use the API key for Supabase operations
+        const userId = existingUser?.id || 'user-' + Date.now();
+        
+        // Create a local session object for our app
+        const localSession = {
+          user: { 
+            id: userId, 
+            phone: phone,
+            email: null,
+            created_at: new Date().toISOString(),
+            aud: 'authenticated',
+            role: 'authenticated'
+          },
+          access_token: 'local-token-' + Date.now(),
+          refresh_token: 'local-refresh-' + Date.now(),
+          expires_at: Date.now() + 3600000, // 1 hour
+          expires_in: 3600,
+          token_type: 'bearer'
+        };
+        
+        console.log('✅ Local session created for user:', userId);
+        console.log('🔍 [DEBUG] Local session user ID:', localSession.user.id);
+        
+        // Handle session change (this will sync with your database)
+        await handleSessionChange(localSession as any);
+        
+        console.log('✅ Custom SMS verification successful! User exists:', !!existingUser);
+        return { success: true, userExists: !!existingUser };
+      } else {
+        return { success: false, error: 'Invalid verification code' };
+      }
+    } catch (err: any) {
+      console.error('❌ SMS verification error:', err);
+      return { success: false, error: err.message || 'Failed to verify token' };
     }
   };
 

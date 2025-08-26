@@ -27,56 +27,16 @@ import { SearchScreen } from '../screens/SearchScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Home Stack Navigator - Shows appropriate dashboard based on user role
+// Home Stack Navigator - Always shows Search
 function HomeStack() {
-  const { user } = useAuth();
-  
-  // Determine which dashboard to show based on user role
-  const getDashboardComponent = () => {
-    switch (user?.role) {
-      case 'AGENT':
-        return AgentDashboardScreen;
-      case 'OWNER':
-        return OwnerDashboardScreen;
-      case 'PUBLIC':
-      default:
-        // For PUBLIC users, show a general home screen or search
-        return SearchScreen;
-    }
-  };
-  
-  const getDashboardTitle = () => {
-    switch (user?.role) {
-      case 'AGENT':
-        return '🎯 Agent Dashboard';
-      case 'OWNER':
-        return '⚓ Owner Dashboard';
-      case 'PUBLIC':
-      default:
-        return '🚢 Boat Ticketing';
-    }
-  };
-  
-  const getHeaderStyle = () => {
-    switch (user?.role) {
-      case 'AGENT':
-        return { backgroundColor: colors.agent };
-      case 'OWNER':
-        return { backgroundColor: colors.owner };
-      case 'PUBLIC':
-      default:
-        return { backgroundColor: theme.colors.primary };
-    }
-  };
-  
   return (
     <Stack.Navigator>
       <Stack.Screen 
         name="HomeMain" 
-        component={getDashboardComponent()}
+        component={SearchScreen}
         options={{ 
-          title: getDashboardTitle(),
-          headerStyle: getHeaderStyle(),
+          title: '🚢 Search Boats',
+          headerStyle: { backgroundColor: theme.colors.primary },
           headerTintColor: '#ffffff',
           headerTitleStyle: { fontWeight: 'bold' }
         }}
@@ -86,7 +46,7 @@ function HomeStack() {
         component={BookingFlowScreen}
         options={{ 
           title: 'Book Tickets',
-          headerStyle: getHeaderStyle(),
+          headerStyle: { backgroundColor: theme.colors.primary },
           headerTintColor: '#ffffff',
         }}
       />
@@ -303,6 +263,72 @@ export function MainTabNavigator() {
     return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
   };
 
+  // Get tabs based on user role
+  const getTabsForUser = () => {
+    const baseTabs = [
+      <Tab.Screen 
+        key="Home"
+        name="Home" 
+        component={HomeStack}
+        options={{ tabBarLabel: 'Search' }}
+      />
+    ];
+
+    // Add role-specific tabs
+    if (user?.role === 'PUBLIC') {
+      baseTabs.push(
+        <Tab.Screen 
+          key="Tickets"
+          name="Tickets" 
+          component={TicketsStack}
+          options={{ tabBarLabel: 'My Tickets' }}
+        />,
+        <Tab.Screen 
+          key="Bookings"
+          name="Bookings" 
+          component={BookingsStack}
+          options={{ tabBarLabel: 'Bookings' }}
+        />
+      );
+    } else if (user?.role === 'AGENT') {
+      baseTabs.push(
+        <Tab.Screen 
+          key="Agent"
+          name="Agent" 
+          component={AgentStack}
+          options={{ 
+            tabBarLabel: 'Dashboard',
+            tabBarActiveTintColor: colors.agent,
+          }}
+        />
+      );
+    } else if (user?.role === 'OWNER') {
+      baseTabs.push(
+        <Tab.Screen 
+          key="Owner"
+          name="Owner" 
+          component={OwnerStack}
+          options={{ 
+            tabBarLabel: 'Dashboard',
+            tabBarActiveTintColor: colors.owner,
+          }}
+        />
+      );
+    }
+
+    // Always add Profile tab
+    baseTabs.push(
+      <Tab.Screen 
+        key="Profile"
+        name="Profile" 
+        component={ProfileStack}
+        options={{ tabBarLabel: 'Profile' }}
+      />
+    );
+
+    return baseTabs;
+  };
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -317,60 +343,7 @@ export function MainTabNavigator() {
         headerShown: false,
       })}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeStack}
-        options={{ tabBarLabel: 'Home' }}
-      />
-      
-      <Tab.Screen 
-        name="Search" 
-        component={SearchStack}
-        options={{ tabBarLabel: 'Search' }}
-      />
-
-      {user?.role === 'PUBLIC' && (
-        <>
-          <Tab.Screen 
-            name="Tickets" 
-            component={TicketsStack}
-            options={{ tabBarLabel: 'My Tickets' }}
-          />
-          <Tab.Screen 
-            name="Bookings" 
-            component={BookingsStack}
-            options={{ tabBarLabel: 'Bookings' }}
-          />
-        </>
-      )}
-
-      {user?.role === 'AGENT' && (
-        <Tab.Screen 
-          name="Agent" 
-          component={AgentStack}
-          options={{ 
-            tabBarLabel: 'Agent Portal',
-            tabBarActiveTintColor: colors.agent,
-          }}
-        />
-      )}
-
-      {user?.role === 'OWNER' && (
-        <Tab.Screen 
-          name="Owner" 
-          component={OwnerStack}
-          options={{ 
-            tabBarLabel: 'Owner Portal',
-            tabBarActiveTintColor: colors.owner,
-          }}
-        />
-      )}
-
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileStack}
-        options={{ tabBarLabel: 'Profile' }}
-      />
+      {getTabsForUser()}
     </Tab.Navigator>
   );
 }

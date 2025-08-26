@@ -41,7 +41,7 @@ export const SeatSelectionStep: React.FC = () => {
           id: seatId,
           row,
           column: col,
-          type: row < 2 ? 'premium' : 'regular',
+          type: 'seat',
           available: !isOccupied,
           price_multiplier: row < 2 ? 1.5 : 1.0,
         });

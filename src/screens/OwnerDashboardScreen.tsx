@@ -5,23 +5,13 @@ import React, { useCallback, useState } from 'react';
 import {
   RefreshControl,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import {
-    Button,
-    Card,
-    Chip,
-    Surface,
-    Text,
-} from '../compat/paper';
-  Text,
-} from 'react-native-paper';
+import { Card, Surface, Text } from '../components/catalyst';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService } from '../services/boatManagementService';
 import { scheduleManagementService } from '../services/scheduleManagementService';
-import { spacing } from '../theme/theme';
 
 interface DashboardStats {
   boats: {
@@ -52,8 +42,8 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     boats: { total: 0, active: 0, capacity: 0, with_schedules: 0 },
-    schedules: { total: 0, active: 0, draft: 0, upcoming: 0 },
-    revenue: { this_month: 0, total_bookings: 0 },
+    schedules: { upcoming: 0, today: 0, sold_out: 0 },
+    sales: { today_revenue: 0, month_revenue: 0, tickets_sold: 0 },
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -78,14 +68,14 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
           with_schedules: boatStats.boats_with_schedules,
         },
         schedules: {
-          total: scheduleStats.total_schedules,
-          active: scheduleStats.active_schedules,
-          draft: scheduleStats.draft_schedules,
           upcoming: scheduleStats.upcoming_departures,
+          today: (scheduleStats as any).today_departures || 0,
+          sold_out: (scheduleStats as any).sold_out_schedules || 0,
         },
-        revenue: {
-          this_month: scheduleStats.revenue_this_month,
-          total_bookings: scheduleStats.total_bookings,
+        sales: {
+          today_revenue: (scheduleStats as any).today_revenue || 0,
+          month_revenue: scheduleStats.revenue_this_month,
+          tickets_sold: scheduleStats.total_bookings,
         },
       });
     } catch (error) {
@@ -115,14 +105,25 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       onPress: () => navigation.navigate('MyBoats'),
     },
     {
-      title: 'Add Boat',
-      icon: 'plus-circle',
-      onPress: () => navigation.navigate('AddBoat'),
-    },
-    {
       title: 'Schedules',
       icon: 'calendar',
       onPress: () => navigation.navigate('ScheduleManagement'),
+    },
+    {
+      title: 'Agents',
+      icon: 'account-group',
+      onPress: () => {
+        // TODO: Navigate to Agents screen when implemented
+        console.log('Agents screen - to be implemented');
+      },
+    },
+    {
+      title: 'Settings',
+      icon: 'cog',
+      onPress: () => {
+        // TODO: Navigate to Settings screen when implemented
+        console.log('Settings screen - to be implemented');
+      },
     },
     {
       title: 'Financials',
@@ -132,333 +133,147 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
   ];
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={styles.headerTitle}>Owner Dashboard</Text>
-      <Text style={styles.headerSubtitle}>Welcome back, {user?.phone?.slice(-4)}</Text>
+    <View style={{ padding: 16, paddingTop: 20, backgroundColor: '#ffffff' }}>
+      <Text variant="h4" color="primary" style={{ fontSize: 18, fontWeight: '600' }}>Owner Dashboard</Text>
+      <Text color="secondary" style={{ marginTop: 2, fontSize: 12 }}>Welcome back, {user?.phone?.slice(-4)}</Text>
     </View>
   );
 
-  const renderStatsGrid = () => (
-    <View style={styles.statsGrid}>
-      {/* Boats Card */}
-      <TouchableOpacity 
-        style={styles.statCard}
-        onPress={() => navigation.navigate('MyBoats')}
-      >
-        <View style={styles.statIconContainer}>
-          <MaterialCommunityIcons name="ferry" size={24} color="#000" />
-        </View>
-        <Text style={styles.statNumber}>{stats.boats.total}</Text>
-        <Text style={styles.statLabel}>Boats</Text>
-        <Text style={styles.statDetail}>{stats.boats.active} active</Text>
+  const renderStatsList = () => (
+    <View style={{ padding: 16 }}>
+      <Text variant="h6" color="primary" style={{ fontSize: 14, fontWeight: '600', marginBottom: 12 }}>Summary</Text>
+      
+      {/* Boats */}
+      <TouchableOpacity onPress={() => navigation.navigate('MyBoats')}>
+        <Card variant="outlined" padding="sm" style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                width: 28, 
+                height: 28, 
+                borderRadius: 14, 
+                backgroundColor: '#f3f4f6', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                marginRight: 12 
+              }}>
+                <MaterialCommunityIcons name="ferry" size={16} color="#52525b" />
+              </View>
+              <View>
+                <Text variant="h6" color="primary" style={{ fontSize: 13, fontWeight: '500' }}>Boats</Text>
+                <Text color="secondary" style={{ fontSize: 11 }}>{stats.boats.active} active</Text>
+              </View>
+            </View>
+            <Text variant="h6" color="primary" style={{ fontSize: 16, fontWeight: '600' }}>{stats.boats.total}</Text>
+          </View>
+        </Card>
       </TouchableOpacity>
 
-      {/* Schedules Card */}
-      <TouchableOpacity 
-        style={styles.statCard}
-        onPress={() => navigation.navigate('ScheduleManagement')}
-      >
-        <View style={styles.statIconContainer}>
-          <MaterialCommunityIcons name="calendar" size={24} color="#000" />
-        </View>
-        <Text style={styles.statNumber}>{stats.schedules.active}</Text>
-        <Text style={styles.statLabel}>Active Schedules</Text>
-        <Text style={styles.statDetail}>{stats.schedules.upcoming} upcoming</Text>
+      {/* Today's Schedule */}
+      <TouchableOpacity onPress={() => navigation.navigate('ScheduleManagement')}>
+        <Card variant="outlined" padding="sm" style={{ marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                width: 28, 
+                height: 28, 
+                borderRadius: 14, 
+                backgroundColor: '#f3f4f6', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                marginRight: 12 
+              }}>
+                <MaterialCommunityIcons name="calendar-today" size={16} color="#52525b" />
+              </View>
+              <View>
+                <Text variant="h6" color="primary" style={{ fontSize: 13, fontWeight: '500' }}>Today&apos;s Schedule</Text>
+                <Text color="secondary" style={{ fontSize: 11 }}>{stats.schedules.upcoming} upcoming</Text>
+              </View>
+            </View>
+            <Text variant="h6" color="primary" style={{ fontSize: 16, fontWeight: '600' }}>{stats.schedules.today}</Text>
+          </View>
+        </Card>
       </TouchableOpacity>
 
-      {/* Revenue Card */}
-      <TouchableOpacity 
-        style={styles.statCard}
-        onPress={() => navigation.navigate('OwnerFinancials')}
-      >
-        <View style={styles.statIconContainer}>
-          <MaterialCommunityIcons name="currency-usd" size={24} color="#000" />
-        </View>
-        <Text style={styles.statNumber}>MVR {stats.revenue.this_month.toLocaleString()}</Text>
-        <Text style={styles.statLabel}>This Month</Text>
-        <Text style={styles.statDetail}>{stats.revenue.total_bookings} bookings</Text>
-      </TouchableOpacity>
-
-      {/* Capacity Card */}
-      <TouchableOpacity 
-        style={styles.statCard}
-        onPress={() => navigation.navigate('MyBoats')}
-      >
-        <View style={styles.statIconContainer}>
-          <MaterialCommunityIcons name="seat" size={24} color="#000" />
-        </View>
-        <Text style={styles.statNumber}>{stats.boats.capacity}</Text>
-        <Text style={styles.statLabel}>Total Seats</Text>
-        <Text style={styles.statDetail}>{stats.boats.with_schedules} scheduled</Text>
+      {/* This Month */}
+      <TouchableOpacity onPress={() => navigation.navigate('OwnerFinancials')}>
+        <Card variant="outlined" padding="sm">
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                width: 28, 
+                height: 28, 
+                borderRadius: 14, 
+                backgroundColor: '#f3f4f6', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                marginRight: 12 
+              }}>
+                <MaterialCommunityIcons name="currency-usd" size={16} color="#52525b" />
+              </View>
+              <View>
+                <Text variant="h6" color="primary" style={{ fontSize: 13, fontWeight: '500' }}>This Month</Text>
+                <Text color="secondary" style={{ fontSize: 11 }}>{stats.sales.tickets_sold} tickets sold</Text>
+              </View>
+            </View>
+            <Text variant="h6" color="primary" style={{ fontSize: 16, fontWeight: '600' }}>MVR {stats.sales.month_revenue.toLocaleString()}</Text>
+          </View>
+        </Card>
       </TouchableOpacity>
     </View>
   );
 
   const renderQuickActions = () => (
-    <View style={styles.quickActionsSection}>
-      <Text style={styles.sectionTitle}>Quick Actions</Text>
-      <View style={styles.quickActionsGrid}>
+    <View style={{ padding: 16 }}>
+      <Text variant="h6" color="primary" style={{ fontSize: 14, fontWeight: '600', marginBottom: 12 }}>Quick Actions</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8 }}>
         {quickActions.map((action, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.actionCard}
+            style={{ alignItems: 'center', flex: 1 }}
             onPress={action.onPress}
           >
-            <View style={styles.actionIconContainer}>
-              <MaterialCommunityIcons name={action.icon as any} size={28} color="#000" />
+            <View style={{ 
+              width: 40, 
+              height: 40, 
+              borderRadius: 20, 
+              backgroundColor: '#f3f4f6', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              marginBottom: 6 
+            }}>
+              <MaterialCommunityIcons name={action.icon as any} size={20} color="#52525b" />
             </View>
-            <Text style={styles.actionTitle}>{action.title}</Text>
+            <Text variant="caption" color="secondary" style={{ fontSize: 10, textAlign: 'center', maxWidth: 60 }}>{action.title}</Text>
           </TouchableOpacity>
         ))}
       </View>
     </View>
   );
 
-  const renderRecentActivity = () => (
-    <View style={styles.recentActivitySection}>
-      <Text style={styles.sectionTitle}>Recent Activity</Text>
-      <View style={styles.activityList}>
-        <View style={styles.activityItem}>
-          <View style={styles.activityIcon}>
-            <MaterialCommunityIcons name="ferry" size={16} color="#000" />
-          </View>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>Boat &quot;Island Express&quot; added</Text>
-            <Text style={styles.activityTime}>2 hours ago</Text>
-          </View>
-        </View>
-        
-        <View style={styles.activityItem}>
-          <View style={styles.activityIcon}>
-            <MaterialCommunityIcons name="calendar" size={16} color="#000" />
-          </View>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>New schedule created for tomorrow</Text>
-            <Text style={styles.activityTime}>5 hours ago</Text>
-          </View>
-        </View>
-        
-        <View style={styles.activityItem}>
-          <View style={styles.activityIcon}>
-            <MaterialCommunityIcons name="currency-usd" size={16} color="#000" />
-          </View>
-          <View style={styles.activityContent}>
-            <Text style={styles.activityTitle}>Payment received: MVR 2,500</Text>
-            <Text style={styles.activityTime}>1 day ago</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
-      </View>
+      <Surface variant="default" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text variant="h6" color="secondary" style={{ fontSize: 14 }}>Loading dashboard...</Text>
+      </Surface>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Surface variant="default" style={{ flex: 1 }}>
       <ScrollView
-        style={styles.scrollView}
+        style={{ flex: 1 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {renderWelcomeCard()}
-        {renderStatsCards()}
+        {renderHeader()}
+        {renderStatsList()}
         {renderQuickActions()}
-        {renderUpcomingSchedules()}
-        {renderRecentActivity()}
 
-        <View style={styles.bottomSpacing} />
+        <View style={{ height: 32 }} />
       </ScrollView>
-
-      {/* Removed FAB */}
-    </View>
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {renderHeader()}
-      {renderStatsGrid()}
-      {renderQuickActions()}
-      {renderRecentActivity()}
-      
-      {/* Bottom spacing */}
-      <View style={styles.bottomSpacing} />
-    </ScrollView>
+    </Surface>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  header: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-    backgroundColor: '#fff',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: spacing.xs,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: spacing.md,
-    gap: spacing.sm,
-  },
-  statCard: {
-    width: '47%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: spacing.xs,
-  },
-  statDetail: {
-    fontSize: 12,
-    color: '#666',
-  },
-  quickActionsSection: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: spacing.md,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  actionCard: {
-    width: '47%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    alignItems: 'center',
-  },
-  actionIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    textAlign: 'center',
-  },
-  recentActivitySection: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  activityList: {
-    gap: spacing.md,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: spacing.xs,
-  },
-  activityTime: {
-    fontSize: 12,
-    color: '#666',
-  },
-  bottomSpacing: {
-    height: spacing.xl,
-  },
-});

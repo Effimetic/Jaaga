@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
@@ -8,6 +7,7 @@ import {
   Boat,
   BoatCreateRequest,
   BoatUpdateRequest,
+  Seat,
   SeatMap
 } from '../types';
 
@@ -19,10 +19,8 @@ export interface PhotoUploadResult {
 }
 
 export interface BoatWithPhotos extends Boat {
-  photos: string[];
-  primary_photo?: string;
-  registration?: string;
-  amenities?: string[];
+  // All fields are now included in the base Boat type from database schema
+  // This interface is kept for backward compatibility
 }
 
 export class BoatManagementService {
@@ -40,10 +38,17 @@ export class BoatManagementService {
    */
   async requestPermissions(): Promise<boolean> {
     try {
+      console.log('Requesting camera and gallery permissions...');
       const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
       const { status: galleryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
-      return cameraStatus === 'granted' && galleryStatus === 'granted';
+      console.log('Camera permission:', cameraStatus);
+      console.log('Gallery permission:', galleryStatus);
+      
+      const hasPermissions = cameraStatus === 'granted' && galleryStatus === 'granted';
+      console.log('Has permissions:', hasPermissions);
+      
+      return hasPermissions;
     } catch (error) {
       console.error('Permission request failed:', error);
       return false;
@@ -55,11 +60,15 @@ export class BoatManagementService {
    */
   async pickImage(source: 'camera' | 'gallery' = 'gallery'): Promise<ImagePicker.ImagePickerAsset | null> {
     try {
+      console.log('pickImage called with source:', source);
       const hasPermissions = await this.requestPermissions();
       if (!hasPermissions) {
+        console.log('Permissions not granted');
         Alert.alert('Permissions Required', 'Please grant camera and photo permissions to upload images.');
         return null;
       }
+      
+      console.log('Permissions granted, launching picker...');
 
       const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -71,15 +80,21 @@ export class BoatManagementService {
       let result: ImagePicker.ImagePickerResult;
       
       if (source === 'camera') {
+        console.log('Launching camera...');
         result = await ImagePicker.launchCameraAsync(options);
       } else {
+        console.log('Launching image library...');
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
+      
+      console.log('Picker result:', result);
 
       if (!result.canceled && result.assets.length > 0) {
+        console.log('Image selected:', result.assets[0]);
         return result.assets[0];
       }
 
+      console.log('No image selected or picker was canceled');
       return null;
     } catch (error) {
       console.error('Image picker failed:', error);
@@ -111,49 +126,65 @@ export class BoatManagementService {
     }
   }
 
+
+
   /**
    * Upload image to Supabase Storage
    */
   async uploadBoatPhoto(
     boatId: string, 
     imageUri: string, 
-    type: 'boat' | 'logo' = 'boat'
+    type: 'boat' | 'logo' = 'boat',
+    customFileName?: string
   ): Promise<PhotoUploadResult> {
     try {
       // Process image
       const processedUri = await this.processImage(imageUri);
       
-      // Generate unique filename
-      const timestamp = Date.now();
-      const fileExtension = 'jpg';
-      const fileName = `${type}s/${boatId}/${timestamp}.${fileExtension}`;
+      // Generate filename
+      let fileName: string;
+      if (customFileName) {
+        fileName = `${type}s/${boatId}/${customFileName}`;
+      } else {
+        const timestamp = Date.now();
+        const fileExtension = 'jpg';
+        fileName = `${type}s/${boatId}/${timestamp}.${fileExtension}`;
+      }
       
-      // Read file as base64
-      const fileContent = await FileSystem.readAsStringAsync(processedUri, {
-        encoding: FileSystem.EncodingType.Base64,
+      // Since we're using our own SMS authentication, we'll use the Edge Function
+      // which has access to the service role key and bypasses RLS policies
+      console.log('🔍 [DEBUG] Using Edge Function for Storage upload');
+      console.log('🔍 [DEBUG] Upload fileName:', fileName);
+      
+      // Convert image to base64 for Edge Function
+      const base64Image = await this.imageToBase64(processedUri);
+      
+      // Upload via Edge Function (bypasses RLS policies)
+      const { data, error } = await supabase.functions.invoke('upload-boat-photo', {
+        body: {
+          boatId: boatId,
+          imageData: base64Image,
+          fileName: fileName,
+          contentType: 'image/jpeg'
+        }
       });
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('boat-images')
-        .upload(fileName, fileContent, {
-          contentType: 'image/jpeg',
-          upsert: false,
-        });
-
       if (error) {
-        throw error;
+        console.error('Edge Function error:', error);
+        throw new Error('Failed to upload photo via Edge Function');
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('boat-images')
-        .getPublicUrl(fileName);
+      if (!data.success) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      console.log('✅ Photo uploaded successfully via Edge Function');
+      console.log('🔍 [DEBUG] Upload result:', data);
 
       return {
         success: true,
-        url: urlData.publicUrl,
-        path: fileName,
+        url: data.url,
+        path: data.path,
       };
 
     } catch (error: any) {
@@ -171,7 +202,7 @@ export class BoatManagementService {
   async deleteBoatPhoto(imagePath: string): Promise<boolean> {
     try {
       const { error } = await supabase.storage
-        .from('boat-images')
+        .from('boat-photos')
         .remove([imagePath]);
 
       if (error) throw error;
@@ -216,7 +247,7 @@ export class BoatManagementService {
       return {
         success: false,
         error: error.message || 'Failed to create boat',
-        data: null,
+        data: undefined,
       };
     }
   }
@@ -255,7 +286,7 @@ export class BoatManagementService {
       return {
         success: false,
         error: error.message || 'Failed to update boat',
-        data: null,
+        data: undefined,
       };
     }
   }
@@ -367,7 +398,7 @@ export class BoatManagementService {
       return {
         success: false,
         error: error.message || 'Boat not found',
-        data: null,
+        data: undefined,
       };
     }
   }
@@ -378,14 +409,14 @@ export class BoatManagementService {
   generateDefaultSeatMap(capacity: number, layout: 'single' | 'double' = 'double'): SeatMap {
     const seatsPerRow = layout === 'single' ? 2 : 4;
     const rows = Math.ceil(capacity / seatsPerRow);
-    const seats = [];
-    const layoutMatrix = [];
+    const seats: Seat[] = [];
+    const layoutMatrix: string[][] = [];
 
     let seatCounter = 1;
 
     for (let row = 0; row < rows; row++) {
-      const rowSeats = [];
-      const rowLayout = [];
+      const rowSeats: Seat[] = [];
+      const rowLayout: string[] = [];
 
       for (let col = 0; col < seatsPerRow; col++) {
         if (seatCounter <= capacity) {
@@ -397,15 +428,17 @@ export class BoatManagementService {
 
           const seatId = `${String.fromCharCode(65 + row)}${col < seatsPerRow / 2 ? col + 1 : col}`;
           
-          seats.push({
+          const seat = {
             id: seatId,
             row,
             column: col,
-            type: 'regular',
+            type: 'seat' as const,
             available: true,
             price_multiplier: 1.0,
-          });
-
+          };
+          
+          seats.push(seat);
+          rowSeats.push(seat);
           rowLayout.push(seatId);
           seatCounter++;
         } else {
@@ -496,6 +529,35 @@ export class BoatManagementService {
         total_capacity: 0,
         boats_with_schedules: 0,
       };
+    }
+  }
+
+  /**
+   * Convert image URI to base64 string
+   */
+  private async imageToBase64(uri: string): Promise<string> {
+    try {
+      // For React Native, we need to read the file and convert to base64
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            // Remove the data:image/jpeg;base64, prefix
+            const base64 = reader.result.split(',')[1];
+            resolve(base64);
+          } else {
+            reject(new Error('Failed to convert image to base64'));
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      throw new Error('Failed to convert image to base64');
     }
   }
 }

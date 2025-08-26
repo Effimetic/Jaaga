@@ -81,7 +81,7 @@ export const colors = {
   // Role colors
   public: '#2196f3',
   agent: '#9c27b0',
-  owner: '#ff9800',
+  owner: '#000000',
   admin: '#f44336',
 };
 

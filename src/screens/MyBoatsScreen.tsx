@@ -2,23 +2,19 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
-    Alert,
-    Image,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    View,
+  Alert,
+  Image,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import {
-    Button,
-    Card,
-    Chip,
-    Surface,
-    Text,
-} from '../compat/paper';
+import { Card, Input, Surface } from '../components/catalyst';
+import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService, BoatWithPhotos } from '../services/boatManagementService';
-import { colors, spacing, theme } from '../theme/theme';
+import { colors } from '../theme/theme';
 
 interface BoatFilters {
   status: 'ALL' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
@@ -36,18 +32,26 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     seatMode: 'ALL',
   });
 
-  useFocusEffect(
-    useCallback(() => {
-      loadBoats();
-    }, [loadBoats])
-  );
-
   const loadBoats = useCallback(async () => {
     if (!user?.id) return;
 
     try {
       setLoading(true);
-      const result = await boatManagementService.getOwnerBoats(user.id);
+      
+      // Get the owner ID for the current user
+      const { data: ownerData, error: ownerError } = await supabase
+        .from('owners')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (ownerError || !ownerData) {
+        Alert.alert('Error', 'Owner account not found. Please contact support.');
+        setLoading(false);
+        return;
+      }
+
+      const result = await boatManagementService.getOwnerBoats(ownerData.id);
       
       if (result.success) {
         setBoats(result.data || []);
@@ -61,6 +65,12 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       setLoading(false);
     }
   }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadBoats();
+    }, [loadBoats])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -124,7 +134,7 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       case 'INACTIVE':
         return colors.error;
       default:
-        return theme.colors.onSurfaceVariant;
+        return '#52525b';
     }
   };
 
@@ -142,130 +152,184 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const renderBoatCard = (boat: BoatWithPhotos) => (
-    <Card key={boat.id} style={styles.boatCard} onPress={() => navigation.navigate('ViewBoat', { boatId: boat.id })}>
-      <View style={styles.cardContent}>
+    <TouchableOpacity 
+      key={boat.id} 
+      onPress={() => navigation.navigate('ViewBoat', { boatId: boat.id })}
+      style={{ marginBottom: 12 }}
+    >
+      <Card variant="elevated" padding="none">
         {/* Boat Image */}
-        <View style={styles.imageContainer}>
+        <View style={{ height: 120, position: 'relative' }}>
           {boat.primary_photo || (boat.photos && boat.photos.length > 0) ? (
             <Image
               source={{ uri: boat.primary_photo || boat.photos[0] }}
-              style={styles.boatImage}
+              style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
             />
           ) : (
-            <View style={styles.placeholderImage}>
+            <View style={{ 
+              width: '100%', 
+              height: '100%', 
+              backgroundColor: '#f3f4f6', 
+              justifyContent: 'center', 
+              alignItems: 'center' 
+            }}>
               <MaterialCommunityIcons
                 name="ferry"
                 size={32}
-                color={theme.colors.onSurfaceVariant}
+                color="#52525b"
               />
             </View>
           )}
 
-          <View style={styles.statusBadge}>
-            <Chip
-              mode="flat"
-              style={[
-                styles.statusChip,
-                { backgroundColor: getStatusColor(boat.status) + '20' }
-              ]}
-              textStyle={{ color: getStatusColor(boat.status), fontSize: 10 }}
-              icon={() => (
-                <MaterialCommunityIcons
-                  name={getStatusIcon(boat.status)}
-                  size={12}
-                  color={getStatusColor(boat.status)}
-                />
-              )}
-            >
+          {/* Status Badge */}
+          <View style={{ 
+            position: 'absolute', 
+            top: 8, 
+            right: 8, 
+            backgroundColor: getStatusColor(boat.status) + '20',
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}>
+            <MaterialCommunityIcons
+              name={getStatusIcon(boat.status)}
+              size={12}
+              color={getStatusColor(boat.status)}
+              style={{ marginRight: 4 }}
+            />
+            <Text style={{ color: getStatusColor(boat.status), fontSize: 10, fontWeight: '500' }}>
               {boat.status}
-            </Chip>
+            </Text>
           </View>
         </View>
 
         {/* Boat Details */}
-        <Card.Content style={styles.boatDetails}>
-          <Text variant="titleMedium" style={styles.boatName}>
+        <View style={{ padding: 12 }}>
+          <Text variant="h6" color="primary" style={{ fontSize: 14, fontWeight: '600', marginBottom: 4 }}>
             {boat.name}
           </Text>
 
           {boat.registration && (
-            <Text variant="bodySmall" style={styles.registration}>
+            <Text color="secondary" style={{ fontSize: 11, marginBottom: 8 }}>
               Registration: {boat.registration}
             </Text>
           )}
 
-          <View style={styles.boatInfo}>
-            <View style={styles.infoItem}>
-              <MaterialCommunityIcons name="seat" size={16} color={theme.colors.primary} />
-              <Text variant="bodySmall" style={styles.infoText}>
+          <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16 }}>
+              <MaterialCommunityIcons name="seat" size={14} color="#52525b" />
+              <Text color="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
                 {boat.capacity} seats
               </Text>
             </View>
 
-            <View style={styles.infoItem}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <MaterialCommunityIcons
                 name={boat.seat_mode === 'SEATMAP' ? 'view-grid' : 'counter'}
-                size={16}
-                color={theme.colors.primary}
+                size={14}
+                color="#52525b"
               />
-              <Text variant="bodySmall" style={styles.infoText}>
-                {boat.seat_mode === 'SEATMAP' ? 'Seat Map' : 'Capacity Mode'}
+              <Text color="secondary" style={{ fontSize: 11, marginLeft: 4 }}>
+                {boat.seat_mode === 'SEATMAP' ? 'Seat Map' : 'Capacity'}
               </Text>
             </View>
           </View>
 
           {boat.amenities && boat.amenities.length > 0 && (
-            <View style={styles.amenities}>
-              {boat.amenities.slice(0, 3).map((amenity, index) => (
-                <Chip key={index} mode="outlined" compact style={styles.amenityChip}>
-                  {amenity}
-                </Chip>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
+              {boat.amenities.slice(0, 2).map((amenity, index) => (
+                <View key={index} style={{
+                  backgroundColor: '#f3f4f6',
+                  paddingHorizontal: 6,
+                  paddingVertical: 2,
+                  borderRadius: 8,
+                  marginRight: 4,
+                  marginBottom: 4
+                }}>
+                  <Text color="secondary" style={{ fontSize: 10 }}>
+                    {amenity}
+                  </Text>
+                </View>
               ))}
-              {boat.amenities.length > 3 && (
-                <Text variant="bodySmall" style={styles.moreAmenities}>
-                  +{boat.amenities.length - 3} more
+              {boat.amenities.length > 2 && (
+                <Text color="secondary" style={{ fontSize: 10, marginLeft: 4 }}>
+                  +{boat.amenities.length - 2} more
                 </Text>
               )}
             </View>
           )}
 
           {/* Action Buttons */}
-          <View style={styles.cardActions}>
-            <Button
-              mode="text"
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <TouchableOpacity
               onPress={() => navigation.navigate('EditBoat', { boatId: boat.id })}
-              compact
+              style={{ 
+                flex: 1, 
+                marginRight: 4,
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: '#18181b',
+                borderRadius: 6,
+                paddingVertical: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              Edit
-            </Button>
-            <Button
-              mode="text"
+              <Text style={{ color: '#18181b', fontSize: 12, fontWeight: '500' }}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => navigation.navigate('BoatSchedules', { boatId: boat.id })}
-              compact
+              style={{ 
+                flex: 1, 
+                marginHorizontal: 4,
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: '#18181b',
+                borderRadius: 6,
+                paddingVertical: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              Schedules
-            </Button>
-            <Button
-              mode="text"
+              <Text style={{ color: '#18181b', fontSize: 12, fontWeight: '500' }}>
+                Schedules
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => handleDeleteBoat(boat)}
-              compact
-              textColor={colors.error}
+              style={{ 
+                flex: 1, 
+                marginLeft: 4,
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderColor: '#ef4444',
+                borderRadius: 6,
+                paddingVertical: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
-              Delete
-            </Button>
+              <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '500' }}>
+                Delete
+              </Text>
+            </TouchableOpacity>
           </View>
-        </Card.Content>
-      </View>
-    </Card>
+        </View>
+      </Card>
+    </TouchableOpacity>
   );
 
   const renderFilters = () => (
-    <View style={styles.filtersContainer}>
+    <View style={{ padding: 16, paddingTop: 8 }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterChips}
+        contentContainerStyle={{ paddingHorizontal: 4 }}
       >
         {/* Status Filters */}
         {[
@@ -274,15 +338,24 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           { key: 'MAINTENANCE', label: 'Maintenance' },
           { key: 'INACTIVE', label: 'Inactive' },
         ].map((filter) => (
-          <Chip
+          <TouchableOpacity
             key={filter.key}
-            mode={filters.status === filter.key ? 'flat' : 'outlined'}
-            selected={filters.status === filter.key}
             onPress={() => setFilters({ ...filters, status: filter.key as any })}
-            style={styles.filterChip}
+            style={{
+              marginRight: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: filters.status === filter.key ? '#52525b' : '#f3f4f6',
+            }}
           >
-            {filter.label}
-          </Chip>
+            <Text 
+              color={filters.status === filter.key ? 'primary' : 'secondary'} 
+              style={{ fontSize: 12, fontWeight: '500', color: filters.status === filter.key ? '#ffffff' : undefined }}
+            >
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
         ))}
 
         {/* Seat Mode Filters */}
@@ -291,15 +364,24 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           { key: 'SEATMAP', label: 'Seat Map' },
           { key: 'CAPACITY', label: 'Capacity' },
         ].map((filter) => (
-          <Chip
+          <TouchableOpacity
             key={filter.key}
-            mode={filters.seatMode === filter.key ? 'flat' : 'outlined'}
-            selected={filters.seatMode === filter.key}
             onPress={() => setFilters({ ...filters, seatMode: filter.key as any })}
-            style={styles.filterChip}
+            style={{
+              marginRight: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 16,
+              backgroundColor: filters.seatMode === filter.key ? '#52525b' : '#f3f4f6',
+            }}
           >
-            {filter.label}
-          </Chip>
+            <Text 
+              color={filters.seatMode === filter.key ? 'primary' : 'secondary'} 
+              style={{ fontSize: 12, fontWeight: '500', color: filters.seatMode === filter.key ? '#ffffff' : undefined }}
+            >
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -309,16 +391,16 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     const isFiltered = searchQuery.trim() || filters.status !== 'ALL' || filters.seatMode !== 'ALL';
     
     return (
-      <View style={styles.emptyState}>
+      <View style={{ padding: 32, alignItems: 'center' }}>
         <MaterialCommunityIcons
           name={isFiltered ? "filter-off-outline" : "ferry"}
-          size={64}
-          color={theme.colors.onSurfaceVariant}
+          size={48}
+          color="#52525b"
         />
-        <Text variant="headlineSmall" style={styles.emptyTitle}>
+        <Text variant="h4" color="primary" style={{ fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: 8 }}>
           {isFiltered ? 'No boats found' : 'No boats yet'}
         </Text>
-        <Text variant="bodyMedium" style={styles.emptySubtitle}>
+        <Text color="secondary" style={{ fontSize: 12, textAlign: 'center', marginBottom: 24 }}>
           {isFiltered
             ? 'Try adjusting your search or filters'
             : 'Add your first boat to start creating schedules'
@@ -326,14 +408,23 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         </Text>
 
         {!isFiltered && (
-          <Button
-            mode="contained"
+          <TouchableOpacity
             onPress={() => navigation.navigate('AddBoat')}
-            style={styles.emptyAction}
-            icon="plus"
+            style={{
+              backgroundColor: '#18181b',
+              borderRadius: 8,
+              paddingVertical: 16,
+              paddingHorizontal: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            Add Your First Boat
-          </Button>
+            <MaterialCommunityIcons name="plus" size={16} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
+              Add Your First Boat
+            </Text>
+          </TouchableOpacity>
         )}
       </View>
     );
@@ -347,7 +438,7 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     }
 
     return (
-      <View style={styles.boatsList}>
+      <View style={{ padding: 16, paddingTop: 8 }}>
         {filteredBoats.map(renderBoatCard)}
       </View>
     );
@@ -361,57 +452,58 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     if (boats.length === 0) return null;
 
     return (
-      <Surface style={styles.summaryContainer} elevation={1}>
-        <View style={styles.summaryStats}>
-          <View style={styles.summaryStat}>
-            <Text variant="titleLarge" style={styles.summaryNumber}>
-              {filteredBoats.length}
-            </Text>
-            <Text variant="bodySmall" style={styles.summaryLabel}>
-              Total Boats
-            </Text>
-          </View>
+      <View style={{ padding: 16, paddingTop: 8 }}>
+        <Card variant="elevated" padding="md">
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text variant="h3" color="primary" style={{ fontSize: 20, fontWeight: '600' }}>
+                {filteredBoats.length}
+              </Text>
+              <Text color="secondary" style={{ fontSize: 11, marginTop: 2 }}>Total Boats</Text>
+            </View>
 
-          <View style={styles.summaryStat}>
-            <Text variant="titleLarge" style={styles.summaryNumber}>
-              {activeBoats}
-            </Text>
-            <Text variant="bodySmall" style={styles.summaryLabel}>
-              Active
-            </Text>
-          </View>
+            <View style={{ alignItems: 'center' }}>
+              <Text variant="h3" color="primary" style={{ fontSize: 20, fontWeight: '600' }}>
+                {activeBoats}
+              </Text>
+              <Text color="secondary" style={{ fontSize: 11, marginTop: 2 }}>Active</Text>
+            </View>
 
-          <View style={styles.summaryStat}>
-            <Text variant="titleLarge" style={styles.summaryNumber}>
-              {totalCapacity}
-            </Text>
-            <Text variant="bodySmall" style={styles.summaryLabel}>
-              Total Seats
-            </Text>
+            <View style={{ alignItems: 'center' }}>
+              <Text variant="h3" color="primary" style={{ fontSize: 20, fontWeight: '600' }}>
+                {totalCapacity}
+              </Text>
+              <Text color="secondary" style={{ fontSize: 11, marginTop: 2 }}>Total Seats</Text>
+            </View>
           </View>
-        </View>
-      </Surface>
+        </Card>
+      </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <Surface variant="default" style={{ flex: 1 }}>
       <ScrollView
-        style={styles.scrollView}
+        style={{ flex: 1 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
+        <View style={{ padding: 16, paddingTop: 20, backgroundColor: '#ffffff' }}>
+          <Text variant="h4" color="primary" style={{ fontSize: 18, fontWeight: '600' }}>My Boats</Text>
+          <Text color="secondary" style={{ marginTop: 2, fontSize: 12 }}>Manage your boat fleet</Text>
+        </View>
+
         {/* Search Bar */}
-        {/* Searchbar is removed from compat/paper, so this will cause an error */}
-        {/* <Searchbar
-          placeholder="Search boats by name or registration..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-          icon="ferry"
-        /> */}
+        <View style={{ padding: 16, paddingTop: 8 }}>
+          <Input
+            placeholder="Search boats by name or registration..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
 
         {/* Summary Stats */}
         {renderSummaryStats()}
@@ -422,172 +514,36 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         {/* Boats List */}
         {renderBoatsList()}
 
-        <View style={styles.bottomSpacing} />
+        <View style={{ height: 80 }} />
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <Button
-        mode="contained"
-        onPress={() => navigation.navigate('AddBoat')}
-        style={styles.fab}
-        icon="plus"
-      >
-        Add Boat
-      </Button>
-    </View>
+      {/* Add Boat Button */}
+      <View style={{ position: 'absolute', bottom: 16, right: 16 }}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('AddBoat')}
+          style={{
+            backgroundColor: '#18181b',
+            borderRadius: 28,
+            paddingHorizontal: 20,
+            paddingVertical: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+        >
+          <MaterialCommunityIcons name="plus" size={20} color="#ffffff" style={{ marginRight: 8 }} />
+          <Text style={{ color: '#ffffff', fontSize: 16, fontWeight: '600' }}>
+            Add Boat
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </Surface>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  searchBar: {
-    margin: spacing.md,
-    elevation: 2,
-  },
-  summaryContainer: {
-    margin: spacing.md,
-    marginTop: 0,
-    borderRadius: 12,
-    padding: spacing.md,
-  },
-  summaryStats: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  summaryStat: {
-    alignItems: 'center',
-  },
-  summaryNumber: {
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-  },
-  summaryLabel: {
-    opacity: 0.7,
-    marginTop: spacing.xs,
-  },
-  filtersContainer: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.md,
-  },
-  filterChips: {
-    paddingHorizontal: spacing.xs,
-    gap: spacing.sm,
-  },
-  filterChip: {
-    marginRight: spacing.xs,
-  },
-  boatsList: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.md,
-  },
-  boatCard: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    flexDirection: 'row',
-  },
-  imageContainer: {
-    position: 'relative',
-    width: 120,
-    height: 120,
-  },
-  boatImage: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: theme.colors.surfaceVariant,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusBadge: {
-    position: 'absolute',
-    top: spacing.xs,
-    left: spacing.xs,
-  },
-  statusChip: {
-    height: 24,
-  },
-  boatDetails: {
-    flex: 1,
-    padding: spacing.md,
-  },
-  boatName: {
-    fontWeight: 'bold',
-    marginBottom: spacing.xs,
-  },
-  registration: {
-    opacity: 0.7,
-    marginBottom: spacing.sm,
-  },
-  boatInfo: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  infoText: {
-    opacity: 0.8,
-  },
-  amenities: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  amenityChip: {
-    height: 24,
-  },
-  moreAmenities: {
-    opacity: 0.7,
-    alignSelf: 'center',
-  },
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.sm,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    marginTop: spacing.xl,
-  },
-  emptyTitle: {
-    fontWeight: 'bold',
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
-  emptySubtitle: {
-    opacity: 0.7,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 20,
-  },
-  emptyAction: {
-    marginTop: spacing.lg,
-  },
-  bottomSpacing: {
-    height: 100,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.primary,
-  },
-});
+
