@@ -348,6 +348,12 @@ export interface SMSAuthVerification {
   token: string;
 }
 
+export interface SMSAuthResponse {
+  success: boolean;
+  error?: string;
+  userExists?: boolean;
+}
+
 // Agent specific types
 export interface AgentConnection extends AgentOwnerLink {
   agent: Agent;

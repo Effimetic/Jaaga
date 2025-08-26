@@ -3,11 +3,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    View,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import {
     Button,
@@ -16,10 +16,12 @@ import {
     Surface,
     Text,
 } from '../compat/paper';
+  Text,
+} from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService } from '../services/boatManagementService';
 import { scheduleManagementService } from '../services/scheduleManagementService';
-import { colors, spacing, theme } from '../theme/theme';
+import { spacing } from '../theme/theme';
 
 interface DashboardStats {
   boats: {
@@ -43,7 +45,6 @@ interface DashboardStats {
 interface QuickAction {
   title: string;
   icon: string;
-  color: string;
   onPress: () => void;
 }
 
@@ -54,7 +55,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
     schedules: { total: 0, active: 0, draft: 0, upcoming: 0 },
     revenue: { this_month: 0, total_bookings: 0 },
   });
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
@@ -89,7 +90,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       });
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-      Alert.alert('Error', 'Failed to load dashboard data');
+      // Don't show alert, just log the error
     } finally {
       setLoading(false);
     }
@@ -111,271 +112,152 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
     {
       title: 'My Boats',
       icon: 'ferry',
-      color: colors.primary,
       onPress: () => navigation.navigate('MyBoats'),
     },
     {
       title: 'Add Boat',
       icon: 'plus-circle',
-      color: colors.success,
       onPress: () => navigation.navigate('AddBoat'),
     },
     {
-      title: 'Financial Reports',
-      icon: 'chart-line',
-      color: colors.info,
-      onPress: () => navigation.navigate('OwnerFinancials'),
+      title: 'Schedules',
+      icon: 'calendar',
+      onPress: () => navigation.navigate('ScheduleManagement'),
     },
     {
-      title: 'Settings',
-      icon: 'cog',
-      color: colors.warning,
-      onPress: () => navigation.navigate('OwnerSettings'),
+      title: 'Financials',
+      icon: 'chart-line',
+      onPress: () => navigation.navigate('OwnerFinancials'),
     },
   ];
 
-  const renderWelcomeCard = () => (
-    <Card style={styles.welcomeCard}>
-      <Card.Content>
-        <View style={styles.welcomeHeader}>
-          <View>
-            <Text variant="headlineSmall" style={styles.welcomeTitle}>
-              Welcome back! 👋
-            </Text>
-            <Text variant="bodyMedium" style={styles.welcomeSubtitle}>
-              Here&apos;s your ferry business overview
-            </Text>
-          </View>
-          <MaterialCommunityIcons
-            name="ferry"
-            size={48}
-            color={theme.colors.primary}
-          />
-        </View>
-      </Card.Content>
-    </Card>
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.headerTitle}>Owner Dashboard</Text>
+      <Text style={styles.headerSubtitle}>Welcome back, {user?.phone?.slice(-4)}</Text>
+    </View>
   );
 
-  const renderStatsCards = () => (
-    <View style={styles.statsContainer}>
-      {/* Boats Stats */}
-      <Card style={styles.statsCard}>
-        <Card.Content style={styles.statsContent}>
-          <View style={styles.statsHeader}>
-            <MaterialCommunityIcons
-              name="ferry"
-              size={32}
-              color={colors.primary}
-            />
-            <Text variant="titleLarge" style={styles.statsNumber}>
-              {stats.boats.total}
-            </Text>
-          </View>
-          <Text variant="titleMedium" style={styles.statsTitle}>
-            Total Boats
-          </Text>
-          <View style={styles.statsDetails}>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              {stats.boats.active} active • {stats.boats.capacity} total seats
-            </Text>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              {stats.boats.with_schedules} with schedules
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+  const renderStatsGrid = () => (
+    <View style={styles.statsGrid}>
+      {/* Boats Card */}
+      <TouchableOpacity 
+        style={styles.statCard}
+        onPress={() => navigation.navigate('MyBoats')}
+      >
+        <View style={styles.statIconContainer}>
+          <MaterialCommunityIcons name="ferry" size={24} color="#000" />
+        </View>
+        <Text style={styles.statNumber}>{stats.boats.total}</Text>
+        <Text style={styles.statLabel}>Boats</Text>
+        <Text style={styles.statDetail}>{stats.boats.active} active</Text>
+      </TouchableOpacity>
 
-      {/* Schedules Stats */}
-      <Card style={styles.statsCard}>
-        <Card.Content style={styles.statsContent}>
-          <View style={styles.statsHeader}>
-            <MaterialCommunityIcons
-              name="calendar"
-              size={32}
-              color={colors.success}
-            />
-            <Text variant="titleLarge" style={styles.statsNumber}>
-              {stats.schedules.active}
-            </Text>
-          </View>
-          <Text variant="titleMedium" style={styles.statsTitle}>
-            Active Schedules
-          </Text>
-          <View style={styles.statsDetails}>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              {stats.schedules.upcoming} upcoming departures
-            </Text>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              {stats.schedules.draft} drafts
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+      {/* Schedules Card */}
+      <TouchableOpacity 
+        style={styles.statCard}
+        onPress={() => navigation.navigate('ScheduleManagement')}
+      >
+        <View style={styles.statIconContainer}>
+          <MaterialCommunityIcons name="calendar" size={24} color="#000" />
+        </View>
+        <Text style={styles.statNumber}>{stats.schedules.active}</Text>
+        <Text style={styles.statLabel}>Active Schedules</Text>
+        <Text style={styles.statDetail}>{stats.schedules.upcoming} upcoming</Text>
+      </TouchableOpacity>
 
-      {/* Revenue Stats */}
-      <Card style={styles.statsCard}>
-        <Card.Content style={styles.statsContent}>
-          <View style={styles.statsHeader}>
-            <MaterialCommunityIcons
-              name="currency-usd"
-              size={32}
-              color={colors.info}
-            />
-            <Text variant="titleLarge" style={styles.statsNumber}>
-              {stats.revenue.this_month.toFixed(0)}
-            </Text>
-          </View>
-          <Text variant="titleMedium" style={styles.statsTitle}>
-            Revenue (MVR)
-          </Text>
-          <View style={styles.statsDetails}>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              This month
-            </Text>
-            <Text variant="bodySmall" style={styles.statsDetail}>
-              {stats.revenue.total_bookings} total bookings
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+      {/* Revenue Card */}
+      <TouchableOpacity 
+        style={styles.statCard}
+        onPress={() => navigation.navigate('OwnerFinancials')}
+      >
+        <View style={styles.statIconContainer}>
+          <MaterialCommunityIcons name="currency-usd" size={24} color="#000" />
+        </View>
+        <Text style={styles.statNumber}>MVR {stats.revenue.this_month.toLocaleString()}</Text>
+        <Text style={styles.statLabel}>This Month</Text>
+        <Text style={styles.statDetail}>{stats.revenue.total_bookings} bookings</Text>
+      </TouchableOpacity>
+
+      {/* Capacity Card */}
+      <TouchableOpacity 
+        style={styles.statCard}
+        onPress={() => navigation.navigate('MyBoats')}
+      >
+        <View style={styles.statIconContainer}>
+          <MaterialCommunityIcons name="seat" size={24} color="#000" />
+        </View>
+        <Text style={styles.statNumber}>{stats.boats.capacity}</Text>
+        <Text style={styles.statLabel}>Total Seats</Text>
+        <Text style={styles.statDetail}>{stats.boats.with_schedules} scheduled</Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderQuickActions = () => (
-    <Surface style={styles.quickActionsContainer} elevation={1}>
-      <Text variant="titleMedium" style={styles.sectionTitle}>
-        Quick Actions
-      </Text>
-      <View style={styles.quickActions}>
+    <View style={styles.quickActionsSection}>
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <View style={styles.quickActionsGrid}>
         {quickActions.map((action, index) => (
-          <Button
+          <TouchableOpacity
             key={index}
-            mode="outlined"
+            style={styles.actionCard}
             onPress={action.onPress}
-            style={[styles.quickActionButton, { borderColor: action.color }]}
-            labelStyle={{ color: action.color }}
-            icon={({ size }) => (
-              <MaterialCommunityIcons
-                name={action.icon as any}
-                size={size}
-                color={action.color}
-              />
-            )}
           >
-            {action.title}
-          </Button>
+            <View style={styles.actionIconContainer}>
+              <MaterialCommunityIcons name={action.icon as any} size={28} color="#000" />
+            </View>
+            <Text style={styles.actionTitle}>{action.title}</Text>
+          </TouchableOpacity>
         ))}
       </View>
-    </Surface>
+    </View>
   );
 
   const renderRecentActivity = () => (
-    <Surface style={styles.recentActivityContainer} elevation={1}>
-      <View style={styles.sectionHeader}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          Recent Activity
-        </Text>
-        <Button mode="text" onPress={() => navigation.navigate('Activity')}>
-          View All
-        </Button>
-      </View>
-
+    <View style={styles.recentActivitySection}>
+      <Text style={styles.sectionTitle}>Recent Activity</Text>
       <View style={styles.activityList}>
         <View style={styles.activityItem}>
-          <MaterialCommunityIcons
-            name="ticket"
-            size={20}
-            color={colors.success}
-          />
+          <View style={styles.activityIcon}>
+            <MaterialCommunityIcons name="ferry" size={16} color="#000" />
+          </View>
           <View style={styles.activityContent}>
-            <Text variant="bodyMedium">5 new bookings today</Text>
-            <Text variant="bodySmall" style={styles.activityTime}>
-              2 hours ago
-            </Text>
+            <Text style={styles.activityTitle}>Boat &quot;Island Express&quot; added</Text>
+            <Text style={styles.activityTime}>2 hours ago</Text>
           </View>
         </View>
-
+        
         <View style={styles.activityItem}>
-          <MaterialCommunityIcons
-            name="calendar-check"
-            size={20}
-            color={colors.info}
-          />
+          <View style={styles.activityIcon}>
+            <MaterialCommunityIcons name="calendar" size={16} color="#000" />
+          </View>
           <View style={styles.activityContent}>
-            <Text variant="bodyMedium">Morning route completed</Text>
-            <Text variant="bodySmall" style={styles.activityTime}>
-              4 hours ago
-            </Text>
+            <Text style={styles.activityTitle}>New schedule created for tomorrow</Text>
+            <Text style={styles.activityTime}>5 hours ago</Text>
           </View>
         </View>
-
+        
         <View style={styles.activityItem}>
-          <MaterialCommunityIcons
-            name="ferry"
-            size={20}
-            color={colors.primary}
-          />
+          <View style={styles.activityIcon}>
+            <MaterialCommunityIcons name="currency-usd" size={16} color="#000" />
+          </View>
           <View style={styles.activityContent}>
-            <Text variant="bodyMedium">Boat inspection due in 3 days</Text>
-            <Text variant="bodySmall" style={styles.activityTime}>
-              1 day ago
-            </Text>
+            <Text style={styles.activityTitle}>Payment received: MVR 2,500</Text>
+            <Text style={styles.activityTime}>1 day ago</Text>
           </View>
         </View>
       </View>
-    </Surface>
+    </View>
   );
 
-  const renderUpcomingSchedules = () => (
-    <Surface style={styles.upcomingContainer} elevation={1}>
-      <View style={styles.sectionHeader}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>
-          Upcoming Departures
-        </Text>
-        <Button mode="text" onPress={() => navigation.navigate('Schedules')}>
-          View All
-        </Button>
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
-
-      <View style={styles.upcomingList}>
-        <View style={styles.upcomingItem}>
-          <View style={styles.upcomingTime}>
-            <Text variant="titleSmall">08:30</Text>
-            <Text variant="bodySmall">Today</Text>
-          </View>
-          <View style={styles.upcomingDetails}>
-            <Text variant="bodyMedium" style={styles.upcomingRoute}>
-              Malé → Hulhumalé
-            </Text>
-            <Text variant="bodySmall" style={styles.upcomingBoat}>
-              Sea Eagle • 45/50 seats booked
-            </Text>
-          </View>
-          <Chip mode="outlined" compact>
-            Ready
-          </Chip>
-        </View>
-
-        <View style={styles.upcomingItem}>
-          <View style={styles.upcomingTime}>
-            <Text variant="titleSmall">14:00</Text>
-            <Text variant="bodySmall">Today</Text>
-          </View>
-          <View style={styles.upcomingDetails}>
-            <Text variant="bodyMedium" style={styles.upcomingRoute}>
-              Hulhumalé → Airport
-            </Text>
-            <Text variant="bodySmall" style={styles.upcomingBoat}>
-              Ocean Rider • 12/30 seats booked
-            </Text>
-          </View>
-          <Chip mode="outlined" compact>
-            Ready
-          </Chip>
-        </View>
-      </View>
-    </Surface>
-  );
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -397,133 +279,145 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
 
       {/* Removed FAB */}
     </View>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+      showsVerticalScrollIndicator={false}
+    >
+      {renderHeader()}
+      {renderStatsGrid()}
+      {renderQuickActions()}
+      {renderRecentActivity()}
+      
+      {/* Bottom spacing */}
+      <View style={styles.bottomSpacing} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#fff',
   },
-  scrollView: {
+  loadingContainer: {
     flex: 1,
-  },
-  welcomeCard: {
-    margin: spacing.md,
-    borderRadius: 16,
-    backgroundColor: theme.colors.primaryContainer,
-  },
-  welcomeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
-  welcomeTitle: {
-    fontWeight: 'bold',
-    color: theme.colors.onPrimaryContainer,
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
   },
-  welcomeSubtitle: {
-    color: theme.colors.onPrimaryContainer,
-    opacity: 0.8,
-    marginTop: spacing.xs,
+  header: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    backgroundColor: '#fff',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  statsCard: {
-    flex: 1,
-    borderRadius: 12,
-  },
-  statsContent: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  statsHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  statsNumber: {
-    fontWeight: 'bold',
-    marginTop: spacing.xs,
-    color: theme.colors.primary,
-  },
-  statsTitle: {
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  statsDetails: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statsDetail: {
-    opacity: 0.7,
-    textAlign: 'center',
-  },
-  quickActionsContainer: {
-    margin: spacing.md,
-    marginTop: 0,
-    borderRadius: 12,
-    padding: spacing.md,
-  },
-  sectionTitle: {
-    fontWeight: '600',
-    marginBottom: spacing.md,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  quickActionButton: {
-    flex: 1,
-    minWidth: '45%',
-  },
-  upcomingContainer: {
-    margin: spacing.md,
-    marginTop: 0,
-    borderRadius: 12,
-    padding: spacing.md,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  upcomingList: {
-    gap: spacing.md,
-  },
-  upcomingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.outline,
-  },
-  upcomingTime: {
-    alignItems: 'center',
-    minWidth: 60,
-    marginRight: spacing.md,
-  },
-  upcomingDetails: {
-    flex: 1,
-  },
-  upcomingRoute: {
-    fontWeight: '500',
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
     marginBottom: spacing.xs,
   },
-  upcomingBoat: {
-    opacity: 0.7,
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#666',
   },
-  recentActivityContainer: {
-    margin: spacing.md,
-    marginTop: 0,
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  statCard: {
+    width: '47%',
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: spacing.md,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: spacing.xs,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: spacing.xs,
+  },
+  statDetail: {
+    fontSize: 12,
+    color: '#666',
+  },
+  quickActionsSection: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: spacing.md,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  actionCard: {
+    width: '47%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    alignItems: 'center',
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  actionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+  },
+  recentActivitySection: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
   },
   activityList: {
     gap: spacing.md,
@@ -531,24 +425,40 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  activityIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
   },
   activityContent: {
     flex: 1,
-    marginLeft: spacing.sm,
+  },
+  activityTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: spacing.xs,
   },
   activityTime: {
-    opacity: 0.7,
-    marginTop: spacing.xs,
+    fontSize: 12,
+    color: '#666',
   },
   bottomSpacing: {
-    height: 100,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.primary,
+    height: spacing.xl,
   },
 });

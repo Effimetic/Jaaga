@@ -25,7 +25,7 @@ echo -e "${GREEN}✅ Supabase CLI found${NC}"
 
 # Check if you're logged in to Supabase
 echo -e "${BLUE}📋 Checking Supabase login status...${NC}"
-if ! supabase status &> /dev/null; then
+if ! supabase projects list &> /dev/null; then
     echo -e "${RED}❌ Not logged in to Supabase!${NC}"
     echo "Please run:"
     echo "   supabase login"
@@ -35,7 +35,7 @@ echo -e "${GREEN}✅ Logged in to Supabase${NC}"
 
 # Check current project status
 echo -e "${BLUE}📋 Checking project status...${NC}"
-PROJECT_STATUS=$(supabase status 2>/dev/null)
+PROJECT_STATUS=$(supabase projects list 2>/dev/null)
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Failed to get project status${NC}"
     exit 1
