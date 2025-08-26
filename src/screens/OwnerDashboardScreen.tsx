@@ -10,6 +10,12 @@ import {
   View,
 } from 'react-native';
 import {
+    Button,
+    Card,
+    Chip,
+    Surface,
+    Text,
+} from '../compat/paper';
   Text,
 } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,14 +31,14 @@ interface DashboardStats {
     with_schedules: number;
   };
   schedules: {
-    total: number;
-    active: number;
-    draft: number;
     upcoming: number;
+    today: number;
+    sold_out: number;
   };
-  revenue: {
-    this_month: number;
-    total_bookings: number;
+  sales: {
+    today_revenue: number;
+    month_revenue: number;
+    tickets_sold: number;
   };
 }
 
@@ -254,6 +260,25 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
   }
 
   return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        showsVerticalScrollIndicator={false}
+      >
+        {renderWelcomeCard()}
+        {renderStatsCards()}
+        {renderQuickActions()}
+        {renderUpcomingSchedules()}
+        {renderRecentActivity()}
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
+
+      {/* Removed FAB */}
+    </View>
     <ScrollView 
       style={styles.container}
       refreshControl={

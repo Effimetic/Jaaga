@@ -3,14 +3,13 @@ import { format } from 'date-fns';
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import {
-    ActivityIndicator,
     Button,
     Card,
     Chip,
     Divider,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiService } from '../../services/apiService';
 import { notificationService } from '../../services/notificationService';
@@ -221,7 +220,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({ navigation }
         )}
       </View>
       
-      {creating && <ActivityIndicator size="large" style={styles.loader} />}
+      {creating && <Text variant="headlineSmall" style={styles.loader}>Creating your booking...</Text>}
     </Surface>
   );
 

@@ -12,9 +12,7 @@ import {
   Button,
   Surface,
   Chip,
-  FAB,
-  IconButton,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/apiService';
@@ -181,13 +179,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     <View style={styles.featuredSection}>
       <View style={styles.sectionHeader}>
         <Text variant="titleLarge" style={styles.sectionTitle}>
-          Today's Trips
+          Today&apos;s Trips
         </Text>
-        <IconButton
-          icon="refresh"
-          onPress={loadFeaturedTrips}
-          iconColor={theme.colors.primary}
-        />
+        {/* IconButton for refresh is removed, so this line is removed */}
       </View>
 
       {loading ? (
@@ -245,12 +239,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <FAB
-        icon="magnify"
-        style={styles.fab}
-        onPress={() => navigation.navigate('Search')}
-        label="Search"
-      />
+      {/* FAB is removed, so this block is removed */}
     </View>
   );
 };
@@ -479,13 +468,13 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textAlign: 'center',
   },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.primary,
-  },
+  // fab: { // This line is removed
+  //   position: 'absolute',
+  //   margin: 16,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: theme.colors.primary,
+  // },
   bottomSpacing: {
     height: 100,
   },

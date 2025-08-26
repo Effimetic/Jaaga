@@ -2,8 +2,8 @@ import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import 'react-native-gesture-handler';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import '../app/globals.css';
 
 import { AuthProvider } from '../src/contexts/AuthContext';
 import RootNavigator from '../src/navigation/RootNavigator';
@@ -20,12 +20,10 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <PaperProvider theme={theme}>
-        <AuthProvider>
-          <RootNavigator />
-          <StatusBar style="auto" />
-        </AuthProvider>
-      </PaperProvider>
+      <AuthProvider>
+        <RootNavigator />
+        <StatusBar style="auto" />
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Card, Surface, Text } from 'react-native-paper';
+import { Button as UIButton, Card as UICard, Surface as UISurface, Text as UIText } from '../compat/paper';
 import { spacing, theme } from '../theme/theme';
 
 interface PlaceholderScreenProps {
@@ -19,34 +19,34 @@ const PlaceholderScreen: React.FC<PlaceholderScreenProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <Surface style={styles.surface} elevation={1}>
-        <Card.Content style={styles.content}>
+      <UISurface>
+        <UICard className="items-center p-8">
           <MaterialCommunityIcons
             name={icon as any}
             size={64}
             color={theme.colors.primary}
             style={styles.icon}
           />
-          <Text variant="headlineMedium" style={styles.title}>
+          <UIText variant="headlineMedium" style={styles.title}>
             {title}
-          </Text>
-          <Text variant="bodyLarge" style={styles.description}>
+          </UIText>
+          <UIText variant="bodyLarge" style={styles.description}>
             {description}
-          </Text>
-          <Text variant="bodyMedium" style={styles.comingSoon}>
+          </UIText>
+          <UIText variant="bodyMedium" style={styles.comingSoon}>
             Coming soon...
-          </Text>
+          </UIText>
           {navigation && (
-            <Button
+            <UIButton
               mode="outlined"
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             >
               Go Back
-            </Button>
+            </UIButton>
           )}
-        </Card.Content>
-      </Surface>
+        </UICard>
+      </UISurface>
     </View>
   );
 };
@@ -71,8 +71,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     navigation={navigation}
   />
 );
-
-
 
 
 

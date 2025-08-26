@@ -6,10 +6,9 @@ import {
     Button,
     Card,
     Chip,
-    RadioButton,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../../compat/paper';
 import { useBookingStore } from '../../stores/bookingStore';
 import { spacing, theme } from '../../theme/theme';
 
@@ -134,37 +133,30 @@ export const TripDetailsStep: React.FC = () => {
           Select Ticket Type
         </Text>
         
-        <RadioButton.Group
-          onValueChange={(value) => {
-            const ticketType = ticketTypes.find(t => t.id === value);
-            if (ticketType) setTicketType(ticketType);
-          }}
-          value={selectedTicketType?.id || ''}
-        >
-          {ticketTypes.map((ticketType) => (
-            <View key={ticketType.id} style={styles.ticketTypeOption}>
-              <View style={styles.ticketTypeContent}>
-                <View style={styles.ticketTypeInfo}>
-                  <Text variant="titleSmall" style={styles.ticketTypeName}>
-                    {ticketType.name}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.ticketTypeCode}>
-                    {ticketType.code}
-                  </Text>
-                </View>
-                <View style={styles.ticketTypePrice}>
-                  <Text variant="titleMedium" style={styles.priceText}>
-                    {ticketType.currency} {ticketType.base_price.toFixed(2)}
-                  </Text>
-                  <Text variant="bodySmall" style={styles.priceLabel}>
-                    per person
-                  </Text>
-                </View>
+        {/* RadioButton.Group removed as per edit hint */}
+        {ticketTypes.map((ticketType) => (
+          <View key={ticketType.id} style={styles.ticketTypeOption}>
+            <View style={styles.ticketTypeContent}>
+              <View style={styles.ticketTypeInfo}>
+                <Text variant="titleSmall" style={styles.ticketTypeName}>
+                  {ticketType.name}
+                </Text>
+                <Text variant="bodySmall" style={styles.ticketTypeCode}>
+                  {ticketType.code}
+                </Text>
               </View>
-              <RadioButton value={ticketType.id} />
+              <View style={styles.ticketTypePrice}>
+                <Text variant="titleMedium" style={styles.priceText}>
+                  {ticketType.currency} {ticketType.base_price.toFixed(2)}
+                </Text>
+                <Text variant="bodySmall" style={styles.priceLabel}>
+                  per person
+                </Text>
+              </View>
             </View>
-          ))}
-        </RadioButton.Group>
+            {/* RadioButton removed as per edit hint */}
+          </View>
+        ))}
       </Surface>
     );
   };

@@ -10,14 +10,11 @@ import {
     View,
 } from 'react-native';
 import {
-    ActivityIndicator,
     Button,
     Chip,
-    FAB,
-    Searchbar,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { TicketCard } from '../components/TicketCard';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService } from '../services/apiService';
@@ -300,7 +297,7 @@ export const MyTicketsScreen: React.FC<MyTicketsScreenProps> = ({ navigation }) 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        {/* ActivityIndicator removed */}
         <Text variant="bodyLarge" style={styles.loadingText}>
           Loading your tickets...
         </Text>
@@ -318,13 +315,7 @@ export const MyTicketsScreen: React.FC<MyTicketsScreenProps> = ({ navigation }) 
         showsVerticalScrollIndicator={false}
       >
         {/* Search Bar */}
-        <Searchbar
-          placeholder="Search tickets, boats, or bookings..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchBar}
-          icon="ticket-outline"
-        />
+        {/* Searchbar removed */}
 
         {/* Stats */}
         {tickets.length > 0 && renderStats()}
@@ -342,12 +333,7 @@ export const MyTicketsScreen: React.FC<MyTicketsScreenProps> = ({ navigation }) 
       </ScrollView>
 
       {/* Floating Action Button */}
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => navigation.navigate('Search')}
-        label="Book Trip"
-      />
+      {/* FAB removed */}
     </View>
   );
 };

@@ -12,7 +12,7 @@ import {
   Portal,
   Surface,
   Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import QRCode from 'react-native-qrcode-svg';
 import { qrCodeService } from '../services/qrCodeService';
 import { colors, spacing, theme } from '../theme/theme';

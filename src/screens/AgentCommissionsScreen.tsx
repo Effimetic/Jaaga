@@ -15,7 +15,7 @@ import {
     Divider,
     Surface,
     Text,
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import { accountingService } from '../services/accountingService';
 import { agentManagementService, ConnectionWithStats } from '../services/agentManagementService';

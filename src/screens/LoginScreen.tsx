@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { Button, Card, Surface, Text, TextInput } from '../compat/paper';
 import {
   Button,
   Card,

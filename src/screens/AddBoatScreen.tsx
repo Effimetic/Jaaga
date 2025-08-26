@@ -12,11 +12,10 @@ import {
 } from 'react-native';
 import {
     Button,
-    RadioButton,
     Surface,
     Text,
     TextInput
-} from 'react-native-paper';
+} from '../compat/paper';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService } from '../services/boatManagementService';
 import { colors, spacing, theme } from '../theme/theme';
@@ -372,37 +371,14 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
         Choose how passengers select seats on your boat.
       </Text>
 
-      <RadioButton.Group
-        onValueChange={(value) => updateForm('seat_mode', value)}
-        value={form.seat_mode}
-      >
-        <View style={styles.radioOption}>
-          <View style={styles.radioContent}>
-            <View style={styles.radioInfo}>
-              <Text variant="titleSmall">Capacity Mode</Text>
-              <Text variant="bodySmall" style={styles.radioDescription}>
-                Passengers buy tickets for a general seating area. Seats are assigned at boarding.
-              </Text>
-            </View>
-            <RadioButton value="CAPACITY" />
+      <View style={styles.radioOption}>
+        <View style={styles.radioContent}>
+          <View style={styles.radioInfo}>
+            <Text variant="titleSmall">Capacity Mode</Text>
+            <Text variant="bodySmall" style={styles.radioDescription}>
+              Passengers buy tickets for a general seating area. Seats are assigned at boarding.
+            </Text>
           </View>
-        </View>
-
-        <View style={styles.radioOption}>
-          <View style={styles.radioContent}>
-            <View style={styles.radioInfo}>
-              <Text variant="titleSmall">Seat Map Mode</Text>
-              <Text variant="bodySmall" style={styles.radioDescription}>
-                Passengers can select specific seats from a visual seat map.
-              </Text>
-            </View>
-            <RadioButton value="SEATMAP" />
-          </View>
-        </View>
-      </RadioButton.Group>
-
-      {form.seat_mode === 'SEATMAP' && (
-        <View style={styles.seatMapSection}>
           <Button
             mode="outlined"
             onPress={generateSeatMap}
@@ -411,7 +387,11 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
           >
             {seatMapPreview ? 'Regenerate' : 'Generate'} Seat Map
           </Button>
+        </View>
+      </View>
 
+      {form.seat_mode === 'SEATMAP' && (
+        <View style={styles.seatMapSection}>
           {seatMapPreview && (
             <View style={styles.seatMapPreview}>
               <Text variant="bodyMedium" style={styles.previewTitle}>

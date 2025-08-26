@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Surface, Text } from 'react-native-paper';
+import { Surface, Text } from '../compat/paper';
 import { colors, spacing, theme } from '../theme/theme';
 import { Seat, SeatMap as SeatMapType } from '../types';
 
