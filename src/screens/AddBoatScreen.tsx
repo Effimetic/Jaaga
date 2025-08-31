@@ -19,6 +19,7 @@ import { BoatCreateRequest, Seat, SeatMap } from '../types';
 interface BoatForm extends Omit<BoatCreateRequest, 'photos' | 'primary_photo'> {
   photos: string[];
   primary_photo?: string;
+  status: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 }
 
 const AMENITIES = [
@@ -50,6 +51,7 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
     description: '',
     photos: [],
     primary_photo: undefined,
+    status: 'ACTIVE',
   });
 
   const [seatMapGrid, setSeatMapGrid] = useState<string[][]>([]);
@@ -86,6 +88,7 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
           description: (boat as any).description || '',
           photos: boat.photos || [],
           primary_photo: boat.primary_photo,
+          status: boat.status || 'ACTIVE',
         });
 
         if (boat.seat_map_json) {
@@ -518,6 +521,7 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
         description: form.description?.trim() || undefined,
         photos: form.photos,
         primary_photo: form.primary_photo,
+        status: form.status,
       };
 
       let result;
@@ -539,7 +543,7 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
                 navigation.goBack();
               } else {
                 // For creating, navigate to My Boats
-                navigation.navigate('My Boats');
+                navigation.navigate('MyBoats');
               }
             }
           }]
@@ -684,6 +688,43 @@ export const AddBoatScreen: React.FC<{ navigation: any; route: any }> = ({
         numberOfLines={3}
         placeholder="Describe your boat's features and services"
       />
+
+          {/* Status Selection */}
+          <View>
+            <Text style={{ fontSize: 12, fontWeight: '500', marginBottom: 8, color: '#374151' }}>
+              Boat Status *
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {[
+                { key: 'ACTIVE', label: 'Active', color: '#10b981' },
+                { key: 'MAINTENANCE', label: 'Maintenance', color: '#f59e0b' },
+                { key: 'INACTIVE', label: 'Inactive', color: '#ef4444' },
+              ].map((status) => (
+                <TouchableOpacity
+                  key={status.key}
+                  onPress={() => updateForm('status', status.key as any)}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    borderRadius: 6,
+                    borderWidth: 1,
+                    borderColor: form.status === status.key ? status.color : '#d1d5db',
+                    backgroundColor: form.status === status.key ? status.color + '10' : '#ffffff',
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    fontWeight: '500',
+                    color: form.status === status.key ? status.color : '#6b7280',
+                  }}>
+                    {status.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
       </Card>
     </View>

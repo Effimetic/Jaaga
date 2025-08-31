@@ -3,12 +3,14 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
+  Image,
   RefreshControl,
   ScrollView,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Card, Surface, Text } from '../components/catalyst';
+import { supabase } from '../config/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { boatManagementService } from '../services/boatManagementService';
 import { scheduleManagementService } from '../services/scheduleManagementService';
@@ -40,6 +42,7 @@ interface QuickAction {
 
 export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { user } = useAuth();
+  const [ownerData, setOwnerData] = useState<{ brand_name: string; logo_url?: string } | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     boats: { total: 0, active: 0, capacity: 0, with_schedules: 0 },
     schedules: { upcoming: 0, today: 0, sold_out: 0 },
@@ -53,6 +56,19 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
 
     try {
       setLoading(true);
+
+      // Load owner data (brand name and logo)
+      const { data: ownerDataResult, error: ownerError } = await supabase
+        .from('owners')
+        .select('brand_name, logo_url')
+        .eq('user_id', user.id)
+        .single();
+
+      if (ownerError) {
+        console.error('Failed to load owner data:', ownerError);
+      } else {
+        setOwnerData(ownerDataResult);
+      }
 
       // Load boat statistics
       const boatStats = await boatManagementService.getBoatStatistics(user.id);
@@ -107,7 +123,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
     {
       title: 'Schedules',
       icon: 'calendar',
-      onPress: () => navigation.navigate('ScheduleManagement'),
+      onPress: () => navigation.navigate('MySchedules'),
     },
     {
       title: 'Agents',
@@ -120,10 +136,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
     {
       title: 'Settings',
       icon: 'cog',
-      onPress: () => {
-        // TODO: Navigate to Settings screen when implemented
-        console.log('Settings screen - to be implemented');
-      },
+      onPress: () => navigation.navigate('OwnerSettings'),
     },
     {
       title: 'Financials',
@@ -134,8 +147,37 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
 
   const renderHeader = () => (
     <View style={{ padding: 16, paddingTop: 20, backgroundColor: '#ffffff' }}>
-      <Text variant="h4" color="primary" style={{ fontSize: 18, fontWeight: '600' }}>Owner Dashboard</Text>
-      <Text color="secondary" style={{ marginTop: 2, fontSize: 12 }}>Welcome back, {user?.phone?.slice(-4)}</Text>
+      {/* Brand Avatar and Name */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+        <View style={{ 
+          width: 48, 
+          height: 48, 
+          borderRadius: 24, 
+          backgroundColor: '#f3f4f6', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          marginRight: 12,
+          overflow: 'hidden'
+        }}>
+          {ownerData?.logo_url ? (
+            <Image 
+              source={{ uri: ownerData.logo_url }} 
+              style={{ width: 48, height: 48, borderRadius: 24 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <MaterialCommunityIcons name="store" size={24} color="#52525b" />
+          )}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="h4" color="primary" style={{ fontSize: 20, fontWeight: '600', color: '#18181b' }}>
+            {ownerData?.brand_name || 'Owner Dashboard'}
+          </Text>
+          <Text color="secondary" style={{ marginTop: 2, fontSize: 12, color: '#71717a' }}>
+            Welcome back, {user?.phone?.slice(-4)}
+          </Text>
+        </View>
+      </View>
     </View>
   );
 
@@ -170,7 +212,7 @@ export const OwnerDashboardScreen: React.FC<{ navigation: any }> = ({ navigation
       </TouchableOpacity>
 
       {/* Today's Schedule */}
-      <TouchableOpacity onPress={() => navigation.navigate('ScheduleManagement')}>
+      <TouchableOpacity onPress={() => navigation.navigate('MySchedules')}>
         <Card variant="outlined" padding="sm" style={{ marginBottom: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>

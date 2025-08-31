@@ -12,17 +12,28 @@ import { AddBoatScreen } from '../screens/AddBoatScreen';
 import { AgentCommissionsScreen } from '../screens/AgentCommissionsScreen';
 import { AgentConnectionsScreen } from '../screens/AgentConnectionsScreen';
 import { AgentDashboardScreen } from '../screens/AgentDashboardScreen';
+import { BankAccountSettingsScreen } from '../screens/BankAccountSettingsScreen';
+import { BrandSettingsScreen } from '../screens/BrandSettingsScreen';
 import { CreditHistoryScreen } from '../screens/CreditHistoryScreen';
+import { DestinationListScreen } from '../screens/DestinationListScreen';
 import { FindOwnersScreen } from '../screens/FindOwnersScreen';
+import { GatewaySettingsScreen } from '../screens/GatewaySettingsScreen';
 import { MyBoatsScreen } from '../screens/MyBoatsScreen';
+import { MySchedulesScreen } from '../screens/MySchedulesScreen';
 import { MyTicketsScreen } from '../screens/MyTicketsScreen';
 import { OwnerDashboardScreen } from '../screens/OwnerDashboardScreen';
 import { OwnerFinancialsScreen } from '../screens/OwnerFinancialsScreen';
+import { OwnerSettingsScreen } from '../screens/OwnerSettingsScreen';
+import { PaymentSettingsScreen } from '../screens/PaymentSettingsScreen';
+import { ScheduleWizardScreen } from '../screens/ScheduleWizardScreen';
+
 import {
-    MyBookingsScreen,
-    ProfileScreen
+  MyBookingsScreen,
+  ProfileScreen
 } from '../screens/PlaceholderScreens';
 import { SearchScreen } from '../screens/SearchScreen';
+import { TaxSettingsScreen } from '../screens/TaxSettingsScreen';
+import { TicketTypeSettingsScreen } from '../screens/TicketTypeSettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -183,6 +194,33 @@ function OwnerStack() {
         }} 
       />
       <Stack.Screen 
+        name="MySchedules" 
+        component={MySchedulesScreen} 
+        options={{ 
+          title: 'My Schedules',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="ScheduleWizard" 
+        component={ScheduleWizardScreen} 
+        options={{ 
+          title: 'Create Schedule',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="DestinationList" 
+        component={DestinationListScreen} 
+        options={{ 
+          title: 'Select Destination',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
         name="AddBoat" 
         component={AddBoatScreen} 
         options={{ 
@@ -205,6 +243,69 @@ function OwnerStack() {
         component={OwnerFinancialsScreen} 
         options={{ 
           title: 'Financial Reports',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="OwnerSettings" 
+        component={OwnerSettingsScreen} 
+        options={{ 
+          title: 'Settings',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="BrandSettings" 
+        component={BrandSettingsScreen} 
+        options={{ 
+          title: 'Brand & Logo',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="GatewaySettings" 
+        component={GatewaySettingsScreen} 
+        options={{ 
+          title: 'BML Gateway',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="TaxSettings" 
+        component={TaxSettingsScreen} 
+        options={{ 
+          title: 'Tax Configuration',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="TicketTypeSettings" 
+        component={TicketTypeSettingsScreen} 
+        options={{ 
+          title: 'Ticket Types',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="PaymentSettings" 
+        component={PaymentSettingsScreen} 
+        options={{ 
+          title: 'Payment Methods',
+          headerStyle: { backgroundColor: colors.owner },
+          headerTintColor: '#ffffff',
+        }} 
+      />
+      <Stack.Screen 
+        name="BankAccountSettings" 
+        component={BankAccountSettingsScreen} 
+        options={{ 
+          title: 'Bank Accounts',
           headerStyle: { backgroundColor: colors.owner },
           headerTintColor: '#ffffff',
         }} 

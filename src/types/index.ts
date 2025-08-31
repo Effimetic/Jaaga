@@ -127,13 +127,32 @@ export interface QRCodeData {
 }
 
 // Schedule Management Types
-export interface RouteStop {
+export interface Destination {
   id: string;
   name: string;
+  description?: string;
+  photo_url?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RouteStop {
+  id: string;
+  destination_id: string; // Reference to destinations table
+  name: string; // Duplicate for easy access
   latitude?: number;
   longitude?: number;
   order: number;
   estimated_duration?: number; // minutes to next stop
+  is_pickup: boolean; // Can passengers board here
+  is_dropoff: boolean; // Can passengers disembark here
+  departure_time?: string; // Departure time if pickup is enabled
+  arrival_time?: string; // Arrival time if dropoff is enabled
 }
 
 export interface ScheduleSegment {
@@ -141,8 +160,12 @@ export interface ScheduleSegment {
   to_stop_id: string;
   departure_time: string;
   arrival_time: string;
+  pickup_time?: string; // Optional pickup time at this stop
+  dropoff_time?: string; // Optional dropoff time at this stop
   distance?: number;
   price_multiplier?: number;
+  is_pickup: boolean; // Can passengers board at this stop
+  is_dropoff: boolean; // Can passengers disembark at this stop
 }
 
 export interface RecurrencePattern {
@@ -167,6 +190,16 @@ export interface ScheduleTemplate {
   updated_at: string;
 }
 
+export interface ScheduleWizardData {
+  template_name: string;
+  description?: string;
+  boat_id: string;
+  route_stops: RouteStop[];
+  recurrence_dates: string[]; // Specific dates when schedule should run
+  save_as_template: boolean;
+  template_name_for_save?: string;
+}
+
 // Boat Management Types
 export interface BoatCreateRequest {
   name: string;
@@ -178,6 +211,7 @@ export interface BoatCreateRequest {
   description?: string;
   photos?: string[];
   primary_photo?: string;
+  status?: 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE';
 }
 
 export type BoatUpdateRequest = Partial<BoatCreateRequest>;

@@ -266,7 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
         
-        if (!existingUser) {
+          if (!existingUser) {
           console.log('🔍 [CUSTOM] No existing user found with any phone format, will create new one');
         }
         

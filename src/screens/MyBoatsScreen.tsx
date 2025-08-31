@@ -497,11 +497,19 @@ export const MyBoatsScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         </View>
 
         {/* Search Bar */}
-        <View style={{ padding: 16, paddingTop: 8 }}>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
           <Input
             placeholder="Search boats by name or registration..."
             value={searchQuery}
             onChangeText={setSearchQuery}
+            style={{
+              fontSize: 14,
+              letterSpacing: 0.5,
+              paddingVertical: 2,
+              paddingHorizontal: 2,
+              height: 'auto',
+            }}
+            placeholderTextColor="#9ca3af"
           />
         </View>
 

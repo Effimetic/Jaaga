@@ -231,7 +231,7 @@ export class BoatManagementService {
           description: boatData.description,
           photos: boatData.photos || [],
           primary_photo: boatData.primary_photo,
-          status: 'ACTIVE',
+          status: boatData.status || 'ACTIVE',
         }])
         .select()
         .single();
@@ -269,6 +269,7 @@ export class BoatManagementService {
           description: boatData.description,
           photos: boatData.photos,
           primary_photo: boatData.primary_photo,
+          status: boatData.status,
           updated_at: new Date().toISOString(),
         })
         .eq('id', boatId)

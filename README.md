@@ -441,13 +441,6 @@ eas build --platform all --profile production
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-For support and questions:
-- 📧 Email: support@boatticketing.com
-- 📖 Documentation: [docs.boatticketing.com](https://docs.boatticketing.com)
-- 🐛 Issues: [GitHub Issues](https://github.com/your-repo/issues)
-- 💬 Discord: [Community Server](https://discord.gg/boatticketing)
 
 ## 📊 Project Status
 

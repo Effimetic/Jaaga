@@ -1,4 +1,6 @@
 // Export all Catalyst components
+export { Calendar } from '../Calendar';
+export { TimePicker } from '../TimePicker';
 export { Button } from './Button';
 export { Card } from './Card';
 export { default as Input } from './Input';
