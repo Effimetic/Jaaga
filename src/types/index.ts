@@ -185,6 +185,11 @@ export interface ScheduleTemplate {
   segments: ScheduleSegment[];
   default_boat_id?: string;
   pricing_tier: string;
+  ticket_type_configs: {
+    ticket_type_id: string;
+    price_override?: number;
+    active: boolean;
+  }[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -196,6 +201,11 @@ export interface ScheduleWizardData {
   boat_id: string;
   route_stops: RouteStop[];
   recurrence_dates: string[]; // Specific dates when schedule should run
+  selected_ticket_types: {
+    ticket_type_id: string;
+    price_override?: number;
+    active: boolean;
+  }[];
   save_as_template: boolean;
   template_name_for_save?: string;
 }

@@ -1,11 +1,11 @@
 import { supabase } from '../config/supabase';
 import {
-    ApiResponse,
-    RecurrencePattern,
-    RouteStop,
-    Schedule,
-    ScheduleSegment,
-    ScheduleTemplate
+  ApiResponse,
+  RecurrencePattern,
+  RouteStop,
+  Schedule,
+  ScheduleSegment,
+  ScheduleTemplate
 } from '../types';
 
 export interface MultiStopSchedule {
@@ -552,6 +552,51 @@ export class ScheduleManagementService {
       status: scheduleData.status || 'ACTIVE',
       inherits_pricing: true,
     };
+  }
+
+  /**
+   * Delete template
+   */
+  async deleteTemplate(templateId: string): Promise<ApiResponse<boolean>> {
+    try {
+      // Check if template is being used by any schedules
+      const { data: schedules } = await supabase
+        .from('schedules')
+        .select('id')
+        .eq('template_id', templateId)
+        .limit(1);
+
+      if (schedules && schedules.length > 0) {
+        return {
+          success: false,
+          error: 'Cannot delete template that is being used by schedules',
+          data: false,
+        };
+      }
+
+      // Soft delete the template
+      const { error } = await supabase
+        .from('schedule_templates')
+        .update({
+          is_active: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', templateId);
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        data: true,
+      };
+    } catch (error: any) {
+      console.error('Template deletion failed:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to delete template',
+        data: false,
+      };
+    }
   }
 
   /**

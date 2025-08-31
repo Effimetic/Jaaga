@@ -291,6 +291,34 @@ export const MySchedulesScreen: React.FC<{ navigation: any }> = ({ navigation })
     );
   };
 
+  const handleDeleteTemplate = async (templateId: string) => {
+    Alert.alert(
+      'Delete Template',
+      'Are you sure you want to delete this template? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await scheduleManagementService.deleteTemplate(templateId);
+              if (response.success) {
+                Alert.alert('Success', 'Template deleted successfully');
+                loadSchedules(); // This will also reload templates
+              } else {
+                Alert.alert('Error', response.error || 'Failed to delete template');
+              }
+            } catch (error) {
+              console.error('Delete failed:', error);
+              Alert.alert('Error', 'Failed to delete template');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const renderHeader = () => (
     <View style={{ padding: 16, paddingTop: 20, backgroundColor: '#ffffff' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -562,7 +590,7 @@ export const MySchedulesScreen: React.FC<{ navigation: any }> = ({ navigation })
         {/* Template Details */}
         <View style={{ backgroundColor: '#f9fafb', padding: 12, borderRadius: 8 }}>
           <Text style={{ fontSize: 12, fontWeight: '500', color: '#374151', marginBottom: 8 }}>
-            Route Configuration
+            Configuration
           </Text>
           <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
             Stops: {template.route_stops?.length || 0}
@@ -570,26 +598,45 @@ export const MySchedulesScreen: React.FC<{ navigation: any }> = ({ navigation })
           <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
             Segments: {template.segments?.length || 0}
           </Text>
+          <Text style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+            Ticket Types: {template.ticket_type_configs?.length || 0}
+          </Text>
           <Text style={{ fontSize: 12, color: '#6b7280' }}>
             Pricing: {template.pricing_tier}
           </Text>
         </View>
 
         {/* Actions */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('ScheduleWizard', { templateId: template.id })}
-          style={{
-            backgroundColor: '#18181b',
-            borderRadius: 6,
-            paddingVertical: 8,
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
-            Use Template
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('ScheduleWizard', { templateId: template.id })}
+            style={{
+              flex: 1,
+              backgroundColor: '#18181b',
+              borderRadius: 6,
+              paddingVertical: 8,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>
+              Use Template
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleDeleteTemplate(template.id)}
+            style={{
+              backgroundColor: '#fef2f2',
+              borderRadius: 6,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <MaterialCommunityIcons name="delete" size={20} color="#dc2626" />
+          </TouchableOpacity>
+        </View>
       </View>
     </Card>
   );

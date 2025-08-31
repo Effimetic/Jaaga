@@ -86,7 +86,14 @@ export const BookingFlowScreen: React.FC<BookingFlowScreenProps> = ({
 
       // Set schedule data
       setSchedule(scheduleData.schedule, segmentKey || 'default');
-      setTicketTypes(scheduleData.schedule.available_tickets.map(st => st.ticket_type));
+      // Load ticket types from the schedule's available tickets
+      const ticketTypeIds = scheduleData.schedule.available_tickets.map(st => st.ticket_type_id);
+      const { data: ticketTypesData } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .in('id', ticketTypeIds);
+      
+      setTicketTypes(ticketTypesData || []);
 
       // Load seat information
       if (scheduleData.schedule.boat.seat_mode === 'SEATMAP') {

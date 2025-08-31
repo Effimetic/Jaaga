@@ -15,7 +15,8 @@ import {
   Boat,
   Destination,
   RouteStop,
-  ScheduleWizardData
+  ScheduleWizardData,
+  TicketType
 } from '../types';
 
 interface WizardStep {
@@ -41,6 +42,11 @@ const WIZARD_STEPS: WizardStep[] = [
     description: 'Choose when this schedule runs'
   },
   {
+    id: 'tickets',
+    title: 'Ticket Types',
+    description: 'Select and configure ticket types for this schedule'
+  },
+  {
     id: 'template',
     title: 'Save Options',
     description: 'Save as template for future use'
@@ -54,6 +60,7 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
   const [saving, setSaving] = useState(false);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [boats, setBoats] = useState<Boat[]>([]);
+  const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
 
@@ -61,10 +68,9 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
     template_name: '',
     description: '',
     boat_id: '',
-          route_stops: [], // Start with completely empty route stops
-    
-    
+    route_stops: [], // Start with completely empty route stops
     recurrence_dates: [],
+    selected_ticket_types: [],
     save_as_template: false,
     template_name_for_save: ''
   });
@@ -73,6 +79,45 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
   useEffect(() => {
     console.log('FormData route_stops changed:', formData.route_stops);
   }, [formData.route_stops]);
+
+  const loadTemplateData = useCallback(async (templateId: string) => {
+    try {
+      setLoading(true);
+      
+      // Load template data
+      const { data: templateData, error: templateError } = await supabase
+        .from('schedule_templates')
+        .select('*')
+        .eq('id', templateId)
+        .eq('is_active', true)
+        .single();
+
+      if (templateError || !templateData) {
+        Alert.alert('Error', 'Template not found or inactive');
+        return;
+      }
+
+      // Populate form data with template data
+      setFormData(prev => ({
+        ...prev,
+        template_name: templateData.name,
+        description: templateData.description || '',
+        boat_id: templateData.default_boat_id || prev.boat_id,
+        route_stops: templateData.route_stops || [],
+        selected_ticket_types: templateData.ticket_type_configs || [],
+        recurrence_dates: [], // Start with empty dates - user will select new dates
+        save_as_template: false, // Don't save as template when using a template
+        template_name_for_save: ''
+      }));
+
+      console.log('Template loaded:', templateData);
+    } catch (error) {
+      console.error('Failed to load template:', error);
+      Alert.alert('Error', 'Failed to load template data');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const loadInitialData = useCallback(async () => {
     if (!user?.id) return;
@@ -128,6 +173,20 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
           setFormData(prev => ({ ...prev, boat_id: boatData[0].id }));
         }
       }
+
+      // Load ticket types
+      const { data: ticketData, error: ticketError } = await supabase
+        .from('ticket_types')
+        .select('*')
+        .eq('owner_id', ownerData.id)
+        .eq('active', true)
+        .order('created_at', { ascending: false });
+
+      if (ticketError) {
+        console.error('Failed to load ticket types:', ticketError);
+      } else {
+        setTicketTypes(ticketData || []);
+      }
     } catch (error) {
       console.error('Failed to load initial data:', error);
       Alert.alert('Error', 'Failed to load destinations and boats');
@@ -142,27 +201,32 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
 
   // Handle route parameters for editing or using templates
   useEffect(() => {
-    if (route?.params) {
-      console.log('Route params received:', route.params);
-      
-      if (route.params.editScheduleId) {
-        // TODO: Load existing schedule for editing
-        setIsEditing(true);
-        setEditingScheduleId(route.params.editScheduleId);
-        console.log('Editing schedule:', route.params.editScheduleId);
-      } else if (route.params.templateId) {
-        // TODO: Load template for creating new schedule
-        console.log('Using template:', route.params.templateId);
-      } else {
-        console.log('No route params, starting fresh');
-        // Ensure we start with empty route stops when no params
-        if (formData.route_stops.length > 0) {
-          console.log('Clearing existing route stops to start fresh');
-          setFormData(prev => ({ ...prev, route_stops: [] }));
+    const handleRouteParams = async () => {
+      if (route?.params) {
+        console.log('Route params received:', route.params);
+        
+        if (route.params.editScheduleId) {
+          // TODO: Load existing schedule for editing
+          setIsEditing(true);
+          setEditingScheduleId(route.params.editScheduleId);
+          console.log('Editing schedule:', route.params.editScheduleId);
+        } else if (route.params.templateId) {
+          // Load template for creating new schedule
+          console.log('Using template:', route.params.templateId);
+          await loadTemplateData(route.params.templateId);
+        } else {
+          console.log('No route params, starting fresh');
+          // Ensure we start with empty route stops when no params
+          if (formData.route_stops.length > 0) {
+            console.log('Clearing existing route stops to start fresh');
+            setFormData(prev => ({ ...prev, route_stops: [] }));
+          }
         }
       }
-    }
-  }, [route?.params]);
+    };
+
+    handleRouteParams();
+  }, [route?.params, loadTemplateData]);
 
   const updateForm = (field: keyof ScheduleWizardData, value: any) => {
     if (field === 'route_stops') {
@@ -418,9 +482,15 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
           return false;
         }
         break;
-      case 2: // Schedule Dates (was case 3, now case 2)
+      case 2: // Schedule Dates
         if (formData.recurrence_dates.length === 0) {
           Alert.alert('Validation Error', 'Please select at least one date');
+          return false;
+        }
+        break;
+      case 3: // Ticket Types
+        if (formData.selected_ticket_types.length === 0) {
+          Alert.alert('Validation Error', 'Please select at least one ticket type');
           return false;
         }
         break;
@@ -464,7 +534,8 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
           route_stops: formData.route_stops,
           segments: segments,
           default_boat_id: formData.boat_id,
-          pricing_tier: 'STANDARD'
+          pricing_tier: 'STANDARD',
+          ticket_type_configs: formData.selected_ticket_types
         };
 
         const { error: templateError } = await supabase
@@ -492,13 +563,34 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
           inherits_pricing: true
         };
 
-        const { error: scheduleError } = await supabase
+        const { data: createdSchedule, error: scheduleError } = await supabase
           .from('schedules')
-          .insert([scheduleData]);
+          .insert([scheduleData])
+          .select()
+          .single();
 
         if (scheduleError) {
           console.error('Failed to create schedule:', scheduleError);
           throw new Error('Failed to create schedule');
+        }
+
+        // Create schedule ticket types
+        if (createdSchedule && formData.selected_ticket_types.length > 0) {
+          const scheduleTicketTypes = formData.selected_ticket_types.map(st => ({
+            schedule_id: createdSchedule.id,
+            ticket_type_id: st.ticket_type_id,
+            active: st.active,
+            price_override: st.price_override
+          }));
+
+          const { error: ticketTypeError } = await supabase
+            .from('schedule_ticket_types')
+            .insert(scheduleTicketTypes);
+
+          if (ticketTypeError) {
+            console.error('Failed to create schedule ticket types:', ticketTypeError);
+            throw new Error('Failed to create schedule ticket types');
+          }
         }
       }
 
@@ -891,6 +983,89 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
     </View>
   );
 
+  const renderTicketTypes = () => (
+    <View style={{ gap: 16 }}>
+      <Text style={{ fontSize: 16, fontWeight: '600', color: '#18181b' }}>
+        Select Ticket Types
+      </Text>
+
+      <Text style={{ fontSize: 14, color: '#6b7280' }}>
+        Choose the ticket types that will be available for this schedule.
+      </Text>
+
+      {/* Ticket Type Selection */}
+      <View style={{ gap: 12 }}>
+        {ticketTypes.map((ticketType) => {
+          const isSelected = formData.selected_ticket_types.some(st => st.ticket_type_id === ticketType.id);
+          const selectedTicket = formData.selected_ticket_types.find(st => st.ticket_type_id === ticketType.id);
+          
+          return (
+            <Card key={ticketType.id} variant="outlined" padding="md">
+              <View style={{ gap: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: '#18181b' }}>
+                      {ticketType.name}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: '#6b7280' }}>
+                      Code: {ticketType.code} • Base Price: {ticketType.base_price} {ticketType.currency}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      const updatedSelectedTypes = isSelected
+                        ? formData.selected_ticket_types.filter(st => st.ticket_type_id !== ticketType.id)
+                        : [...formData.selected_ticket_types, {
+                            ticket_type_id: ticketType.id,
+                            price_override: undefined,
+                            active: true
+                          }];
+                      updateForm('selected_ticket_types', updatedSelectedTypes);
+                    }}
+                    style={{
+                      padding: 8,
+                      borderRadius: 8,
+                      backgroundColor: isSelected ? '#10b98110' : '#f3f4f6',
+                      borderWidth: 1,
+                      borderColor: isSelected ? '#10b981' : '#d1d5db'
+                    }}
+                  >
+                    <MaterialCommunityIcons name="check-circle" size={20} color={isSelected ? '#10b981' : '#6b7280'} />
+                  </TouchableOpacity>
+                </View>
+                
+                {isSelected && (
+                  <View style={{ gap: 8 }}>
+                    <Input
+                      label="Price Override (Optional)"
+                      value={selectedTicket?.price_override?.toString() || ''}
+                      onChangeText={(text: string) => {
+                        const price = text ? parseFloat(text) : undefined;
+                        const updatedSelectedTypes = formData.selected_ticket_types.map(st => 
+                          st.ticket_type_id === ticketType.id 
+                            ? { ...st, price_override: price }
+                            : st
+                        );
+                        updateForm('selected_ticket_types', updatedSelectedTypes);
+                      }}
+                      placeholder={`${ticketType.base_price} (base price)`}
+                      keyboardType="numeric"
+                      style={{
+                        fontSize: 14,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                      }}
+                    />
+                  </View>
+                )}
+              </View>
+            </Card>
+          );
+        })}
+      </View>
+    </View>
+  );
+
   const renderTemplateOptions = () => (
     <View style={{ gap: 16 }}>
       <Text style={{ fontSize: 16, fontWeight: '600', color: '#18181b' }}>
@@ -957,6 +1132,8 @@ export const ScheduleWizardScreen: React.FC<{ navigation: any; route?: any }> = 
       case 2:
         return renderScheduleDates();
       case 3:
+        return renderTicketTypes();
+      case 4:
         return renderTemplateOptions();
       default:
         return null;
