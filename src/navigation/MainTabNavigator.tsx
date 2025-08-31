@@ -32,21 +32,53 @@ import {
   ProfileScreen
 } from '../screens/PlaceholderScreens';
 import { SearchScreen } from '../screens/SearchScreen';
+import { AgentSearchScreen } from '../screens/AgentSearchScreen';
+import { OwnerSearchScreen } from '../screens/OwnerSearchScreen';
+import { PublicSearchScreen } from '../screens/PublicSearchScreen';
 import { TaxSettingsScreen } from '../screens/TaxSettingsScreen';
 import { TicketTypeSettingsScreen } from '../screens/TicketTypeSettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Home Stack Navigator - Always shows Search
+// Home Stack Navigator - Role-based Search
 function HomeStack() {
+  const { user } = useAuth();
+  
+  const getSearchComponent = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return AgentSearchScreen;
+      case 'OWNER':
+        return OwnerSearchScreen;
+      case 'PUBLIC':
+      default:
+        return PublicSearchScreen;
+    }
+  };
+
+  const getSearchTitle = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return '🎯 Agent Search';
+      case 'OWNER':
+        return '🚢 Owner Search';
+      case 'PUBLIC':
+      default:
+        return '🚢 Search Boats';
+    }
+  };
+
+  const SearchComponent = getSearchComponent();
+  const searchTitle = getSearchTitle();
+
   return (
     <Stack.Navigator>
       <Stack.Screen 
         name="HomeMain" 
-        component={SearchScreen}
+        component={SearchComponent}
         options={{ 
-          title: '🚢 Search Boats',
+          title: searchTitle,
           headerStyle: { backgroundColor: theme.colors.primary },
           headerTintColor: '#ffffff',
           headerTitleStyle: { fontWeight: 'bold' }
@@ -65,15 +97,44 @@ function HomeStack() {
   );
 }
 
-// Search Stack Navigator
+// Search Stack Navigator - Role-based
 function SearchStack() {
+  const { user } = useAuth();
+  
+  const getSearchComponent = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return AgentSearchScreen;
+      case 'OWNER':
+        return OwnerSearchScreen;
+      case 'PUBLIC':
+      default:
+        return PublicSearchScreen;
+    }
+  };
+
+  const getSearchTitle = () => {
+    switch (user?.role) {
+      case 'AGENT':
+        return 'Agent Search';
+      case 'OWNER':
+        return 'Owner Search';
+      case 'PUBLIC':
+      default:
+        return 'Search Trips';
+    }
+  };
+
+  const SearchComponent = getSearchComponent();
+  const searchTitle = getSearchTitle();
+
   return (
     <Stack.Navigator>
       <Stack.Screen 
         name="SearchMain" 
-        component={SearchScreen}
+        component={SearchComponent}
         options={{ 
-          title: 'Search Trips',
+          title: searchTitle,
           headerStyle: { backgroundColor: theme.colors.primary },
           headerTintColor: theme.colors.onPrimary,
         }}
