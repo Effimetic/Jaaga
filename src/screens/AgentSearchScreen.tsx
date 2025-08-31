@@ -1,6 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { View } from 'react-native';
 import { Surface, Text } from '../components/catalyst';
 
 export const AgentSearchScreen: React.FC<{ navigation: any }> = ({ navigation }) => {

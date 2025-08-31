@@ -27,13 +27,12 @@ import { OwnerSettingsScreen } from '../screens/OwnerSettingsScreen';
 import { PaymentSettingsScreen } from '../screens/PaymentSettingsScreen';
 import { ScheduleWizardScreen } from '../screens/ScheduleWizardScreen';
 
+import { AgentSearchScreen } from '../screens/AgentSearchScreen';
+import { OwnerSearchScreen } from '../screens/OwnerSearchScreen';
 import {
   MyBookingsScreen,
   ProfileScreen
 } from '../screens/PlaceholderScreens';
-import { SearchScreen } from '../screens/SearchScreen';
-import { AgentSearchScreen } from '../screens/AgentSearchScreen';
-import { OwnerSearchScreen } from '../screens/OwnerSearchScreen';
 import { PublicSearchScreen } from '../screens/PublicSearchScreen';
 import { TaxSettingsScreen } from '../screens/TaxSettingsScreen';
 import { TicketTypeSettingsScreen } from '../screens/TicketTypeSettingsScreen';
